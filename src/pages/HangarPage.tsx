@@ -1166,7 +1166,7 @@ export default function HangarPage() {
 
               {/* Pilot is completely independent and stands
                   on the grass shoulder beside the road */}
-<HangarMan position={[1.5, 0, 1.1]} /></Suspense>
+<HangarMan position={[1.5, 0, 0.5]} /></Suspense>
 
             {/* ==================================================
                 CAMERA CONTROL
