@@ -17,7 +17,8 @@ export default function LandingPage() {
           textShadow: '4px 4px 0 #ff2bd6',
         }}
       >
-        PLANE-GTA
+MARSHOUT
+      
       </h1>
       <p style={{ fontFamily: 'Arial, sans-serif', fontSize: 18, color: '#c9b8ff', maxWidth: 520 }}>
         Paint a plane in the hangar, then extract your homies. Travel faster. Not a flight sim.
