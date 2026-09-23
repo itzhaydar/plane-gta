@@ -1,4 +1,5 @@
 import { NavLink, Route, Routes } from 'react-router-dom';
+import { Analytics } from '@vercel/analytics/react';
 import LandingPage from './pages/LandingPage';
 import HangarPage from './pages/HangarPage';
 import FlyPage from './pages/FlyPage';
@@ -51,6 +52,7 @@ export default function App() {
         <Route path="/fly" element={<FlyPage />} />
         <Route path="/result" element={<ResultPage />} />
       </Routes>
+      <Analytics />
     </div>
   );
 }
