@@ -229,7 +229,7 @@ function Road() {
 const PILOT_HEIGHT = 1.25;
 
 function HangarMan({
-  position = [2.65, 0, 0.15] as [number, number, number],
+  position = [1.65, 0, 0.15] as [number, number, number],
 }) {
   const group = useRef<THREE.Group>(null);
 
