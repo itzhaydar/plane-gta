@@ -1,4 +1,13 @@
 {
+  "scripts": {
+    "prepare:landing": "node scripts/prepare-landing.cjs",
+    "dev": "npm run prepare:landing && vite",
+    "build": "npm run prepare:landing && vite build",
+    "preview": "vite preview"
+  }
+}
+
+{
   "name": "plane-gta",
   "private": true,
   "version": "0.0.1",
@@ -27,3 +36,5 @@
     "vite": "^7.1.6"
   }
 }
+
+
