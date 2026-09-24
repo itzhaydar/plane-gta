@@ -29,6 +29,7 @@ type Telemetry = {
 };
 
 useGLTF.preload('/astro.glb');
+useGLTF.preload('/homie2.glb');
 
 function MissionSkin({ url, fallback }: { url: string | null; fallback: string }) {
   const map = useTexture(url ?? fallback);
@@ -315,7 +316,8 @@ function SpaceScene({ progress }: { progress: number }) {
     [],
   );
 
-  const marsZ = THREE.MathUtils.lerp(-48, -9, THREE.MathUtils.clamp((progress - 0.55) / 0.28, 0, 1));
+  // Mars stays fixed in space. The rocket physically travels toward it.
+  const marsZ = -138;
 
   return (
     <group>
@@ -387,7 +389,7 @@ function MarsGround() {
   );
 }
 
-function Astronaut({ visible }: { visible: boolean }) {
+function MarsAstronaut({ visible }: { visible: boolean }) {
   const { scene } = useGLTF('/astro.glb');
   const astronaut = useMemo(() => {
     const c = SkeletonUtils.clone(scene);
@@ -412,8 +414,39 @@ function Astronaut({ visible }: { visible: boolean }) {
 
   if (!visible) return null;
   return (
-    <group position={[1.7, 0, 0.9]} rotation={[0, -Math.PI / 2, 0]}>
+    <group position={[1.9, 0, 1.15]} rotation={[0, -Math.PI / 2, 0]}>
       <primitive object={astronaut} />
+    </group>
+  );
+}
+
+function Homie({ visible }: { visible: boolean }) {
+  const { scene } = useGLTF('/homie2.glb');
+  const homie = useMemo(() => {
+    const c = SkeletonUtils.clone(scene);
+    c.traverse((o) => {
+      if (o instanceof THREE.Mesh) {
+        o.castShadow = true;
+        o.receiveShadow = true;
+      }
+    });
+    c.updateMatrixWorld(true);
+    const box = new THREE.Box3().setFromObject(c);
+    const size = box.getSize(new THREE.Vector3());
+    c.scale.multiplyScalar(1.55 / Math.max(size.y, 1e-6));
+    c.updateMatrixWorld(true);
+    const fitted = new THREE.Box3().setFromObject(c);
+    const center = fitted.getCenter(new THREE.Vector3());
+    c.position.x -= center.x;
+    c.position.z -= center.z;
+    c.position.y -= fitted.min.y;
+    return c;
+  }, [scene]);
+
+  if (!visible) return null;
+  return (
+    <group position={[-1.45, 0, 1.0]} rotation={[0, Math.PI / 2, 0]}>
+      <primitive object={homie} />
     </group>
   );
 }
@@ -443,23 +476,23 @@ function RocketWorld({
       progress.current = 0;
     } else if (phase === 'launch') {
       speed.current = Math.min(4200, speed.current + 1500 * d);
-      progress.current += 0.027 * d;
+      progress.current += 0.018 * d;
       if (progress.current >= 0.08) setPhase('clouds');
     } else if (phase === 'clouds') {
       speed.current = Math.min(12500, speed.current + 2800 * d);
-      progress.current += 0.04 * d;
+      progress.current += 0.026 * d;
       if (progress.current >= 0.24) setPhase('space');
     } else if (phase === 'space') {
       speed.current = Math.min(MAX_SPEED, speed.current + 3200 * d);
-      progress.current += 0.022 * d;
+      progress.current += 0.0085 * d;
       if (progress.current >= 0.72) setPhase('mars-approach');
     } else if (phase === 'mars-approach') {
       speed.current = THREE.MathUtils.lerp(speed.current, 7200, d * 0.7);
-      progress.current += 0.027 * d;
+      progress.current += 0.013 * d;
       if (progress.current >= 0.86) setPhase('landing');
     } else if (phase === 'landing') {
       speed.current = Math.max(0, speed.current - 4100 * d);
-      progress.current = Math.min(1, progress.current + 0.026 * d);
+      progress.current = Math.min(1, progress.current + 0.016 * d);
       if (progress.current >= 1 && speed.current <= 25) {
         speed.current = 0;
         setPhase('landed');
@@ -482,21 +515,27 @@ function RocketWorld({
         rocketRef.current.position.set(0, THREE.MathUtils.lerp(8, 0.08, landingT), 0);
         rocketRef.current.rotation.set(0, 0, 0);
       } else {
-        rocketRef.current.position.set(0, 1.1, 0);
-        rocketRef.current.rotation.set(0, 0, -0.035);
+        // Deep-space transfer: the rocket itself travels forward through the scene.
+        // Mars remains fixed far ahead instead of sliding toward the rocket.
+        const transferT = THREE.MathUtils.clamp((p - 0.24) / 0.62, 0, 1);
+        const travelZ = THREE.MathUtils.lerp(4, -116, transferT);
+        const travelY = 1.4 + Math.sin(transferT * Math.PI) * 2.2;
+        rocketRef.current.position.set(0, travelY, travelZ);
+        rocketRef.current.rotation.set(Math.PI / 2, 0, -0.025);
       }
     }
 
     const targetY = rocketRef.current?.position.y ?? 1.5;
+    const targetZ = rocketRef.current?.position.z ?? 0;
     const desired = earthMode
-      ? new THREE.Vector3(7.5, targetY + 3.3, 9.5)
+      ? new THREE.Vector3(7.5, targetY + 3.3, targetZ + 9.5)
       : marsMode
         ? new THREE.Vector3(7.4, targetY + 3.4, 9.2)
-        : new THREE.Vector3(7.8, 4.2, 10.5);
+        : new THREE.Vector3(8.8, targetY + 4.0, targetZ + 13.5);
 
     if (!orbit.current?.__dragging) camera.position.lerp(desired, 1 - Math.pow(0.004, d));
     if (orbit.current) {
-      orbit.current.target.lerp(new THREE.Vector3(0, targetY + 1.6, 0), 1 - Math.pow(0.003, d));
+      orbit.current.target.lerp(new THREE.Vector3(0, targetY + 1.2, targetZ - (earthMode || marsMode ? 0 : 4.5)), 1 - Math.pow(0.003, d));
       orbit.current.update();
     }
 
@@ -532,7 +571,8 @@ function RocketWorld({
         <Rocket liveries={liveries} enginesOn={enginesOn} />
       </group>
 
-      <Astronaut visible={phase === 'exited'} />
+      <MarsAstronaut visible={phase === 'landed' || phase === 'exited'} />
+      <Homie visible={phase === 'exited'} />
 
       {phase === 'space' && (
         <Html position={[0, 6.2, 0]} center distanceFactor={12} style={{ pointerEvents: 'none' }}>
