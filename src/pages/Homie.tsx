@@ -1,5 +1,4 @@
-import { ChangeEvent, useMemo, useRef, useState } from 'react';
-
+import { useMemo, useRef, useState, type ChangeEvent } from 'react';
 type Vehicle = 'Plane' | 'Rocket';
 type DefaultPerson = 'man' | 'mann' | 'woman';
 
