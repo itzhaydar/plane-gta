@@ -867,12 +867,12 @@ export default function RockHangar() {
                 alpha: false,
                 stencil: false,
               }}
-              camera={{
-                position: [5.1, 3.15, 5.1],
-                fov: 37,
-                near: 0.1,
-                far: 60,
-              }}
+camera={{
+  position: [6.5, 3.2, 7.2],
+  fov: 36,
+  near: 0.1,
+  far: 60,
+}}
               style={{
                 width: '100%',
                 height: '100%',
