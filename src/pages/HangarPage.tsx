@@ -18,7 +18,7 @@ import * as THREE from 'three';
 import { SkeletonUtils } from 'three-stdlib';
 
 
-const LiveryEditor = lazy(() => import('../components/LiveryEditor'));
+import LiveryEditor from '../components/LiveryEditor';
 import { usePlaneStore, type Face } from '../store';
 
 // ============================================================
