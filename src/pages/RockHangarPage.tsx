@@ -80,7 +80,7 @@ function HangarMan({
   position = [1.7, 0, 0.55] as [number, number, number],
 }) {
   const invalidate = useThree((state) => state.invalidate);
-  const { scene, animations } = useGLTF('/atro.glb');
+  const { scene, animations } = useGLTF('/astro.glb');
 
   const man = useMemo(() => {
     const clone = SkeletonUtils.clone(scene);
