@@ -965,7 +965,8 @@ const toggleSound = () => {
         <aside className="launch-bay-editor">
           <div className="launch-bay-editor-head">
             <p className="launch-bay-prompt">
-              Yo dawg, paint them flags so we can bounce outta here!
+Yo dawg, slap some heat on them tails so we can bounce.
+
             </p>
 
             <div className="launch-bay-faces">
