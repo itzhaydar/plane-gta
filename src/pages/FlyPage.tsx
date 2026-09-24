@@ -695,10 +695,55 @@ function HighClouds(){
 }
 
 useGLTF.preload('/pilot-out.glb');
-function ExitPilot(){
-  const {scene}=useGLTF('/pilot-out.glb');
-  const man=useMemo(()=>{const c=SkeletonUtils.clone(scene);c.traverse(o=>{if(o instanceof THREE.Mesh){o.castShadow=true;o.receiveShadow=true}});c.updateMatrixWorld(true);const b=new THREE.Box3().setFromObject(c),sz=b.getSize(new THREE.Vector3());c.scale.multiplyScalar(1.42/Math.max(sz.y,1e-6));c.updateMatrixWorld(true);const f=new THREE.Box3().setFromObject(c),center=f.getCenter(new THREE.Vector3());c.position.x-=center.x;c.position.z-=center.z;c.position.y-=f.min.y;return c},[scene]);
-  return <group position={[1.65,-0.72,0.35]} rotation={[0,-Math.PI/2,0]}><primitive object={man}/></group>;
+useGLTF.preload('/homie1.glb');
+
+function ExitPerson({
+  src,
+  position,
+  rotation = [0, -Math.PI / 2, 0],
+  height = 1.42,
+}: {
+  src: string;
+  position: [number, number, number];
+  rotation?: [number, number, number];
+  height?: number;
+}) {
+  const { scene } = useGLTF(src);
+  const man = useMemo(() => {
+    const c = SkeletonUtils.clone(scene);
+    c.traverse((o) => {
+      if (o instanceof THREE.Mesh) {
+        o.castShadow = true;
+        o.receiveShadow = true;
+      }
+    });
+    c.updateMatrixWorld(true);
+    const b = new THREE.Box3().setFromObject(c);
+    const sz = b.getSize(new THREE.Vector3());
+    c.scale.multiplyScalar(height / Math.max(sz.y, 1e-6));
+    c.updateMatrixWorld(true);
+    const f = new THREE.Box3().setFromObject(c);
+    const center = f.getCenter(new THREE.Vector3());
+    c.position.x -= center.x;
+    c.position.z -= center.z;
+    c.position.y -= f.min.y;
+    return c;
+  }, [scene, height]);
+
+  return (
+    <group position={position} rotation={rotation}>
+      <primitive object={man} />
+    </group>
+  );
+}
+
+function ExitCrew() {
+  return (
+    <>
+      <ExitPerson src="/pilot-out.glb" position={[1.65, -0.72, 0.35]} />
+      <ExitPerson src="/homie1.glb" position={[1.65, -0.72, -1.05]} />
+    </>
+  );
 }
 
 function DestinationBeacon({distance}:{distance:number}){return <group position={[0,13,ROUTE_END_Z]}><Html center distanceFactor={16} style={{pointerEvents:'none'}}><div className="destination-beacon"><span/><b>{DESTINATION_NAME}</b><small>{Math.max(0,Math.round(distance))} KM</small></div></Html></group>}
@@ -732,7 +777,7 @@ function FlightWorld({phase,setPhase,onTelemetry}:{phase:FlightPhase;setPhase:(p
     const chase=new THREE.Vector3(7.4,3.8,z.current+11.5);if(!orbit.current?.__dragging)camera.position.lerp(chase,1-Math.pow(.003,d));if(orbit.current){orbit.current.target.lerp(new THREE.Vector3(0,altitude.current+.5,z.current-5),1-Math.pow(.002,d));orbit.current.update()}
     if(state.clock.elapsedTime-lastHud.current>.08){onTelemetry({speed:Math.round(speed.current),altitude:Math.max(0,Math.round((altitude.current-.72)*120)),distance:Math.round(Math.max(0,dist)),progress:THREE.MathUtils.clamp(1-dist/785,0,1)});lastHud.current=state.clock.elapsedTime}
   });
-  return <><color attach="background" args={['#a9cede']}/><fog attach="fog" args={['#b8d5e2',55,330]}/><ambientLight intensity={.82}/><directionalLight position={[7,12,5]} intensity={1.8} castShadow/><WorldEnvironment/><HighClouds/><group ref={aircraft} position={[0,.72,65]}><Plane liveries={liveries}/>{phase==='exited'&&<ExitPilot/>}</group>{!['parked','takeoff'].includes(phase)&&<DestinationBeacon distance={Math.max(0,z.current-ROUTE_END_Z)}/>}<OrbitControls ref={orbit} enablePan={false} enableZoom minDistance={5} maxDistance={18} maxPolarAngle={Math.PI*.48} minPolarAngle={.35} onStart={()=>{if(orbit.current)orbit.current.__dragging=true}} onEnd={()=>{if(orbit.current)orbit.current.__dragging=false}}/></>;
+  return <><color attach="background" args={['#a9cede']}/><fog attach="fog" args={['#b8d5e2',55,330]}/><ambientLight intensity={.82}/><directionalLight position={[7,12,5]} intensity={1.8} castShadow/><WorldEnvironment/><HighClouds/><group ref={aircraft} position={[0,.72,65]}><Plane liveries={liveries}/>{phase==='exited'&&<ExitCrew/>}</group>{!['parked','takeoff'].includes(phase)&&<DestinationBeacon distance={Math.max(0,z.current-ROUTE_END_Z)}/>}<OrbitControls ref={orbit} enablePan={false} enableZoom minDistance={5} maxDistance={18} maxPolarAngle={Math.PI*.48} minPolarAngle={.35} onStart={()=>{if(orbit.current)orbit.current.__dragging=true}} onEnd={()=>{if(orbit.current)orbit.current.__dragging=false}}/></>;
 }
 
 function SoundButton({muted,onClick}:{muted:boolean;onClick:()=>void}){return <button className="fly-sound" onClick={onClick} aria-label={muted?'Unmute':'Mute'}>{muted?'🔇':'🔊'}</button>}
