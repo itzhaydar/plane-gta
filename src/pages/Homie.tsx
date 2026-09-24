@@ -25,6 +25,7 @@ export default function Homie() {
   const [uploaded, setUploaded] = useState(false);
   const [uploadName, setUploadName] = useState('');
   const [editorOpen, setEditorOpen] = useState(true);
+  const [portraitEdited, setPortraitEdited] = useState(false);
   const [exporting, setExporting] = useState(false);
 
   const fileInput = useRef<HTMLInputElement | null>(null);
@@ -35,6 +36,7 @@ export default function Homie() {
     setPortraitSrc(src);
     setUploaded(false);
     setUploadName('');
+    setPortraitEdited(false);
     setEditorOpen(true);
 
     if (fileInput.current) {
@@ -62,6 +64,7 @@ export default function Homie() {
       setPortraitSrc(reader.result);
       setUploaded(true);
       setUploadName(file.name);
+      setPortraitEdited(false);
       setEditorOpen(true);
     };
 
@@ -104,6 +107,11 @@ export default function Homie() {
   };
 
   const downloadFlyer = async () => {
+    if (!portraitEdited) {
+      setEditorOpen(true);
+      return;
+    }
+
     setExporting(true);
 
     try {
@@ -361,7 +369,11 @@ export default function Homie() {
               <div className="panelTop">
                 <div>
                   <span className="panelKicker">IMAGE EDITOR</span>
-                  <strong>Style your portrait</strong>
+                  <strong>
+                    {portraitEdited
+                      ? 'Portrait signed — download unlocked'
+                      : 'Sign or edit your image to unlock download'}
+                  </strong>
                 </div>
 
                 <div className="selectedFace">
@@ -399,6 +411,7 @@ export default function Homie() {
                       dataUrl: string;
                     }) => {
                       setPortraitSrc(dataUrl);
+                      setPortraitEdited(true);
                       setEditorOpen(false);
                     }}
                     onCancel={() => setEditorOpen(false)}
@@ -484,18 +497,42 @@ export default function Homie() {
                 className="editAgain"
                 onClick={() => setEditorOpen(true)}
               >
-                EDIT PORTRAIT
+                {portraitEdited ? 'EDIT AGAIN' : 'SIGN / EDIT IMAGE'}
               </button>
 
-              <button
-                type="button"
-                className="download"
-                disabled={exporting}
-                onClick={downloadFlyer}
-              >
-                <span>{exporting ? 'EXPORTING...' : 'DOWNLOAD FLYER'}</span>
-                <b>↓</b>
-              </button>
+              {portraitEdited ? (
+                <button
+                  type="button"
+                  className="download downloadIcon"
+                  disabled={exporting}
+                  onClick={downloadFlyer}
+                  aria-label="Download flyer"
+                  title="Download flyer"
+                >
+                  {exporting ? (
+                    <span className="exportingText">...</span>
+                  ) : (
+                    <svg
+                      viewBox="0 0 24 24"
+                      aria-hidden="true"
+                      className="downloadSvg"
+                    >
+                      <path
+                        d="M12 3v12m0 0 5-5m-5 5-5-5M5 21h14"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  )}
+                </button>
+              ) : (
+                <div className="downloadLocked">
+                  To download, sign your image or make an edit in the editor below.
+                </div>
+              )}
             </div>
           </section>
         </div>
@@ -1215,6 +1252,42 @@ const CSS = `
   cursor: not-allowed;
 }
 
+
+.downloadIcon {
+  min-width: 48px;
+  width: 48px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+}
+
+.downloadSvg {
+  width: 20px;
+  height: 20px;
+}
+
+.exportingText {
+  font-size: 11px;
+  letter-spacing: .08em;
+}
+
+.downloadLocked {
+  min-height: 48px;
+  max-width: 330px;
+  padding: 0 14px;
+  border: 1px dashed rgba(7, 26, 56, .15);
+  border-radius: 7px;
+  background: #f7f9fb;
+  color: rgba(7, 26, 56, .48);
+  display: flex;
+  align-items: center;
+  font-size: 8px;
+  font-weight: 900;
+  line-height: 1.45;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
 @media (max-width: 1150px) {
   .workspace {
     grid-template-columns: 1fr;
@@ -1281,9 +1354,18 @@ const CSS = `
     flex-direction: column;
   }
 
-  .editAgain,
-  .download {
+  .editAgain {
     width: 100%;
+  }
+
+  .downloadIcon {
+    width: 48px;
+    min-width: 48px;
+  }
+
+  .downloadLocked {
+    width: 100%;
+    max-width: none;
   }
 }
 
