@@ -8,13 +8,18 @@ export default function LandingPage() {
   const navigate = useNavigate();
   const setRole = usePlaneStore((state) => state.setRole);
   const [rolePanelOpen, setRolePanelOpen] = useState(false);
+  const [vehiclePanelOpen, setVehiclePanelOpen] = useState(false);
 
   useEffect(() => {
-    if (!rolePanelOpen) return;
+    if (!rolePanelOpen && !vehiclePanelOpen) return;
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        setRolePanelOpen(false);
+        if (vehiclePanelOpen) {
+          setVehiclePanelOpen(false);
+        } else {
+          setRolePanelOpen(false);
+        }
       }
     };
 
@@ -23,12 +28,30 @@ export default function LandingPage() {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [rolePanelOpen]);
+  }, [rolePanelOpen, vehiclePanelOpen]);
 
   const selectRole = (role: Role) => {
     setRole(role);
+
+    if (role === 'pilot') {
+      setRolePanelOpen(false);
+      setVehiclePanelOpen(true);
+      return;
+    }
+
     setRolePanelOpen(false);
     navigate('/hangar');
+  };
+
+  const selectVehicle = (vehicle: 'plane' | 'rocket') => {
+    setVehiclePanelOpen(false);
+
+    if (vehicle === 'plane') {
+      navigate('/hangar');
+      return;
+    }
+
+    navigate('/rock-hangar');
   };
 
   return (
@@ -53,7 +76,6 @@ export default function LandingPage() {
         </header>
 
         <main className="landing-main">
-          {/* HERO COPY */}
           <section className="landing-copy">
             <p className="landing-kicker">A trip worth taking</p>
 
@@ -83,7 +105,6 @@ export default function LandingPage() {
             </button>
           </section>
 
-          {/* SINGLE COMPOSED GAME ART */}
           <section
             className="landing-scene"
             aria-label="Marshout game scene"
@@ -178,7 +199,7 @@ export default function LandingPage() {
                     </span>
 
                     <span className="landing-role-enter">
-                      Enter cockpit →
+                      Choose vehicle →
                     </span>
                   </span>
                 </button>
@@ -202,6 +223,96 @@ export default function LandingPage() {
 
                     <span className="landing-role-enter">
                       Join the crew →
+                    </span>
+                  </span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* VEHICLE SELECTION */}
+        {vehiclePanelOpen && (
+          <div
+            className="landing-overlay"
+            role="presentation"
+            onMouseDown={(event) => {
+              if (event.currentTarget === event.target) {
+                setVehiclePanelOpen(false);
+              }
+            }}
+          >
+            <div
+              className="landing-role-screen"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="landing-vehicle-title"
+            >
+              <button
+                type="button"
+                className="landing-close"
+                aria-label="Close"
+                onClick={() => setVehiclePanelOpen(false)}
+              >
+                ×
+              </button>
+
+              <div className="landing-role-header">
+                <p className="landing-role-kicker">
+                  Pilot setup
+                </p>
+
+                <h2
+                  id="landing-vehicle-title"
+                  className="landing-role-title"
+                >
+                  Choose your vehicle
+                </h2>
+              </div>
+
+              <div className="landing-role-grid">
+                <button
+                  type="button"
+                  className="landing-role"
+                  onClick={() => selectVehicle('plane')}
+                >
+                  <span className="landing-role-number">01</span>
+
+                  <span className="landing-role-content">
+                    <span className="landing-role-name">
+                      Plane
+                    </span>
+
+                    <span className="landing-role-description">
+                      Take the crew into the skies and choose
+                      your destination.
+                    </span>
+
+                    <span className="landing-role-enter">
+                      Enter hangar →
+                    </span>
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  className="landing-role"
+                  onClick={() => selectVehicle('rocket')}
+                >
+                  <span className="landing-role-number">02</span>
+
+                  <span className="landing-role-content">
+                    <span className="landing-role-name">
+                      Rocket
+                    </span>
+
+                    <span className="landing-role-description">
+                      Leave the runway behind and take the crew
+                      somewhere beyond.
+                    </span>
+
+                    <span className="landing-role-enter">
+                      Enter rock-hangar →
                     </span>
                   </span>
                 </button>
@@ -266,8 +377,6 @@ button {
     sans-serif;
 }
 
-/* BACKGROUND GRID */
-
 .landing-grid {
   position: absolute;
   inset: 0;
@@ -290,8 +399,6 @@ button {
     transparent 82%
   );
 }
-
-/* HEADER */
 
 .landing-header {
   position: absolute;
@@ -363,8 +470,6 @@ button {
   background: rgba(7, 26, 56, 0.14);
 }
 
-/* MAIN */
-
 .landing-main {
   position: relative;
   z-index: 5;
@@ -385,8 +490,6 @@ button {
   align-items: center;
   gap: clamp(30px, 4vw, 80px);
 }
-
-/* HERO COPY */
 
 .landing-copy {
   position: relative;
@@ -499,8 +602,6 @@ button {
   letter-spacing: 0.16em;
 }
 
-/* GAME ART AREA */
-
 .landing-scene {
   position: relative;
   min-width: 0;
@@ -552,11 +653,6 @@ button {
   text-transform: uppercase;
 }
 
-/*
-  The generated landing artwork is treated as ONE
-  complete game composition.
-*/
-
 .landing-art-frame {
   position: relative;
   z-index: 5;
@@ -565,7 +661,10 @@ button {
   align-items: center;
   justify-content: center;
   transform: translateY(-1%);
-  filter: drop-shadow(0 35px 35px rgba(7, 26, 56, 0.12));
+  filter:
+    drop-shadow(
+      0 35px 35px rgba(7, 26, 56, 0.12)
+    );
 }
 
 .landing-art {
@@ -582,10 +681,6 @@ button {
   user-select: none;
   -webkit-user-drag: none;
 
-  /*
-    Softly blends the edges of the white artwork
-    into the landing page.
-  */
   -webkit-mask-image:
     linear-gradient(
       to right,
@@ -603,7 +698,7 @@ button {
       black 95%,
       transparent 100%
     );
-}/* FOOTER */
+}
 
 .landing-footer {
   position: absolute;
@@ -626,8 +721,6 @@ button {
   border-radius: 50%;
   background: #c58b3c;
 }
-
-/* ROLE OVERLAY */
 
 .landing-overlay {
   position: fixed;
@@ -810,8 +903,6 @@ button {
   border-color: rgba(197, 139, 60, 0.55);
 }
 
-/* TABLET */
-
 @media (max-width: 1050px) {
   .landing-main {
     grid-template-columns: 1fr;
@@ -837,8 +928,6 @@ button {
     width: min(100%, 760px);
   }
 }
-
-/* MOBILE */
 
 @media (max-width: 650px) {
   .landing-header {
@@ -891,17 +980,14 @@ button {
   }
 
   .landing-art-frame {
-    width: 115%;
+    width: 125%;
     max-width: none;
-    transform: translateY(-1%);
   }
 
   .landing-horizon-label,
   .landing-footer {
     display: none;
   }
-
-  /* ROLE SCREEN */
 
   .landing-overlay {
     align-items: flex-end;
@@ -956,8 +1042,6 @@ button {
     margin-top: 12px;
   }
 }
-
-/* REDUCED MOTION */
 
 @media (prefers-reduced-motion: reduce) {
   .landing-overlay,
