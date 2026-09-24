@@ -36,7 +36,7 @@ const FACES: Face[] = ['flag-left', 'flag-right'];
 const LEFT_PANEL_FALLBACK = '/templates/flag-left.svg';
 const RIGHT_PANEL_FALLBACK = '/templates/flag-right.svg';
 
-useGLTF.preload('/atro.glb');
+useGLTF.preload('/astro.glb');
 
 // ============================================================
 // EDITABLE MISSION PANEL MATERIAL
