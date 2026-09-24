@@ -712,8 +712,22 @@ function FlightWorld({phase,setPhase,onTelemetry}:{phase:FlightPhase;setPhase:(p
     else if(phase==='cruise'){speed.current=THREE.MathUtils.lerp(speed.current,CRUISE_SPEED,d);z.current-=speed.current/10*d;pitch.current=THREE.MathUtils.lerp(pitch.current,0,d*2);if(dist<190)setPhase('approach')}
     else if(phase==='approach'){speed.current=THREE.MathUtils.lerp(speed.current,145,d*.7);z.current-=speed.current/10*d;const target=THREE.MathUtils.mapLinear(THREE.MathUtils.clamp(dist,35,190),35,190,3.2,22);altitude.current=THREE.MathUtils.lerp(altitude.current,target,d*.85);pitch.current=THREE.MathUtils.lerp(pitch.current,-.045,d*2);if(dist<45)setPhase('landing')}
     else if(phase==='landing'){speed.current=THREE.MathUtils.lerp(speed.current,72,d*.8);z.current-=Math.max(7,speed.current/11)*d;altitude.current=Math.max(.72,altitude.current-1.05*d);pitch.current=THREE.MathUtils.lerp(pitch.current,.025,d*2);if(altitude.current<=.725){altitude.current=.72;z.current=ROUTE_END_Z+42;setPhase('landed')}}
-    else if(phase==='landed'){speed.current=THREE.MathUtils.lerp(speed.current,32,d*.45);z.current-=speed.current/13*d}
-    else if(phase==='stopped'||phase==='exited')speed.current=THREE.MathUtils.lerp(speed.current,0,d*5);
+    else if(phase==='landed'){
+      // Automatic rollout braking: touchdown speed -> 0 km/h.
+      // S / STOP can still end the rollout earlier, but it is never required.
+      const AUTO_BRAKE_KMH_PER_SEC = 18;
+      speed.current = Math.max(0, speed.current - AUTO_BRAKE_KMH_PER_SEC * d);
+      z.current -= (speed.current / 13) * d;
+      pitch.current = THREE.MathUtils.lerp(pitch.current, 0, d * 3);
+
+      if (speed.current <= 0.5) {
+        speed.current = 0;
+        setPhase('stopped');
+      }
+    }
+    else if(phase==='stopped'||phase==='exited'){
+      speed.current=0;
+    }
     if(aircraft.current){aircraft.current.position.set(0,altitude.current,z.current);aircraft.current.rotation.set(pitch.current,0,0)}
     const chase=new THREE.Vector3(7.4,3.8,z.current+11.5);if(!orbit.current?.__dragging)camera.position.lerp(chase,1-Math.pow(.003,d));if(orbit.current){orbit.current.target.lerp(new THREE.Vector3(0,altitude.current+.5,z.current-5),1-Math.pow(.002,d));orbit.current.update()}
     if(state.clock.elapsedTime-lastHud.current>.08){onTelemetry({speed:Math.round(speed.current),altitude:Math.max(0,Math.round((altitude.current-.72)*120)),distance:Math.round(Math.max(0,dist)),progress:THREE.MathUtils.clamp(1-dist/785,0,1)});lastHud.current=state.clock.elapsedTime}
@@ -736,7 +750,7 @@ export default function FlyPage(){
   useEffect(()=>{const key=(e:KeyboardEvent)=>{if(e.repeat)return;const k=e.key.toLowerCase();if(k==='t'&&phase==='parked')takeOff();if(k==='s'&&phase==='landed')stop();if(k==='e'&&phase==='stopped')exitPlane();if(k==='m')toggleSound()};window.addEventListener('keydown',key);return()=>window.removeEventListener('keydown',key)},[phase,flagsReady]);
   if(!flagsReady)return <main className="fly-gate"><style>{FLY_CSS}</style><div className="gate-card"><span>MARSHOUT FLIGHT</span><h1>Paint them flags, dawg, then we out.</h1><p>Your aircraft needs both flags painted before it can leave Vice City.</p><button onClick={()=>go('/hangar')}>GO TO HANGAR <b>→</b></button></div></main>;
   const current=phase==='landed'||phase==='stopped'||phase==='exited'?DESTINATION_NAME:START_NAME;
-  const status:Record<FlightPhase,[string,string]>={parked:['READY AT VICE CITY','Autopilot is ready. Take off and enjoy the flight.'],takeoff:['TAKEOFF ROLL','Autopilot accelerating and rotating from the runway.'],climb:['CLIMBING','Clearing the skyline. Cloud layer ahead.'],cruise:['EN ROUTE','Autopilot locked for Los Santos.'],approach:['APPROACH','Descending automatically toward Los Santos.'],landing:['FINAL APPROACH','Runway captured. Landing automatically.'],landed:['TOUCHDOWN','We made it. Stop the plane when you are ready.'],stopped:['PARKED','Aircraft stopped completely. You can get out now.'],exited:['ARRIVED','Thank you, dawg']};
+  const status:Record<FlightPhase,[string,string]>={parked:['READY AT VICE CITY','Autopilot is ready. Take off and enjoy the flight.'],takeoff:['TAKEOFF ROLL','Autopilot accelerating and rotating from the runway.'],climb:['CLIMBING','Clearing the skyline. Cloud layer ahead.'],cruise:['EN ROUTE','Autopilot locked for Los Santos.'],approach:['APPROACH','Descending automatically toward Los Santos.'],landing:['FINAL APPROACH','Runway captured. Landing automatically.'],landed:['TOUCHDOWN','Automatic braking engaged. The aircraft will stop on its own.'],stopped:['PARKED','Aircraft stopped completely. You can get out now.'],exited:['ARRIVED','Thank you, dawg']};
   const [title,desc]=status[phase];
   // On final approach the nav display snaps to the destination/runway, so the map agrees with the actual landing state.
   const mapProgress=['landing','landed','stopped','exited'].includes(phase)?1:telemetry.progress;
