@@ -74,6 +74,9 @@ export default function App() {
         <Route path="/hangar" element={<HangarPage />} />
         <Route path="/fly" element={<FlyPage />} />
         <Route path="/result" element={<ResultPage />} />
+        <Route path="/rock-hangar" element={<RockHangarPage />} />
+        <Route path="/fly-rocket" element={<FlyRocket />} />
+        <Route path="/homie" element={<Homie />} />
       </Routes>
     </div>
   );
