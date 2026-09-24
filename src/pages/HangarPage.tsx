@@ -922,7 +922,7 @@ function SoundToggle({
 export default function HangarPage() {
   const go = useNavigate();
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const [muted, setMuted] = useState(false);
+  const [muted, setMuted] = useState(true);
 
   const {
     activeFace,
@@ -932,17 +932,10 @@ export default function HangarPage() {
 
 useEffect(() => {
   const audio = new Audio('/boot.mp3');
-  audio.loop = true;      // repeat forever
-  audio.volume = 0.35;    // 0 = silent, 1 = max. 0.3–0.45 is good for hangar music
+  audio.loop = true;
+  audio.volume = 0.35;
+  audio.muted = true;
   audioRef.current = audio;
-
-  audio.play().catch(() => {
-    const playOnce = () => {
-      audio.play().catch(() => {});
-      window.removeEventListener('pointerdown', playOnce);
-    };
-    window.addEventListener('pointerdown', playOnce, { once: true });
-  });
 
   return () => {
     audio.pause();
@@ -950,12 +943,15 @@ useEffect(() => {
     audioRef.current = null;
   };
 }, []);
-
-  const toggleSound = () => {
-    if (!audioRef.current) return;
-    audioRef.current.muted = !audioRef.current.muted;
-    setMuted(audioRef.current.muted);
-  };
+const toggleSound = () => {
+  const audio = audioRef.current;
+  if (!audio) return;
+  audio.muted = !audio.muted;
+  setMuted(audio.muted);
+  if (!audio.muted) {
+    audio.play().catch(() => {});
+  }
+};
 
   const painted = FACES.every(
     (face) => Boolean(liveries[face])
