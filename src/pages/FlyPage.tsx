@@ -697,8 +697,8 @@ function HighClouds(){
 useGLTF.preload('/pilot-out.glb');
 function ExitPilot(){
   const {scene}=useGLTF('/pilot-out.glb');
-  const man=useMemo(()=>{const c=SkeletonUtils.clone(scene);c.traverse(o=>{if(o instanceof THREE.Mesh){o.castShadow=true;o.receiveShadow=true}});c.updateMatrixWorld(true);const b=new THREE.Box3().setFromObject(c),sz=b.getSize(new THREE.Vector3());c.scale.multiplyScalar(1.25/Math.max(sz.y,1e-6));c.updateMatrixWorld(true);const f=new THREE.Box3().setFromObject(c),center=f.getCenter(new THREE.Vector3());c.position.x-=center.x;c.position.z-=center.z;c.position.y-=f.min.y;return c},[scene]);
-  return <group position={[2.1,0,ROUTE_END_Z+3]} rotation={[0,-Math.PI/2,0]}><primitive object={man}/></group>;
+  const man=useMemo(()=>{const c=SkeletonUtils.clone(scene);c.traverse(o=>{if(o instanceof THREE.Mesh){o.castShadow=true;o.receiveShadow=true}});c.updateMatrixWorld(true);const b=new THREE.Box3().setFromObject(c),sz=b.getSize(new THREE.Vector3());c.scale.multiplyScalar(1.42/Math.max(sz.y,1e-6));c.updateMatrixWorld(true);const f=new THREE.Box3().setFromObject(c),center=f.getCenter(new THREE.Vector3());c.position.x-=center.x;c.position.z-=center.z;c.position.y-=f.min.y;return c},[scene]);
+  return <group position={[1.65,-0.72,0.35]} rotation={[0,-Math.PI/2,0]}><primitive object={man}/></group>;
 }
 
 function DestinationBeacon({distance}:{distance:number}){return <group position={[0,13,ROUTE_END_Z]}><Html center distanceFactor={16} style={{pointerEvents:'none'}}><div className="destination-beacon"><span/><b>{DESTINATION_NAME}</b><small>{Math.max(0,Math.round(distance))} KM</small></div></Html></group>}
@@ -718,7 +718,7 @@ function FlightWorld({phase,setPhase,onTelemetry}:{phase:FlightPhase;setPhase:(p
     const chase=new THREE.Vector3(7.4,3.8,z.current+11.5);if(!orbit.current?.__dragging)camera.position.lerp(chase,1-Math.pow(.003,d));if(orbit.current){orbit.current.target.lerp(new THREE.Vector3(0,altitude.current+.5,z.current-5),1-Math.pow(.002,d));orbit.current.update()}
     if(state.clock.elapsedTime-lastHud.current>.08){onTelemetry({speed:Math.round(speed.current),altitude:Math.max(0,Math.round((altitude.current-.72)*120)),distance:Math.round(Math.max(0,dist)),progress:THREE.MathUtils.clamp(1-dist/785,0,1)});lastHud.current=state.clock.elapsedTime}
   });
-  return <><color attach="background" args={['#a9cede']}/><fog attach="fog" args={['#b8d5e2',55,330]}/><ambientLight intensity={.82}/><directionalLight position={[7,12,5]} intensity={1.8} castShadow/><WorldEnvironment/><HighClouds/><group ref={aircraft} position={[0,.72,65]}><Plane liveries={liveries}/></group>{!['parked','takeoff'].includes(phase)&&<DestinationBeacon distance={Math.max(0,z.current-ROUTE_END_Z)}/>} {phase==='exited'&&<ExitPilot/>}<OrbitControls ref={orbit} enablePan={false} enableZoom minDistance={5} maxDistance={18} maxPolarAngle={Math.PI*.48} minPolarAngle={.35} onStart={()=>{if(orbit.current)orbit.current.__dragging=true}} onEnd={()=>{if(orbit.current)orbit.current.__dragging=false}}/></>;
+  return <><color attach="background" args={['#a9cede']}/><fog attach="fog" args={['#b8d5e2',55,330]}/><ambientLight intensity={.82}/><directionalLight position={[7,12,5]} intensity={1.8} castShadow/><WorldEnvironment/><HighClouds/><group ref={aircraft} position={[0,.72,65]}><Plane liveries={liveries}/>{phase==='exited'&&<ExitPilot/>}</group>{!['parked','takeoff'].includes(phase)&&<DestinationBeacon distance={Math.max(0,z.current-ROUTE_END_Z)}/>}<OrbitControls ref={orbit} enablePan={false} enableZoom minDistance={5} maxDistance={18} maxPolarAngle={Math.PI*.48} minPolarAngle={.35} onStart={()=>{if(orbit.current)orbit.current.__dragging=true}} onEnd={()=>{if(orbit.current)orbit.current.__dragging=false}}/></>;
 }
 
 function SoundButton({muted,onClick}:{muted:boolean;onClick:()=>void}){return <button className="fly-sound" onClick={onClick} aria-label={muted?'Unmute':'Mute'}>{muted?'🔇':'🔊'}</button>}
@@ -738,10 +738,14 @@ export default function FlyPage(){
   const current=phase==='landed'||phase==='stopped'||phase==='exited'?DESTINATION_NAME:START_NAME;
   const status:Record<FlightPhase,[string,string]>={parked:['READY AT VICE CITY','Autopilot is ready. Take off and enjoy the flight.'],takeoff:['TAKEOFF ROLL','Autopilot accelerating and rotating from the runway.'],climb:['CLIMBING','Clearing the skyline. Cloud layer ahead.'],cruise:['EN ROUTE','Autopilot locked for Los Santos.'],approach:['APPROACH','Descending automatically toward Los Santos.'],landing:['FINAL APPROACH','Runway captured. Landing automatically.'],landed:['TOUCHDOWN','We made it. Stop the plane when you are ready.'],stopped:['PARKED','Aircraft stopped completely. You can get out now.'],exited:['ARRIVED','Thank you, dawg']};
   const [title,desc]=status[phase];
+  // On final approach the nav display snaps to the destination/runway, so the map agrees with the actual landing state.
+  const mapProgress=['landing','landed','stopped','exited'].includes(phase)?1:telemetry.progress;
+  const mapLeft=22 + mapProgress*67 + Math.sin(mapProgress*Math.PI)*15;
+  const mapTop=12 + mapProgress*77;
   return <main className="fly-page"><style>{FLY_CSS}</style><Canvas shadows dpr={[1,1.3]} camera={{position:[7.4,4.5,76],fov:43,near:.1,far:1200}} gl={{antialias:true,powerPreference:'high-performance',stencil:false}}><FlightWorld phase={phase} setPhase={setPhase} onTelemetry={setTelemetry}/></Canvas><div className="fly-vignette"/>
     <header className="fly-hud"><div className="flight-brand"><i/>MARSHOUT <b>FLIGHT</b></div>{['landed','stopped','exited'].includes(phase)?<div className="route-card route-card-arrived"><span><small>CURRENT LOCATION</small><b>{DESTINATION_NAME}</b></span></div>:<div className="route-card"><span><small>CURRENT LOCATION</small><b>{current}</b></span><em>→</em><span><small>DESTINATION</small><b>{DESTINATION_NAME}</b></span></div>}<SoundButton muted={muted} onClick={toggleSound}/></header>
     <aside className="instruments"><div className="speed"><small>AIRSPEED</small><strong>{String(telemetry.speed).padStart(3,'0')}</strong><em> KM/H</em><i><b style={{width:`${Math.min(100,telemetry.speed/CRUISE_SPEED*100)}%`}}/></i></div><div className="stat"><small>ALTITUDE</small><b>{telemetry.altitude.toLocaleString()} FT</b></div><div className="stat"><small>AUTOPILOT</small><b>{phase==='parked'?'STANDBY':phase==='exited'?'COMPLETE':'ENGAGED'}</b></div></aside>
-    <aside className={`nav-map ${telemetry.progress > .72 ? 'is-approach' : ''}`}>
+    <aside className={`nav-map ${mapProgress > .72 ? 'is-approach' : ''}`}>
       <div className="map-title"><span>NAV / AUTOPILOT</span><b>{telemetry.distance} KM</b></div>
       <div className="map-sub"><span>VCY 024°</span><i>LIVE</i><span>LSX 204°</span></div>
       <div className="map-grid">
@@ -756,8 +760,8 @@ export default function FlyPage(){
         <span className="waypoint wp1">VC-01</span><span className="waypoint wp2">MAR-7</span><span className="waypoint wp3">LS-APP</span>
         <span className="city vc"><i/>VICE CITY</span><span className="city ls"><i/>LOS SANTOS</span>
         <span className="approach-cone"/><span className="runway-map">RWY 24</span>
-        <span className="plane-dot" style={{top:`${13+telemetry.progress*72}%`,left:`${35 + Math.sin(telemetry.progress*Math.PI)*28}%`,transform:`translate(-50%,-50%) rotate(${18+telemetry.progress*18}deg)`}}>▲</span>
-        <span className="map-track" style={{height:`${Math.max(3,telemetry.progress*72)}%`}}/>
+        <span className="plane-dot" style={{top:`${mapTop}%`,left:`${mapLeft}%`,transform:`translate(-50%,-50%) rotate(${18+mapProgress*18}deg)`}}>▲</span>
+        <span className="map-track" style={{height:`${Math.max(3,mapProgress*76)}%`}}/>
       </div>
       <div className="map-data"><span><small>ALT</small><b>{telemetry.altitude.toLocaleString()} FT</b></span><span><small>SPD</small><b>{telemetry.speed} KM/H</b></span><span><small>ETA</small><b>{telemetry.distance===0?'ARRIVED':`${Math.max(1,Math.ceil(telemetry.distance/95))} MIN`}</b></span></div>
       <div className="map-progress"><i><b style={{width:`${Math.round(telemetry.progress*100)}%`}}/></i><span>{Math.round(telemetry.progress*100)}% ROUTE</span></div>
