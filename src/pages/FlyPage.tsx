@@ -66,8 +66,7 @@ function Plane({ url }: { url: string }) {
 }export default function FlyPage() {
   const go = useNavigate();
   const { liveries, setLastRun } = usePlaneStore();
-  const skin = liveries.top ?? liveries.left ?? '/templates/plane-top.svg';
-
+const skin = liveries['flag-left'] ?? liveries['flag-right'] ?? '/templates/plane-flag-left.svg';
   return (
     <main style={{ display: 'grid', gridTemplateColumns: '1fr 280px', minHeight: 'calc(100vh - 52px)' }}>
       <div style={{ background: '#0e0718' }}>
