@@ -98,7 +98,7 @@ select {
 .app-header {
   position: relative;
   z-index: 100;
-  height: 78px;
+  height: 48px;
   padding: 0 clamp(22px, 5vw, 76px);
 
   display: flex;
