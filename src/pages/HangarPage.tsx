@@ -31,8 +31,7 @@ const FACES: Face[] = [
   'flag-left',
 ];
 
-const FLAG_LEFT_FALLBACK = '/templates/flag-left.svg';
-const FLAG_RIGHT_FALLBACK = '/templates/flag-right.svg';
+
 // Preload the pilot while the landing page is still on screen.
 useGLTF.preload('/pilot-out.glb');
 
