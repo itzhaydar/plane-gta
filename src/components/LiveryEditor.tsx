@@ -2,8 +2,8 @@ import ImageEditor from '@unlayer/react-image-editor';
 import { usePlaneStore, type Face } from '../store';
 
 const TEMPLATES: Record<Face, string> = {
-  'flag-left': '/templates/plane-flag-left.svg',
-  'flag-right': '/templates/plane-flag-right.svg',
+  'flag-left': '/templates/flag-left.svg',
+  'flag-right': '/templates/flag-right.svg',
 };
 
 export default function LiveryEditor() {
