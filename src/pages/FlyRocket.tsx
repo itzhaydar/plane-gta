@@ -305,7 +305,7 @@ function EarthGlobe({ position = [8, 1, -14] as [number, number, number] }) {
   );
 }
 
-function SpaceScene({ progress }: { progress: number }) {
+function SpaceScene() {
   const stars = useMemo(
     () => Array.from({ length: 180 }, (_, i) => ({
       x: ((i * 37) % 100) / 2 - 25,
@@ -564,7 +564,7 @@ function RocketWorld({
       <directionalLight position={[8, 13, 7]} intensity={earthMode ? 1.8 : 1.2} castShadow />
       {earthMode && <EarthLaunchSite lift={phase === 'parked' ? 0 : p * 30} />}
       {(phase === 'launch' || phase === 'clouds') && <CloudLayer offset={p * 30} />}
-      {!earthMode && !marsMode && <SpaceScene progress={p} />}
+      {!earthMode && !marsMode && <SpaceScene/>}
       {marsMode && <MarsGround />}
 
       <group ref={rocketRef} position={[0, 0.08, 0]}>
