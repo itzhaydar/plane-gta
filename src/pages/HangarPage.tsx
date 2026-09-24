@@ -832,7 +832,7 @@ function FlagPanel({
         <planeGeometry args={[0.30, 0.50]} />
 <FlagSkin
   url={livery}
-  fallback={side === 1 ? '/templates/flag-left.svg' : '/templates/flag-right.svg'}
+  fallback={side === 1 ? '/templates/flag-right.svg' : '/templates/flag-left.svg'}
 />      </mesh>
     </group>
   );
@@ -942,12 +942,12 @@ function Plane({
          ================================================== */}
 <FlagPanel
   livery={liveries['flag-left']}
-  side={1}
+  side={-1}
 />
 
 <FlagPanel
   livery={liveries['flag-right']}
-  side={-1}
+  side={1}
 />
     </group>
   );
