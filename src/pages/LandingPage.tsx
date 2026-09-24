@@ -157,32 +157,24 @@ export default function LandingPage() {
         </header>
 
         <main className="landing-main">
-          <section className="landing-copy">
-            <p className="landing-kicker">A trip worth taking</p>
+<section className="landing-scene" aria-label="Marshout game scene">
+  <div className="landing-horizon" />
+  <div className="landing-horizon-label">Destination unknown</div>
 
-            <h1 className="landing-title">
-              Pick up
-              <span className="landing-title-accent">your homies.</span>
-            </h1>
+  <picture className="landing-art">
+    <source srcSet="/landing.webp" type="image/webp" />
 
-            <p className="landing-description">
-              Fly somewhere new. Pick up your crew, choose your destination,
-              and see where the trip takes you.
-            </p>
-
-            <button
-              type="button"
-              className="landing-start"
-              onClick={() => setRolePanelOpen(true)}
-              aria-label="Start game"
-            >
-              <span className="landing-start-icon" />
-              <span className="landing-start-copy">
-                <span className="landing-start-main">Start Game</span>
-                <span className="landing-start-sub">Choose your role</span>
-              </span>
-            </button>
-          </section>
+    <img
+      src="/landing.png"
+      alt="Marshout crew with a plane and rocket"
+      width={1600}
+      height={900}
+      loading="eager"
+      fetchPriority="high"
+      decoding="async"
+    />
+  </picture>
+</section>
 
           <section className="landing-scene" aria-label="Marshout game scene">
             <div className="landing-horizon" />
