@@ -91,7 +91,7 @@ export default function LandingPage() {
 
             <div className="landing-desktop-notice">
               <span>DESKTOP FIRST</span>
-              <b>The game won’t work on a smartphone.</b>
+              <b>The game won’t work on some smartphones.</b>
             </div>
 
             <button
