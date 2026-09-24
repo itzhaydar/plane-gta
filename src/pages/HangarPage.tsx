@@ -17,7 +17,6 @@ import {
 import * as THREE from 'three';
 import { SkeletonUtils } from 'three-stdlib';
 
-
 import LiveryEditor from '../components/LiveryEditor';
 import { usePlaneStore, type Face } from '../store';
 
@@ -26,17 +25,14 @@ import { usePlaneStore, type Face } from '../store';
 // ============================================================
 
 const FACES: Face[] = [
-  'flag-right', 
+  'flag-right',
   'flag-left',
 ];
 
-
-// Preload the pilot while the landing page is still on screen.
 useGLTF.preload('/pilot-out.glb');
 
 // ============================================================
 // FLAG MATERIAL
-// ONLY REMAINING LIVERY WRAPPER
 // ============================================================
 
 function FlagSkin({
@@ -85,9 +81,7 @@ function Tree({
       position={[x, 0, z]}
       scale={s}
     >
-      <mesh
-        position={[0, 0.45, 0]}
-      >
+      <mesh position={[0, 0.45, 0]}>
         <cylinderGeometry
           args={[0.06, 0.08, 0.9, 6]}
         />
@@ -98,9 +92,7 @@ function Tree({
         />
       </mesh>
 
-      <mesh
-        position={[0, 1.15, 0]}
-      >
+      <mesh position={[0, 1.15, 0]}>
         <coneGeometry
           args={[0.55, 1.1, 6]}
         />
@@ -199,8 +191,6 @@ function Road() {
       ))}
 
       {/* Trees */}
-      {/* Moved farther away from the road to create a proper
-          grass shoulder for the pilot. */}
       {zs.map((z, i) => (
         <group key={z}>
           <Tree
@@ -224,9 +214,6 @@ function Road() {
 // PILOT
 // ============================================================
 
-// if that path fails:
-// import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
-
 const PILOT_HEIGHT = 1.25;
 
 function HangarMan({
@@ -242,6 +229,7 @@ function HangarMan({
 
     clone.traverse((obj) => {
       if (!(obj instanceof THREE.Mesh)) return;
+
       obj.castShadow = true;
       obj.receiveShadow = true;
     });
@@ -250,12 +238,17 @@ function HangarMan({
 
     const box = new THREE.Box3().setFromObject(clone);
     const size = box.getSize(new THREE.Vector3());
-    const s = PILOT_HEIGHT / Math.max(size.y, 1e-6);
+
+    const s =
+      PILOT_HEIGHT /
+      Math.max(size.y, 1e-6);
+
     clone.scale.multiplyScalar(s);
     clone.updateMatrixWorld(true);
 
     const fitted = new THREE.Box3().setFromObject(clone);
     const center = fitted.getCenter(new THREE.Vector3());
+
     clone.position.x -= center.x;
     clone.position.z -= center.z;
     clone.position.y -= fitted.min.y;
@@ -263,8 +256,8 @@ function HangarMan({
     return clone;
   }, [scene]);
 
-  // hook the mixer to the CLONE, not the original scene
-  const { actions, mixer } = useAnimations(animations, man);
+  const { actions, mixer } =
+    useAnimations(animations, man);
 
   useLayoutEffect(() => {
     const idle =
@@ -292,11 +285,17 @@ function HangarMan({
   });
 
   return (
-    <group ref={group} position={position} rotation={[0, -Math.PI / 2, 0]}>
+    <group
+      ref={group}
+      position={position}
+      rotation={[0, -Math.PI / 2, 0]}
+    >
       <primitive object={man} />
     </group>
   );
-}// ============================================================
+}
+
+// ============================================================
 // COCKPIT SEAT
 // ============================================================
 
@@ -486,6 +485,7 @@ function Wing({
       'position',
       new THREE.BufferAttribute(vertices, 3)
     );
+
     geometry.setIndex(indices);
     geometry.computeVertexNormals();
 
@@ -514,9 +514,7 @@ function Wing({
 
 function Tail() {
   return (
-    <group
-      position={[-0.93, 0.12, 0]}
-    >
+    <group position={[-0.93, 0.12, 0]}>
       {/* Vertical stabilizer */}
       <mesh
         position={[0, 0.34, 0]}
@@ -555,9 +553,7 @@ function Tail() {
       </mesh>
 
       {/* Tail tip */}
-      <mesh
-        position={[-0.17, 0.04, 0]}
-      >
+      <mesh position={[-0.17, 0.04, 0]}>
         <sphereGeometry
           args={[0.07, 16, 10]}
         />
@@ -579,12 +575,15 @@ function Tail() {
 function Propeller() {
   const propellerRef =
     useRef<THREE.Group>(null);
-  const invalidate = useThree((state) => state.invalidate);
+
+  const invalidate =
+    useThree((state) => state.invalidate);
 
   useFrame((_, delta) => {
     if (propellerRef.current) {
       propellerRef.current.rotation.x +=
         delta * 8;
+
       invalidate();
     }
   });
@@ -788,12 +787,7 @@ function LandingGear() {
 }
 
 // ============================================================
-// FLAG WRAPPER
-//
-// THIS IS THE ONLY LIVERY WRAPPER LEFT.
-//
-// It sits prominently on the rear/tail section,
-// rather than floating on the main fuselage.
+// FLAG PANEL
 // ============================================================
 
 function FlagPanel({
@@ -823,17 +817,29 @@ function FlagPanel({
         />
       </RoundedBox>
 
-      {/* Actual flag artwork wrapper */}
+      {/* Actual flag artwork */}
       <mesh
         position={[0.005, 0, side * 0.018]}
-        rotation={[0, side === 1 ? 0 : Math.PI, 0]}
+        rotation={[
+          0,
+          side === 1 ? 0 : Math.PI,
+          0,
+        ]}
         renderOrder={3}
       >
-        <planeGeometry args={[0.30, 0.50]} />
-<FlagSkin
-  url={livery}
-  fallback={side === 1 ? '/templates/flag-right.svg' : '/templates/flag-left.svg'}
-/>      </mesh>
+        <planeGeometry
+          args={[0.30, 0.50]}
+        />
+
+        <FlagSkin
+          url={livery}
+          fallback={
+            side === 1
+              ? '/templates/flag-right.svg'
+              : '/templates/flag-left.svg'
+          }
+        />
+      </mesh>
     </group>
   );
 }
@@ -845,7 +851,10 @@ function FlagPanel({
 function Plane({
   liveries,
 }: {
-  liveries: Record<Face, string | null>;
+  liveries: Record<
+    Face,
+    string | null
+  >;
 }) {
   return (
     <group
@@ -853,10 +862,7 @@ function Plane({
       rotation={[0, Math.PI / 2, 0]}
       scale={1.15}
     >
-      {/* ==================================================
-          MAIN FUSELAGE
-         ================================================== */}
-
+      {/* Main fuselage */}
       <RoundedBox
         args={[2.05, 0.48, 0.52]}
         radius={0.18}
@@ -905,50 +911,32 @@ function Plane({
         />
       </mesh>
 
-      {/* ==================================================
-          WINGS
-         ================================================== */}
-
+      {/* Wings */}
       <Wing side={1} />
       <Wing side={-1} />
 
-      {/* ==================================================
-          COCKPIT
-         ================================================== */}
-
+      {/* Cockpit */}
       <Cockpit />
 
-      {/* ==================================================
-          OVERHEAD PROPELLER
-         ================================================== */}
-
+      {/* Propeller */}
       <Propeller />
 
-      {/* ==================================================
-          TAIL
-         ================================================== */}
-
+      {/* Tail */}
       <Tail />
 
-      {/* ==================================================
-          LANDING GEAR
-         ================================================== */}
-
+      {/* Landing gear */}
       <LandingGear />
 
-      {/* ==================================================
-          ONLY LIVERY WRAPPER
-          FLAG
-         ================================================== */}
-<FlagPanel
-  livery={liveries['flag-left']}
-  side={-1}
-/>
+      {/* Flag panels */}
+      <FlagPanel
+        livery={liveries['flag-left']}
+        side={-1}
+      />
 
-<FlagPanel
-  livery={liveries['flag-right']}
-  side={1}
-/>
+      <FlagPanel
+        livery={liveries['flag-right']}
+        side={1}
+      />
     </group>
   );
 }
@@ -974,20 +962,71 @@ export default function HangarPage() {
     <main className="launch-bay">
       <style>{LAUNCH_BAY_CSS}</style>
 
+      {/* ======================================================
+          TOP BAR
+         ====================================================== */}
 
-      <section className="launch-bay-layout">
-        <aside className="launch-bay-editor">
-          <div className="launch-bay-editor-head">
-            <div>
-              <p className="launch-bay-kicker">Aircraft preparation</p>
-              <h1>Launch Bay</h1>
-            </div>
-            <span className="launch-bay-step">01 / 02</span>
+      <header className="launch-bay-topbar">
+        <div className="launch-bay-top-left">
+          <div className="launch-bay-brand">
+            <span className="launch-bay-brand-mark" />
+            <span>LAUNCH BAY</span>
           </div>
 
-          <p className="launch-bay-copy">
-            Finish the livery, check the aircraft, then take the crew somewhere unexpected.
-          </p>
+          <span className="launch-bay-divider" />
+
+          <span className="launch-bay-homie">
+            Dawg, paint them flags so we can bounce.
+          </span>
+        </div>
+
+        <div className="launch-bay-top-right">
+          <span className="launch-bay-mouse-help">
+            Move your PC mouse to move around the plane.
+          </span>
+
+          <button
+            type="button"
+            onClick={() => {
+              if (painted) {
+                go('/fly');
+              }
+            }}
+            disabled={!painted}
+            className={`launch-bay-takeoff-button ${
+              painted ? 'is-ready' : ''
+            }`}
+          >
+            <span>TAKE OFF</span>
+            <span className="launch-bay-arrow">
+              →
+            </span>
+          </button>
+        </div>
+      </header>
+
+      {/* ======================================================
+          MAIN TWO-PANEL AREA
+         ====================================================== */}
+
+      <section className="launch-bay-layout">
+
+        {/* ====================================================
+            EDITOR
+           ==================================================== */}
+
+        <aside className="launch-bay-editor">
+          <div className="launch-bay-panel-top">
+            <div className="launch-bay-panel-label">
+              LIVERY
+            </div>
+
+            <div className="launch-bay-panel-count">
+              {activeFace === 'flag-right'
+                ? 'FLAG RIGHT'
+                : 'FLAG LEFT'}
+            </div>
+          </div>
 
           <div className="launch-bay-faces">
             {FACES.map((face) => (
@@ -996,35 +1035,46 @@ export default function HangarPage() {
                 type="button"
                 onClick={() => setActiveFace(face)}
                 className={`launch-bay-face ${
-                  activeFace === face ? 'is-active' : ''
-                } ${liveries[face] ? 'is-done' : ''}`}
+                  activeFace === face
+                    ? 'is-active'
+                    : ''
+                } ${
+                  liveries[face]
+                    ? 'is-done'
+                    : ''
+                }`}
               >
-                <span>{face.toUpperCase()}</span>
-                {liveries[face] && <span className="launch-bay-check">✓</span>}
+                <span>
+                  {face.toUpperCase()}
+                </span>
+
+                {liveries[face] && (
+                  <span className="launch-bay-check">
+                    ✓
+                  </span>
+                )}
               </button>
             ))}
           </div>
 
           <div className="launch-bay-editor-body">
-           <LiveryEditor />
-          </div>
-
-          <div className="launch-bay-footer">
-            <span className="launch-bay-footer-dot" />
-            Flight system ready
+            <LiveryEditor />
           </div>
         </aside>
 
+        {/* ====================================================
+            3D PREVIEW
+           ==================================================== */}
+
         <section className="launch-bay-preview">
-          <div className="launch-bay-preview-top">
-            <div>
-              <p className="launch-bay-kicker">Aircraft 01</p>
-              <span className="launch-bay-preview-title">Ready for inspection</span>
+          <div className="launch-bay-panel-top">
+            <div className="launch-bay-panel-label">
+              AIRCRAFT 01
             </div>
 
-            <span className="launch-bay-destination">
-              Destination unknown
-            </span>
+            <div className="launch-bay-panel-count">
+              LIVE PREVIEW
+            </div>
           </div>
 
           <div className="launch-bay-viewport">
@@ -1034,12 +1084,17 @@ export default function HangarPage() {
               frameloop="demand"
               gl={{
                 antialias: false,
-                powerPreference: 'high-performance',
+                powerPreference:
+                  'high-performance',
                 alpha: false,
                 stencil: false,
               }}
               camera={{
-                position: [3.4, 1.8, 3.4],
+                position={[
+                  3.4,
+                  1.8,
+                  3.4,
+                ],
                 fov: 38,
                 near: 0.1,
                 far: 40,
@@ -1055,7 +1110,9 @@ export default function HangarPage() {
                 args={['#edf2f5']}
               />
 
-              <ambientLight intensity={0.65} />
+              <ambientLight
+                intensity={0.65}
+              />
 
               <directionalLight
                 position={[5, 8, 5]}
@@ -1071,7 +1128,10 @@ export default function HangarPage() {
               />
 
               <Road />
-              <Plane liveries={liveries} />
+
+              <Plane
+                liveries={liveries}
+              />
 
               <Suspense
                 fallback={
@@ -1082,15 +1142,23 @@ export default function HangarPage() {
                       fontSize: '10px',
                       fontWeight: 900,
                       letterSpacing: '0.18em',
-                      textTransform: 'uppercase',
-                      whiteSpace: 'nowrap',
+                      textTransform:
+                        'uppercase',
+                      whiteSpace:
+                        'nowrap',
                     }}
                   >
                     rolling the bird out…
                   </Html>
                 }
               >
-                <HangarMan position={[1.3, 0, -0.2]} />
+                <HangarMan
+                  position={[
+                    1.3,
+                    0,
+                    -0.2,
+                  ]}
+                />
               </Suspense>
 
               <OrbitControls
@@ -1105,45 +1173,6 @@ export default function HangarPage() {
                 target={[0, 0.65, 0]}
               />
             </Canvas>
-
-            <div className="launch-bay-viewport-label">
-              <span>LIVE PREVIEW</span>
-              <span>DRAG TO INSPECT</span>
-            </div>
-          </div>
-
-          <div className="launch-bay-takeoff">
-            <div className="launch-bay-readiness">
-              <span
-                className={`launch-bay-readiness-dot ${
-                  painted ? 'is-ready' : ''
-                }`}
-              />
-              <div>
-                <strong>{painted ? 'Aircraft ready' : 'Livery incomplete'}</strong>
-                <span>
-                  {painted
-                    ? 'All required panels are finished.'
-                    : 'Complete every panel before departure.'}
-                </span>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => {
-                if (painted) {
-                  go('/fly');
-                }
-              }}
-              disabled={!painted}
-              className={`launch-bay-takeoff-button ${
-                painted ? 'is-ready' : ''
-              }`}
-            >
-              <span>TAKE OFF</span>
-              <span className="launch-bay-arrow">→</span>
-            </button>
           </div>
         </section>
       </section>
@@ -1151,16 +1180,37 @@ export default function HangarPage() {
   );
 }
 
+// ============================================================
+// CLEAN LAUNCH BAY CSS
+// ============================================================
+
 const LAUNCH_BAY_CSS = `
+  * {
+    box-sizing: border-box;
+  }
+
   .launch-bay {
-    min-height: 100vh;
-    min-height: 100svh;
-    position: relative;
+    width: 100%;
+    height: 100svh;
+    min-height: 620px;
     overflow: hidden;
+    position: relative;
+
     color: #071a38;
+
     background:
-      radial-gradient(circle at 78% 22%, rgba(31, 71, 119, 0.055), transparent 27%),
-      linear-gradient(135deg, #fbfcfc 0%, #f5f7f9 55%, #eef2f6 100%);
+      radial-gradient(
+        circle at 78% 15%,
+        rgba(31, 71, 119, 0.055),
+        transparent 28%
+      ),
+      linear-gradient(
+        135deg,
+        #fbfcfc 0%,
+        #f5f7f9 55%,
+        #eef2f6 100%
+      );
+
     font-family:
       Inter,
       ui-sans-serif,
@@ -1176,166 +1226,364 @@ const LAUNCH_BAY_CSS = `
     position: absolute;
     inset: 0;
     pointer-events: none;
-    opacity: 0.22;
+
+    opacity: 0.16;
+
     background-image:
-      linear-gradient(rgba(7, 26, 56, 0.035) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(7, 26, 56, 0.035) 1px, transparent 1px);
+      linear-gradient(
+        rgba(7, 26, 56, 0.035) 1px,
+        transparent 1px
+      ),
+      linear-gradient(
+        90deg,
+        rgba(7, 26, 56, 0.035) 1px,
+        transparent 1px
+      );
+
     background-size: 72px 72px;
-    mask-image: linear-gradient(to bottom, black, transparent 82%);
+
+    mask-image:
+      linear-gradient(
+        to bottom,
+        black,
+        transparent 85%
+      );
   }
 
-  .launch-bay-header {
+  /* ========================================================
+     TOP BAR
+     ======================================================== */
+
+  .launch-bay-topbar {
     position: relative;
     z-index: 20;
-    height: 78px;
-    padding: 0 clamp(22px, 5vw, 76px);
+
+    height: 88px;
+
+    padding:
+      0
+      clamp(22px, 4vw, 64px);
+
     display: flex;
     align-items: center;
     justify-content: space-between;
-    border-bottom: 1px solid rgba(7, 26, 56, 0.08);
-    background: linear-gradient(
-      to bottom,
-      rgba(255, 255, 255, 0.7),
-      rgba(255, 255, 255, 0)
-    );
+
+    gap: 30px;
+
+    border-bottom:
+      1px solid
+      rgba(7, 26, 56, 0.08);
+
+    background:
+      rgba(255, 255, 255, 0.72);
+
+    backdrop-filter: blur(14px);
+  }
+
+  .launch-bay-top-left,
+  .launch-bay-top-right {
+    min-width: 0;
+
+    display: flex;
+    align-items: center;
+  }
+
+  .launch-bay-top-left {
+    gap: 18px;
+  }
+
+  .launch-bay-top-right {
+    justify-content: flex-end;
+    gap: 20px;
   }
 
   .launch-bay-brand {
     display: flex;
     align-items: center;
-    gap: 11px;
+    gap: 10px;
+
+    color: #071a38;
+
     font-size: 13px;
+    line-height: 1;
+
     font-weight: 950;
-    letter-spacing: 0.2em;
+    letter-spacing: 0.17em;
   }
 
-  .launch-bay-brand-dot,
-  .launch-bay-footer-dot {
+  .launch-bay-brand-mark {
     width: 7px;
     height: 7px;
+
+    flex: 0 0 auto;
+
     border-radius: 50%;
+
     background: #c58b3c;
-    box-shadow: 0 0 0 4px rgba(197, 139, 60, 0.1);
+
+    box-shadow:
+      0 0 0 4px
+      rgba(197, 139, 60, 0.1);
   }
 
-  .launch-bay-hud {
-    display: flex;
-    align-items: center;
-    gap: 18px;
-    color: rgba(7, 26, 56, 0.38);
-    font-size: 9px;
+  .launch-bay-divider {
+    width: 1px;
+    height: 22px;
+
+    background:
+      rgba(7, 26, 56, 0.12);
+  }
+
+  .launch-bay-homie {
+    max-width: 330px;
+
+    color:
+      rgba(7, 26, 56, 0.52);
+
+    font-size: 11px;
+    line-height: 1.3;
+
+    font-weight: 750;
+    letter-spacing: 0.01em;
+  }
+
+  .launch-bay-mouse-help {
+    color:
+      rgba(7, 26, 56, 0.34);
+
+    font-size: 8px;
+    line-height: 1.2;
+
     font-weight: 850;
-    letter-spacing: 0.17em;
+    letter-spacing: 0.12em;
+
     text-transform: uppercase;
+
+    white-space: nowrap;
   }
 
-  .launch-bay-status {
+  /* ========================================================
+     TAKE OFF
+     ======================================================== */
+
+  .launch-bay-takeoff-button {
+    min-width: 155px;
+    height: 46px;
+
+    padding:
+      0
+      15px;
+
     display: flex;
     align-items: center;
-    gap: 7px;
+    justify-content: space-between;
+
+    gap: 22px;
+
+    border:
+      1px solid
+      rgba(7, 26, 56, 0.06);
+
+    border-radius: 3px;
+
+    background: #dfe4e8;
+
+    color:
+      rgba(7, 26, 56, 0.3);
+
+    font-size: 9px;
+    font-weight: 950;
+    letter-spacing: 0.16em;
+
+    cursor: not-allowed;
+
+    transition:
+      transform 150ms ease,
+      background 150ms ease,
+      box-shadow 150ms ease;
   }
 
-  .launch-bay-status::before {
-    content: "";
-    width: 5px;
-    height: 5px;
-    border-radius: 50%;
-    background: #c58b3c;
+  .launch-bay-takeoff-button.is-ready {
+    background: #0a2850;
+    color: #ffffff;
+
+    cursor: pointer;
+
+    box-shadow:
+      0 10px 24px
+      rgba(7, 26, 56, 0.14);
   }
 
-  .launch-bay-line {
-    width: 32px;
-    height: 1px;
-    background: rgba(7, 26, 56, 0.14);
+  .launch-bay-takeoff-button.is-ready:hover {
+    transform: translateY(-1px);
+
+    background: #123b6b;
+
+    box-shadow:
+      0 14px 28px
+      rgba(7, 26, 56, 0.17);
   }
+
+  .launch-bay-arrow {
+    color: #d8a35c;
+    font-size: 16px;
+    line-height: 1;
+  }
+
+  /* ========================================================
+     MAIN TWO PANEL LAYOUT
+     ======================================================== */
 
   .launch-bay-layout {
     position: relative;
     z-index: 5;
-    height: calc(100svh - 48px);
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    max-width: 1680px;
-    margin: 0 auto;
-    padding: 10px clamp(22px, 5vw, 76px) 14px;
-    gap: 20px;
-  }
 
-  .launch-bay-editor {
-    min-width: 0;
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
+    width: 100%;
+    height: calc(100svh - 88px);
+
+    display: grid;
+
+    grid-template-columns:
+      minmax(0, 1fr)
+      minmax(0, 1fr);
+
+    gap: 0;
+
     padding: 0;
   }
 
-  .launch-bay-editor-head {
+  /* ========================================================
+     SHARED PANEL
+     ======================================================== */
+
+  .launch-bay-editor,
+  .launch-bay-preview {
+    min-width: 0;
+    min-height: 0;
+
+    height: 100%;
+
     display: flex;
-    align-items: flex-end;
+    flex-direction: column;
+  }
+
+  .launch-bay-editor {
+    padding:
+      12px
+      10px
+      12px
+      clamp(22px, 4vw, 64px);
+
+    border-right:
+      1px solid
+      rgba(7, 26, 56, 0.1);
+  }
+
+  .launch-bay-preview {
+    padding:
+      12px
+      clamp(22px, 4vw, 64px)
+      12px
+      10px;
+  }
+
+  /* ========================================================
+     PANEL TOP
+     ======================================================== */
+
+  .launch-bay-panel-top {
+    height: 25px;
+
+    flex: 0 0 25px;
+
+    display: flex;
+    align-items: center;
     justify-content: space-between;
+
     gap: 12px;
-    margin-bottom: 4px;
+
+    margin-bottom: 7px;
   }
 
-  .launch-bay-kicker {
-    margin: 0 0 4px;
-    color: rgba(7, 26, 56, 0.42);
-    font-size: 9px;
+  .launch-bay-panel-label,
+  .launch-bay-panel-count {
+    font-size: 8px;
+    line-height: 1;
+
     font-weight: 900;
-    letter-spacing: 0.22em;
+    letter-spacing: 0.18em;
+
     text-transform: uppercase;
   }
 
-  .launch-bay-editor h1 {
-    margin: 0;
-    color: #071a38;
-    font-size: 32px;
-    line-height: 0.92;
-    letter-spacing: -0.06em;
-    font-weight: 950;
-    text-transform: uppercase;
+  .launch-bay-panel-label {
+    color:
+      rgba(7, 26, 56, 0.42);
   }
 
-  .launch-bay-copy {
-    max-width: 420px;
-    margin: 6px 0 8px;
-    color: rgba(7, 26, 56, 0.52);
-    font-size: 12px;
-    line-height: 1.45;
+  .launch-bay-panel-count {
+    color:
+      rgba(7, 26, 56, 0.25);
   }
+
+  /* ========================================================
+     FLAG SELECTOR
+     ======================================================== */
 
   .launch-bay-faces {
+    height: 34px;
+
+    flex: 0 0 34px;
+
     display: flex;
-    gap: 6px;
-    flex-wrap: wrap;
-    margin-bottom: 8px;
+
+    gap: 5px;
+
+    margin-bottom: 7px;
   }
 
   .launch-bay-face {
-    min-width: 64px;
-    padding: 9px 11px;
-    border: 1px solid rgba(7, 26, 56, 0.1);
+    min-width: 100px;
+
+    height: 34px;
+
+    padding:
+      0
+      11px;
+
+    border:
+      1px solid
+      rgba(7, 26, 56, 0.1);
+
     border-radius: 3px;
-    background: rgba(255, 255, 255, 0.54);
-    color: rgba(7, 26, 56, 0.48);
+
+    background:
+      rgba(255, 255, 255, 0.58);
+
+    color:
+      rgba(7, 26, 56, 0.44);
+
     cursor: pointer;
+
     display: inline-flex;
     align-items: center;
     justify-content: center;
+
     gap: 6px;
+
     font-size: 8px;
     font-weight: 900;
-    letter-spacing: 0.13em;
+    letter-spacing: 0.12em;
+
     transition:
       color 150ms ease,
       background 150ms ease,
-      border-color 150ms ease,
-      transform 150ms ease;
+      border-color 150ms ease;
   }
 
   .launch-bay-face:hover {
-    transform: translateY(-2px);
-    border-color: rgba(197, 139, 60, 0.45);
+    border-color:
+      rgba(197, 139, 60, 0.4);
   }
 
   .launch-bay-face.is-active {
@@ -1345,289 +1593,233 @@ const LAUNCH_BAY_CSS = `
   }
 
   .launch-bay-face.is-done:not(.is-active) {
-    border-color: rgba(52, 111, 83, 0.28);
-    background: rgba(52, 111, 83, 0.08);
+    border-color:
+      rgba(52, 111, 83, 0.28);
+
+    background:
+      rgba(52, 111, 83, 0.07);
+
     color: #356d52;
   }
 
   .launch-bay-check {
     font-size: 10px;
+    line-height: 1;
   }
 
-   .launch-bay-editor-body {
-    flex: 1 1 auto;
+  /* ========================================================
+     EDITOR
+     ======================================================== */
+
+  .launch-bay-editor-body {
+    flex: 1 1 0;
+
+    min-width: 0;
     min-height: 0;
+
+    width: 100%;
+    height: auto;
+
     display: flex;
     flex-direction: column;
+
     overflow: hidden;
-    border: 1px solid rgba(7, 26, 56, 0.09);
-    border-radius: 5px;
+
+    border:
+      1px solid
+      rgba(7, 26, 56, 0.1);
+
+    border-radius: 4px;
+
     background: #edf2f5;
+
     box-shadow:
-      0 24px 60px rgba(7, 26, 56, 0.08),
-      inset 0 0 0 1px rgba(255, 255, 255, 0.48);
+      0 18px 45px
+      rgba(7, 26, 56, 0.065),
+
+      inset 0 0 0 1px
+      rgba(255, 255, 255, 0.52);
   }
 
   .launch-bay-editor-body > * {
     flex: 1 1 auto;
+
+    min-width: 0;
     min-height: 0;
+
     width: 100%;
     height: 100%;
   }
-  .launch-bay-editor-loading {
-    min-height: 120px;
-    display: flex;
-    align-items: center;
-    gap: 9px;
-    color: rgba(7, 26, 56, 0.4);
-    font-size: 9px;
-    font-weight: 900;
-    letter-spacing: 0.17em;
-    text-transform: uppercase;
-  }
 
-  .launch-bay-loading-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: #c58b3c;
-    animation: launchBayPulse 900ms ease-in-out infinite alternate;
-  }
-
-  @keyframes launchBayPulse {
-    from { opacity: 0.35; transform: scale(0.8); }
-    to { opacity: 1; transform: scale(1); }
-  }
-
-  .launch-bay-footer {
-    display: flex;
-    align-items: center;
-    gap: 9px;
-    margin-top: 15px;
-    color: rgba(7, 26, 56, 0.28);
-    font-size: 8px;
-    font-weight: 850;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-  }
-
-  .launch-bay-footer-dot {
-    width: 5px;
-    height: 5px;
-    box-shadow: none;
-  }
-
-  .launch-bay-preview {
-    min-width: 0;
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
-  }
-
-  .launch-bay-preview-top {
-    min-height: 0;
-    display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: 16px;
-    padding: 0 2px 8px;
-  }
-
-  .launch-bay-destination {
-    margin-top: 0;
-    color: rgba(7, 26, 56, 0.26);
-    font-size: 8px;
-    font-weight: 900;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-  }
+  /* ========================================================
+     3D VIEWPORT
+     ======================================================== */
 
   .launch-bay-viewport {
     position: relative;
+
+    flex: 1 1 0;
+
+    min-width: 0;
     min-height: 0;
-    flex: 1 1 auto;
+
+    width: 100%;
+    height: auto;
+
     overflow: hidden;
-    border: 1px solid rgba(7, 26, 56, 0.09);
-    border-radius: 5px;
+
+    border:
+      1px solid
+      rgba(7, 26, 56, 0.1);
+
+    border-radius: 4px;
+
     background: #edf2f5;
+
     box-shadow:
-      0 24px 60px rgba(7, 26, 56, 0.08),
-      inset 0 0 0 1px rgba(255, 255, 255, 0.48);
+      0 18px 45px
+      rgba(7, 26, 56, 0.065),
+
+      inset 0 0 0 1px
+      rgba(255, 255, 255, 0.52);
   }
 
-  .launch-bay-footer {
-    display: flex;
-    align-items: center;
-    gap: 9px;
-    margin-top: 8px;
-    color: rgba(7, 26, 56, 0.28);
-    font-size: 8px;
-    font-weight: 850;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-  }
-
-  .launch-bay-takeoff {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 20px;
-    padding-top: 8px;
-  }  .launch-bay-readiness {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-
-  .launch-bay-readiness-dot {
-    width: 7px;
-    height: 7px;
-    flex: 0 0 auto;
-    border-radius: 50%;
-    background: #b8bec5;
-  }
-
-  .launch-bay-readiness-dot.is-ready {
-    background: #c58b3c;
-    box-shadow: 0 0 0 4px rgba(197, 139, 60, 0.1);
-  }
-
-  .launch-bay-readiness strong,
-  .launch-bay-readiness span {
+  .launch-bay-viewport canvas {
+    width: 100% !important;
+    height: 100% !important;
     display: block;
   }
 
-  .launch-bay-readiness strong {
-    color: #071a38;
-    font-size: 9px;
-    font-weight: 900;
-    letter-spacing: 0.13em;
-    text-transform: uppercase;
-  }
-
-  .launch-bay-readiness div > span {
-    margin-top: 3px;
-    color: rgba(7, 26, 56, 0.34);
-    font-size: 8px;
-  }
-
-  .launch-bay-takeoff-button {
-    min-width: 185px;
-    padding: 15px 17px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 20px;
-    border: 0;
-    border-radius: 3px;
-    background: #dfe4e8;
-    color: rgba(7, 26, 56, 0.3);
-    font-size: 10px;
-    font-weight: 950;
-    letter-spacing: 0.16em;
-    cursor: not-allowed;
-    transition:
-      transform 150ms ease,
-      background 150ms ease;
-  }
-
-  .launch-bay-takeoff-button.is-ready {
-    background: #0a2850;
-    color: #ffffff;
-    cursor: pointer;
-    box-shadow: 0 12px 25px rgba(7, 26, 56, 0.14);
-  }
-
-  .launch-bay-takeoff-button.is-ready:hover {
-    transform: translateY(-2px);
-    background: #123b6b;
-  }
-
-  .launch-bay-arrow {
-    color: #d8a35c;
-    font-size: 16px;
-  }
+  /* ========================================================
+     TABLET
+     ======================================================== */
 
   @media (max-width: 1050px) {
-    .launch-bay-layout {
-      grid-template-columns: 1fr;
+    .launch-bay {
       height: auto;
-      min-height: calc(100svh - 78px);
+      min-height: 100svh;
       overflow: auto;
     }
 
-    .launch-bay-editor {
-      min-height: 430px;
+    .launch-bay-topbar {
+      height: auto;
+      min-height: 88px;
+
+      padding:
+        18px
+        24px;
+
+      align-items: flex-start;
     }
 
-    .launch-bay-preview {
-      min-height: 650px;
-    }
-
-    .launch-bay-viewport {
-      min-height: 500px;
-    }
-  }
-
-  @media (max-width: 650px) {
-    .launch-bay-header {
-      height: 67px;
-      padding: 0 22px;
-    }
-
-    .launch-bay-hud {
-      display: none;
+    .launch-bay-top-left,
+    .launch-bay-top-right {
+      flex-wrap: wrap;
     }
 
     .launch-bay-layout {
-      padding: 22px 22px 30px;
-      gap: 30px;
+      height: auto;
+
+      min-height: 0;
+
+      grid-template-columns: 1fr;
+
+      gap: 12px;
+
+      padding:
+        0
+        24px
+        24px;
+    }
+
+    .launch-bay-editor,
+    .launch-bay-preview {
+      height: 620px;
+
+      padding: 0;
     }
 
     .launch-bay-editor {
-      min-height: 440px;
-    }
-
-    .launch-bay-editor h1 {
-      font-size: 52px;
-    }
-
-    .launch-bay-copy {
-      font-size: 12px;
-      margin-top: 17px;
+      border-right: 0;
     }
 
     .launch-bay-preview {
-      min-height: 560px;
-    }
-
-    .launch-bay-preview-top {
-      padding-top: 0;
-    }
-
-    .launch-bay-destination {
-      display: none;
-    }
-
-    .launch-bay-viewport {
-      min-height: 410px;
-    }
-
-    .launch-bay-takeoff {
-      align-items: stretch;
-      flex-direction: column;
-    }
-
-    .launch-bay-takeoff-button {
-      width: 100%;
+      border-top: 0;
     }
   }
 
+  /* ========================================================
+     MOBILE
+     ======================================================== */
+
+  @media (max-width: 650px) {
+    .launch-bay-topbar {
+      padding:
+        16px
+        18px;
+
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    .launch-bay-top-left,
+    .launch-bay-top-right {
+      width: 100%;
+    }
+
+    .launch-bay-top-left {
+      align-items: flex-start;
+    }
+
+    .launch-bay-top-right {
+      justify-content: space-between;
+    }
+
+    .launch-bay-divider {
+      display: none;
+    }
+
+    .launch-bay-homie {
+      font-size: 10px;
+    }
+
+    .launch-bay-mouse-help {
+      max-width: 180px;
+
+      white-space: normal;
+
+      line-height: 1.4;
+    }
+
+    .launch-bay-takeoff-button {
+      min-width: 145px;
+    }
+
+    .launch-bay-layout {
+      padding:
+        0
+        18px
+        18px;
+    }
+
+    .launch-bay-editor,
+    .launch-bay-preview {
+      height: 560px;
+    }
+
+    .launch-bay-face {
+      min-width: 0;
+      flex: 1;
+    }
+  }
+
+  /* ========================================================
+     REDUCED MOTION
+     ======================================================== */
+
   @media (prefers-reduced-motion: reduce) {
-    .launch-bay-loading-dot,
     .launch-bay-face,
     .launch-bay-takeoff-button {
-      animation: none;
       transition: none;
     }
   }
