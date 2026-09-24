@@ -36,7 +36,7 @@ const FACES: Face[] = ['flag-left', 'flag-right'];
 const LEFT_PANEL_FALLBACK = '/templates/flag-left.svg';
 const RIGHT_PANEL_FALLBACK = '/templates/flag-right.svg';
 
-useGLTF.preload('/pilot-out.glb');
+useGLTF.preload('/astro.glb');
 
 // ============================================================
 // EDITABLE MISSION PANEL MATERIAL
@@ -80,7 +80,7 @@ function HangarMan({
   position = [1.7, 0, 0.55] as [number, number, number],
 }) {
   const invalidate = useThree((state) => state.invalidate);
-  const { scene, animations } = useGLTF('/pilot-out.glb');
+  const { scene, animations } = useGLTF('/astro.glb');
 
   const man = useMemo(() => {
     const clone = SkeletonUtils.clone(scene);
