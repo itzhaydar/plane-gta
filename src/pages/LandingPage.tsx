@@ -40,7 +40,7 @@ export default function LandingPage() {
     }
 
     setRolePanelOpen(false);
-    navigate('/hangar');
+    navigate('/homie');
   };
 
   const selectVehicle = (vehicle: 'plane' | 'rocket') => {
