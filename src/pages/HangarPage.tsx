@@ -930,23 +930,26 @@ export default function HangarPage() {
     liveries,
   } = usePlaneStore();
 
-  useEffect(() => {
-    audioRef.current = new Audio('/boot.mp3');
-    audioRef.current.volume = 0.6;
+useEffect(() => {
+  const audio = new Audio('/boot.mp3');
+  audio.loop = true;      // repeat forever
+  audio.volume = 0.35;    // 0 = silent, 1 = max. 0.3–0.45 is good for hangar music
+  audioRef.current = audio;
 
-    audioRef.current.play().catch(() => {
-      const playOnce = () => {
-        audioRef.current?.play();
-        window.removeEventListener('pointerdown', playOnce);
-      };
-      window.addEventListener('pointerdown', playOnce, { once: true });
-    });
-
-    return () => {
-      audioRef.current?.pause();
-      audioRef.current = null;
+  audio.play().catch(() => {
+    const playOnce = () => {
+      audio.play().catch(() => {});
+      window.removeEventListener('pointerdown', playOnce);
     };
-  }, []);
+    window.addEventListener('pointerdown', playOnce, { once: true });
+  });
+
+  return () => {
+    audio.pause();
+    audio.src = '';
+    audioRef.current = null;
+  };
+}, []);
 
   const toggleSound = () => {
     if (!audioRef.current) return;
