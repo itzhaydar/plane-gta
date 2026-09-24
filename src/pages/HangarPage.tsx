@@ -975,18 +975,6 @@ export default function HangarPage() {
     <main className="launch-bay">
       <style>{LAUNCH_BAY_CSS}</style>
 
-      <header className="launch-bay-header">
-        <div className="launch-bay-brand">
-          <span className="launch-bay-brand-dot" />
-          MARSHOUT
-        </div>
-
-        <div className="launch-bay-hud">
-          <span className="launch-bay-status">ONLINE</span>
-          <span className="launch-bay-line" />
-          <span>LAUNCH BAY</span>
-        </div>
-      </header>
 
       <section className="launch-bay-layout">
         <aside className="launch-bay-editor">
