@@ -1,55 +1,41 @@
+```tsx
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePlaneStore } from '../store';
 
-// Before deploy: compress image exports to WebP (80–200KB) with Squoosh.
-
 type Role = 'pilot' | 'homie';
 
-type AssetImageProps = {
-  webp: string;
-  png: string;
+type GameImageProps = {
+  src: string;
+  fallback: string;
   alt: string;
+  className: string;
   width: number;
   height: number;
-  className?: string;
   priority?: boolean;
 };
 
-function AssetImage({
-  webp,
-  png,
+function GameImage({
+  src,
+  fallback,
   alt,
+  className,
   width,
   height,
-  className,
   priority = false,
-}: AssetImageProps) {
-  const [failed, setFailed] = useState(false);
-
-  if (failed) {
-    return (
-      <div
-        className="game-asset-placeholder"
-        style={{ width, height }}
-        aria-label={`${alt} placeholder`}
-      />
-    );
-  }
-
+}: GameImageProps) {
   return (
     <picture>
-      <source srcSet={webp} type="image/webp" />
+      <source srcSet={src} type="image/webp" />
 
       <img
-        src={png}
+        src={fallback}
         alt={alt}
+        className={className}
         width={width}
         height={height}
-        className={className}
-        onError={() => setFailed(true)}
-        fetchPriority={priority ? 'high' : 'auto'}
         loading={priority ? 'eager' : 'lazy'}
+        fetchPriority={priority ? 'high' : 'auto'}
         decoding="async"
       />
     </picture>
@@ -58,6 +44,7 @@ function AssetImage({
 
 export default function LandingPage() {
   const navigate = useNavigate();
+
   const setRole = usePlaneStore((state) => state.setRole);
 
   const [rolePanelOpen, setRolePanelOpen] = useState(false);
@@ -87,33 +74,57 @@ export default function LandingPage() {
   return (
     <>
       <style>{`
+        :root {
+          color-scheme: light;
+        }
+
         * {
           box-sizing: border-box;
         }
 
-        .game-page {
+        html,
+        body,
+        #root {
+          margin: 0;
+          min-height: 100%;
+        }
+
+        body {
+          background: #f5f7f9;
+        }
+
+        button {
+          font: inherit;
+        }
+
+        /*
+        ========================================
+        PAGE
+        ========================================
+        */
+
+        .landing-page {
           min-height: 100vh;
-          width: 100%;
+          min-height: 100svh;
+
           position: relative;
           overflow: hidden;
-          color: #f5f1e8;
+
+          color: #071a38;
+
           background:
             radial-gradient(
-              circle at 72% 38%,
-              rgba(214, 126, 58, 0.18),
+              circle at 72% 35%,
+              rgba(31, 71, 119, 0.075),
               transparent 28%
             ),
-            radial-gradient(
-              circle at 18% 78%,
-              rgba(55, 91, 111, 0.2),
-              transparent 30%
-            ),
             linear-gradient(
-              145deg,
-              #071014 0%,
-              #0b171c 45%,
-              #111a1c 100%
+              135deg,
+              #fbfcfc 0%,
+              #f5f7f9 52%,
+              #eef2f6 100%
             );
+
           font-family:
             Inter,
             ui-sans-serif,
@@ -125,332 +136,402 @@ export default function LandingPage() {
         }
 
         /*
-          ATMOSPHERE
+        ========================================
+        VERY LIGHT GRID
+        ========================================
         */
 
-        .game-page::before {
-          content: "";
+        .landing-grid {
           position: absolute;
           inset: 0;
+
           pointer-events: none;
-          opacity: 0.22;
+
+          opacity: 0.25;
+
           background-image:
             linear-gradient(
-              rgba(255,255,255,0.025) 1px,
+              rgba(7, 26, 56, 0.035) 1px,
               transparent 1px
             ),
             linear-gradient(
               90deg,
-              rgba(255,255,255,0.025) 1px,
+              rgba(7, 26, 56, 0.035) 1px,
               transparent 1px
             );
-          background-size: 56px 56px;
-          mask-image: linear-gradient(
-            to bottom,
-            black,
-            transparent 85%
-          );
-        }
 
-        .game-page::after {
-          content: "";
-          position: absolute;
-          inset: 0;
-          pointer-events: none;
-          background:
-            radial-gradient(
-              ellipse at center,
-              transparent 45%,
-              rgba(0,0,0,0.55) 100%
+          background-size: 72px 72px;
+
+          mask-image:
+            linear-gradient(
+              to bottom,
+              black,
+              transparent 82%
             );
         }
 
         /*
-          TOP HUD
+        ========================================
+        NAV / GAME HUD
+        ========================================
         */
 
-        .game-topbar {
+        .landing-header {
           position: absolute;
-          z-index: 20;
+          z-index: 30;
+
           top: 0;
           left: 0;
           right: 0;
 
-          height: 86px;
-          padding: 0 clamp(22px, 4vw, 64px);
+          height: 78px;
+
+          padding:
+            0
+            clamp(22px, 5vw, 76px);
 
           display: flex;
           align-items: center;
           justify-content: space-between;
 
-          border-bottom: 1px solid rgba(255,255,255,0.08);
+          border-bottom:
+            1px solid
+            rgba(7, 26, 56, 0.08);
 
           background:
             linear-gradient(
               to bottom,
-              rgba(4, 9, 11, 0.72),
-              rgba(4, 9, 11, 0)
+              rgba(255,255,255,0.68),
+              rgba(255,255,255,0)
             );
-
-          pointer-events: none;
         }
 
-        .game-brand {
+        .landing-brand {
           display: flex;
           align-items: center;
-          gap: 13px;
+          gap: 11px;
+
+          color: #071a38;
 
           font-size: 13px;
-          font-weight: 900;
-          letter-spacing: 0.22em;
+          font-weight: 950;
+
+          letter-spacing: 0.2em;
         }
 
-        .game-brand-mark {
-          width: 9px;
-          height: 9px;
+        .landing-brand-dot {
+          width: 8px;
+          height: 8px;
+
           border-radius: 50%;
-          background: #e99b52;
+
+          background: #c58b3c;
+
           box-shadow:
-            0 0 0 4px rgba(233,155,82,0.1),
-            0 0 18px rgba(233,155,82,0.5);
+            0 0 0 4px
+            rgba(197, 139, 60, 0.10);
         }
 
-        .game-status {
+        .landing-hud {
           display: flex;
           align-items: center;
           gap: 18px;
 
-          color: rgba(245,241,232,0.55);
+          color:
+            rgba(7, 26, 56, 0.38);
 
-          font-size: 10px;
-          font-weight: 700;
-          letter-spacing: 0.16em;
+          font-size: 9px;
+          font-weight: 850;
+
+          letter-spacing: 0.17em;
           text-transform: uppercase;
         }
 
-        .game-status-line {
-          width: 34px;
+        .landing-hud-status {
+          display: flex;
+          align-items: center;
+          gap: 7px;
+        }
+
+        .landing-hud-status::before {
+          content: "";
+
+          width: 5px;
+          height: 5px;
+
+          border-radius: 50%;
+
+          background: #c58b3c;
+        }
+
+        .landing-hud-line {
+          width: 32px;
           height: 1px;
-          background: rgba(255,255,255,0.2);
+
+          background:
+            rgba(7, 26, 56, 0.14);
         }
 
         /*
-          MAIN
+        ========================================
+        MAIN
+        ========================================
         */
 
-        .game-main {
-          min-height: 100vh;
+        .landing-main {
           position: relative;
           z-index: 5;
 
-          display: grid;
-          grid-template-columns: 0.78fr 1.22fr;
-          align-items: center;
+          min-height: 100vh;
+          min-height: 100svh;
 
-          max-width: 1700px;
+          max-width: 1680px;
+
           margin: 0 auto;
 
           padding:
-            100px
-            clamp(24px, 5vw, 80px)
-            60px;
+            105px
+            clamp(24px, 5vw, 78px)
+            45px;
+
+          display: grid;
+
+          grid-template-columns:
+            minmax(350px, 0.78fr)
+            minmax(540px, 1.22fr);
+
+          align-items: center;
+
+          gap: clamp(30px, 4vw, 80px);
         }
 
         /*
-          LEFT
+        ========================================
+        COPY
+        ========================================
         */
 
-        .game-copy {
+        .landing-copy {
           position: relative;
-          z-index: 12;
-          max-width: 650px;
+          z-index: 20;
+
+          max-width: 610px;
         }
 
-        .game-eyebrow {
+        .landing-kicker {
+          margin: 0 0 20px;
+
           display: flex;
           align-items: center;
-          gap: 12px;
+          gap: 11px;
 
-          margin: 0 0 22px;
+          color:
+            rgba(7, 26, 56, 0.46);
 
-          color: rgba(245,241,232,0.55);
+          font-size: 10px;
+          font-weight: 900;
 
-          font-size: 11px;
-          font-weight: 800;
-          letter-spacing: 0.25em;
+          letter-spacing: 0.22em;
           text-transform: uppercase;
         }
 
-        .game-eyebrow::before {
+        .landing-kicker::before {
           content: "";
-          width: 28px;
+
+          width: 27px;
           height: 1px;
-          background: #e99b52;
+
+          background: #c58b3c;
         }
 
-        .game-title {
+        .landing-title {
           margin: 0;
 
-          max-width: 700px;
+          color: #071a38;
 
-          font-size: clamp(
-            68px,
-            8vw,
-            132px
-          );
+          font-size:
+            clamp(
+              58px,
+              7.2vw,
+              112px
+            );
 
-          line-height: 0.82;
+          line-height: 0.84;
+
           letter-spacing: -0.075em;
+
           font-weight: 950;
 
           text-transform: uppercase;
-
-          color: #f4eee2;
-
-          text-shadow:
-            0 5px 30px rgba(0,0,0,0.3);
         }
 
-        .game-title span {
+        .landing-title-accent {
           display: block;
-          color: #e99b52;
+
+          color: #123b6b;
         }
 
-        .game-description {
-          max-width: 440px;
+        .landing-description {
+          max-width: 430px;
 
-          margin: 30px 0 0;
+          margin: 28px 0 0;
 
-          color: rgba(245,241,232,0.62);
+          color:
+            rgba(7, 26, 56, 0.52);
 
           font-size: 15px;
+
           line-height: 1.65;
         }
 
         /*
-          PLAY BUTTON
+        ========================================
+        START GAME
+        ========================================
         */
 
-        .game-play {
-          margin-top: 38px;
+        .landing-start {
+          margin-top: 34px;
 
           display: inline-flex;
           align-items: center;
-          gap: 18px;
+          gap: 15px;
 
           padding: 0;
 
           border: 0;
+
           background: transparent;
 
-          color: #f5f1e8;
-
-          font: inherit;
-          font-size: 13px;
-          font-weight: 900;
-          letter-spacing: 0.17em;
-          text-transform: uppercase;
+          color: #071a38;
 
           cursor: pointer;
+
+          text-transform: uppercase;
         }
 
-        .game-play-icon {
-          width: 64px;
-          height: 64px;
+        .landing-start-icon {
+          width: 59px;
+          height: 59px;
 
           display: flex;
           align-items: center;
           justify-content: center;
 
-          border: 1px solid rgba(233,155,82,0.75);
           border-radius: 50%;
 
-          background: rgba(233,155,82,0.08);
+          background: #0a2850;
+
+          box-shadow:
+            0 12px 26px
+            rgba(7, 26, 56, 0.17);
 
           transition:
-            transform 180ms ease,
-            background 180ms ease,
-            box-shadow 180ms ease;
+            transform 160ms ease,
+            background 160ms ease;
         }
 
-        .game-play-icon::after {
+        .landing-start-icon::after {
           content: "";
+
           width: 0;
           height: 0;
 
-          margin-left: 4px;
+          margin-left: 3px;
 
-          border-top: 7px solid transparent;
-          border-bottom: 7px solid transparent;
-          border-left: 10px solid #e99b52;
+          border-top:
+            7px solid transparent;
+
+          border-bottom:
+            7px solid transparent;
+
+          border-left:
+            10px solid white;
         }
 
-        .game-play:hover .game-play-icon {
-          transform: scale(1.08);
-          background: rgba(233,155,82,0.16);
+        .landing-start:hover .landing-start-icon {
+          transform: scale(1.07);
 
-          box-shadow:
-            0 0 0 8px rgba(233,155,82,0.05),
-            0 0 30px rgba(233,155,82,0.16);
+          background: #123b6b;
         }
 
-        .game-play-text {
+        .landing-start-copy {
           display: flex;
           flex-direction: column;
           align-items: flex-start;
           gap: 4px;
         }
 
-        .game-play-sub {
-          color: rgba(245,241,232,0.38);
-          font-size: 9px;
+        .landing-start-main {
+          font-size: 12px;
+          font-weight: 950;
+
           letter-spacing: 0.18em;
         }
 
+        .landing-start-sub {
+          color:
+            rgba(7, 26, 56, 0.36);
+
+          font-size: 8px;
+          font-weight: 800;
+
+          letter-spacing: 0.16em;
+        }
+
         /*
-          SCENE
+        ========================================
+        SCENE
+        ========================================
         */
 
-        .game-scene {
-          min-width: 0;
-          height: min(760px, 78vh);
-
+        .landing-scene {
           position: relative;
+
+          min-width: 0;
+
+          height: min(760px, 79vh);
 
           display: flex;
           align-items: flex-end;
           justify-content: center;
         }
 
-        .game-scene::before {
-          content: "";
+        /*
+        SOFT NAVY ATMOSPHERE
+        */
 
+        .landing-scene-glow {
           position: absolute;
 
-          width: 80%;
-          height: 60%;
+          width: 650px;
+          height: 650px;
 
-          right: 5%;
-          bottom: 5%;
+          right: 0;
+          bottom: -180px;
+
+          border-radius: 50%;
 
           background:
             radial-gradient(
-              ellipse,
-              rgba(220,126,55,0.18),
+              circle,
+              rgba(22, 61, 106, 0.12),
               transparent 68%
             );
 
-          filter: blur(30px);
+          pointer-events: none;
         }
 
         /*
-          HORIZON
+        GROUND / HORIZON
         */
 
-        .game-horizon {
+        .landing-horizon {
           position: absolute;
-          left: -10%;
-          right: -10%;
+
+          left: -15%;
+          right: -15%;
+
           bottom: 13%;
 
           height: 1px;
@@ -459,73 +540,90 @@ export default function LandingPage() {
             linear-gradient(
               90deg,
               transparent,
-              rgba(255,255,255,0.16),
+              rgba(7, 26, 56, 0.16),
               transparent
             );
         }
 
-        .game-horizon-label {
+        .landing-horizon-label {
           position: absolute;
-          right: 9%;
+
+          right: 8%;
           bottom: calc(13% + 12px);
 
-          color: rgba(245,241,232,0.25);
+          color:
+            rgba(7, 26, 56, 0.23);
 
           font-size: 8px;
-          font-weight: 800;
-          letter-spacing: 0.25em;
+          font-weight: 900;
+
+          letter-spacing: 0.22em;
           text-transform: uppercase;
         }
 
         /*
-          VEHICLES
+        ========================================
+        VEHICLES
+        ========================================
         */
 
-        .game-vehicle {
+        .landing-vehicle {
           position: absolute;
+
+          height: auto;
 
           object-fit: contain;
 
           pointer-events: none;
 
+          user-select: none;
+
           filter:
             drop-shadow(
-              0 30px 30px rgba(0,0,0,0.42)
+              0 28px 24px
+              rgba(7, 26, 56, 0.18)
             );
         }
 
-        .game-plane {
+        .landing-plane {
           width: min(58%, 620px);
 
-          right: -2%;
-          top: 9%;
+          top: 7%;
+          right: -1%;
 
           z-index: 4;
 
           transform: rotate(-4deg);
 
           animation:
-            planeFloat 5s ease-in-out infinite;
+            planeFloat
+            6s
+            ease-in-out
+            infinite;
         }
 
-        .game-rocket {
-          width: min(30%, 300px);
+        .landing-rocket {
+          width: min(29%, 300px);
 
-          left: 0;
-          top: 22%;
+          top: 23%;
+          left: 1%;
 
           z-index: 3;
 
-          transform: rotate(-12deg);
+          opacity: 0.88;
 
-          opacity: 0.84;
+          transform: rotate(-11deg);
 
           animation:
-            rocketFloat 4.5s ease-in-out infinite;
+            rocketFloat
+            5s
+            ease-in-out
+            infinite;
         }
 
         @keyframes planeFloat {
-          0%, 100% {
+          0%,
+          100% {
             transform:
               translate3d(0, 0, 0)
               rotate(-4deg);
@@ -533,46 +631,50 @@ export default function LandingPage() {
 
           50% {
             transform:
-              translate3d(-8px, -12px, 0)
-              rotate(-2deg);
+              translate3d(-7px, -10px, 0)
+              rotate(-2.5deg);
           }
         }
 
         @keyframes rocketFloat {
-          0%, 100% {
+          0%,
+          100% {
             transform:
               translate3d(0, 0, 0)
-              rotate(-12deg);
+              rotate(-11deg);
           }
 
           50% {
             transform:
-              translate3d(5px, -16px, 0)
-              rotate(-9deg);
+              translate3d(5px, -13px, 0)
+              rotate(-8deg);
           }
         }
 
         /*
-          CHARACTERS
+        ========================================
+        PEOPLE
+        ========================================
         */
 
-        .game-people {
+        .landing-people {
           position: absolute;
 
-          width: 88%;
+          z-index: 8;
 
-          bottom: 7%;
+          width: 91%;
+
+          bottom: 5%;
 
           display: flex;
           align-items: flex-end;
           justify-content: center;
-
-          z-index: 8;
         }
 
-        .game-person {
-          width: 32%;
-          max-width: 290px;
+        .landing-person {
+          width: 33%;
+
+          max-width: 300px;
 
           height: auto;
 
@@ -580,85 +682,108 @@ export default function LandingPage() {
 
           margin-left: -3%;
 
+          user-select: none;
+
           filter:
             drop-shadow(
-              0 28px 22px rgba(0,0,0,0.5)
+              0 28px 20px
+              rgba(7, 26, 56, 0.22)
             );
 
           transition:
             transform 220ms ease;
         }
 
-        .game-person:first-child {
+        .landing-person:first-child {
           margin-left: 0;
-          transform: translateY(15px) rotate(-2deg);
-        }
 
-        .game-person:nth-child(2) {
-          z-index: 3;
-          transform: translateY(-4px);
-        }
-
-        .game-person:nth-child(3) {
-          transform: translateY(18px) rotate(2deg);
-        }
-
-        .game-people:hover .game-person:first-child {
           transform:
-            translateX(-8px)
+            translateY(15px)
+            rotate(-2deg);
+        }
+
+        .landing-person:nth-child(2) {
+          z-index: 3;
+
+          transform:
+            translateY(-5px);
+        }
+
+        .landing-person:nth-child(3) {
+          transform:
+            translateY(17px)
+            rotate(2deg);
+        }
+
+        .landing-people:hover
+        .landing-person:first-child {
+          transform:
+            translateX(-7px)
             translateY(15px)
             rotate(-3deg);
         }
 
-        .game-people:hover .game-person:nth-child(2) {
+        .landing-people:hover
+        .landing-person:nth-child(2) {
           transform:
-            translateY(-8px)
+            translateY(-9px)
             scale(1.015);
         }
 
-        .game-people:hover .game-person:nth-child(3) {
+        .landing-people:hover
+        .landing-person:nth-child(3) {
           transform:
-            translateX(8px)
-            translateY(18px)
+            translateX(7px)
+            translateY(17px)
             rotate(3deg);
         }
 
         /*
-          CORNER GAME INFO
+        ========================================
+        FOOTER HUD
+        ========================================
         */
 
-        .game-corner {
+        .landing-footer {
           position: absolute;
-          z-index: 15;
 
-          left: clamp(24px, 5vw, 80px);
-          bottom: 30px;
+          z-index: 20;
+
+          left: clamp(24px, 5vw, 78px);
+          bottom: 28px;
 
           display: flex;
           align-items: center;
-          gap: 12px;
+          gap: 9px;
 
-          color: rgba(245,241,232,0.3);
+          color:
+            rgba(7, 26, 56, 0.28);
 
-          font-size: 9px;
-          font-weight: 800;
+          font-size: 8px;
+          font-weight: 850;
+
           letter-spacing: 0.18em;
           text-transform: uppercase;
         }
 
-        .game-corner-dot {
+        .landing-footer-dot {
           width: 5px;
           height: 5px;
+
           border-radius: 50%;
-          background: #e99b52;
+
+          background: #c58b3c;
         }
 
         /*
-          ROLE SCREEN
+        ========================================
+        ROLE OVERLAY
+        ========================================
         */
 
-        .game-overlay {
+        .landing-overlay {
           position: fixed;
+
           inset: 0;
 
           z-index: 100;
@@ -670,12 +795,15 @@ export default function LandingPage() {
           padding: 30px;
 
           background:
-            rgba(3, 8, 10, 0.76);
+            rgba(4, 15, 30, 0.48);
 
-          backdrop-filter: blur(14px);
+          backdrop-filter: blur(12px);
 
           animation:
-            overlayIn 180ms ease both;
+            overlayIn
+            150ms
+            ease
+            both;
         }
 
         @keyframes overlayIn {
@@ -688,61 +816,84 @@ export default function LandingPage() {
           }
         }
 
-        .game-role-screen {
-          width: min(900px, 100%);
-
+        .landing-role-screen {
           position: relative;
 
+          width: min(900px, 100%);
+
           animation:
-            roleIn 240ms ease both;
+            roleIn
+            190ms
+            ease
+            both;
         }
 
         @keyframes roleIn {
           from {
             opacity: 0;
-            transform: translateY(18px) scale(0.98);
+            transform:
+              translateY(15px)
+              scale(0.985);
           }
 
           to {
             opacity: 1;
-            transform: translateY(0) scale(1);
+            transform:
+              translateY(0)
+              scale(1);
           }
         }
 
-        .game-role-header {
-          margin-bottom: 24px;
+        .landing-role-header {
+          margin-bottom: 22px;
         }
 
-        .game-role-kicker {
-          margin: 0 0 10px;
+        .landing-role-kicker {
+          margin: 0 0 9px;
 
-          color: #e99b52;
+          color: #c58b3c;
 
           font-size: 9px;
           font-weight: 900;
-          letter-spacing: 0.25em;
+
+          letter-spacing: 0.23em;
           text-transform: uppercase;
         }
 
-        .game-role-title {
+        .landing-role-title {
           margin: 0;
 
-          font-size: clamp(38px, 6vw, 70px);
+          color: white;
+
+          font-size:
+            clamp(
+              40px,
+              6vw,
+              70px
+            );
+
           line-height: 0.9;
-          letter-spacing: -0.06em;
+
+          letter-spacing: -0.065em;
+
+          font-weight: 950;
+
           text-transform: uppercase;
         }
 
-        .game-role-grid {
+        .landing-role-grid {
           display: grid;
+
           grid-template-columns: 1fr 1fr;
-          gap: 14px;
+
+          gap: 12px;
         }
 
-        .game-role {
+        .landing-role {
           min-height: 260px;
 
           position: relative;
+
           overflow: hidden;
 
           display: flex;
@@ -751,391 +902,477 @@ export default function LandingPage() {
 
           padding: 25px;
 
-          border: 1px solid rgba(255,255,255,0.12);
-          border-radius: 3px;
+          border:
+            1px solid
+            rgba(255,255,255,0.13);
+
+          border-radius: 4px;
 
           background:
             linear-gradient(
               145deg,
-              rgba(255,255,255,0.09),
-              rgba(255,255,255,0.025)
+              rgba(22, 61, 106, 0.75),
+              rgba(5, 20, 39, 0.94)
             );
 
-          color: #f5f1e8;
+          color: white;
 
           text-align: left;
 
           cursor: pointer;
 
           transition:
-            transform 180ms ease,
-            border-color 180ms ease,
-            background 180ms ease;
+            transform 170ms ease,
+            border-color 170ms ease;
         }
 
-        .game-role::before {
+        .landing-role::after {
           content: "";
 
           position: absolute;
-          inset: 0;
+
+          width: 220px;
+          height: 220px;
+
+          right: -90px;
+          top: -90px;
+
+          border-radius: 50%;
 
           background:
             radial-gradient(
-              circle at 80% 20%,
-              rgba(233,155,82,0.2),
-              transparent 42%
+              circle,
+              rgba(197,139,60,0.18),
+              transparent 68%
             );
 
-          opacity: 0.5;
-
-          transition: opacity 180ms ease;
+          pointer-events: none;
         }
 
-        .game-role:hover {
+        .landing-role:hover {
           transform: translateY(-5px);
 
-          border-color: rgba(233,155,82,0.55);
-
-          background:
-            linear-gradient(
-              145deg,
-              rgba(233,155,82,0.12),
-              rgba(255,255,255,0.035)
-            );
+          border-color:
+            rgba(197,139,60,0.58);
         }
 
-        .game-role:hover::before {
-          opacity: 1;
-        }
-
-        .game-role-number {
+        .landing-role-number {
           position: absolute;
-          top: 20px;
-          right: 20px;
 
-          color: rgba(255,255,255,0.24);
+          top: 18px;
+          right: 19px;
 
-          font-size: 10px;
+          color:
+            rgba(255,255,255,0.28);
+
+          font-size: 9px;
           font-weight: 900;
-          letter-spacing: 0.15em;
+
+          letter-spacing: 0.16em;
         }
 
-        .game-role-content {
+        .landing-role-content {
           position: relative;
           z-index: 2;
         }
 
-        .game-role-name {
-          margin: 0;
+        .landing-role-name {
+          display: block;
 
-          font-size: clamp(34px, 5vw, 58px);
+          font-size:
+            clamp(
+              35px,
+              5vw,
+              58px
+            );
+
           line-height: 0.9;
+
           letter-spacing: -0.06em;
+
+          font-weight: 950;
+
           text-transform: uppercase;
         }
 
-        .game-role-description {
-          margin: 12px 0 0;
+        .landing-role-description {
+          display: block;
 
-          max-width: 230px;
+          max-width: 240px;
 
-          color: rgba(245,241,232,0.48);
+          margin-top: 11px;
+
+          color:
+            rgba(255,255,255,0.52);
 
           font-size: 12px;
+
           line-height: 1.5;
         }
 
-        .game-role-enter {
-          margin-top: 20px;
+        .landing-role-enter {
+          display: block;
 
-          color: #e99b52;
+          margin-top: 19px;
+
+          color: #d8a35c;
 
           font-size: 9px;
           font-weight: 900;
+
           letter-spacing: 0.18em;
+
           text-transform: uppercase;
         }
 
-        .game-close {
+        .landing-close {
           position: absolute;
+
           top: -50px;
           right: 0;
 
           width: 36px;
           height: 36px;
 
-          border: 1px solid rgba(255,255,255,0.15);
+          border:
+            1px solid
+            rgba(255,255,255,0.16);
+
           border-radius: 50%;
 
-          background: rgba(255,255,255,0.04);
+          background:
+            rgba(255,255,255,0.05);
 
-          color: #f5f1e8;
+          color: white;
+
+          cursor: pointer;
 
           font-size: 18px;
 
-          cursor: pointer;
+          transition:
+            background 150ms ease,
+            border-color 150ms ease;
         }
 
-        .game-close:hover {
-          border-color: rgba(233,155,82,0.5);
-          color: #e99b52;
-        }
+        .landing-close:hover {
+          background:
+            rgba(255,255,255,0.10);
 
-        .game-asset-placeholder {
-          flex: 0 0 auto;
-          opacity: 0;
-          pointer-events: none;
+          border-color:
+            rgba(197,139,60,0.55);
         }
 
         /*
-          TABLET
+        ========================================
+        TABLET
+        ========================================
         */
 
         @media (max-width: 1050px) {
-          .game-main {
+          .landing-main {
             grid-template-columns: 1fr;
-            padding-top: 130px;
+
+            padding-top: 120px;
+
+            gap: 15px;
           }
 
-          .game-copy {
+          .landing-copy {
             max-width: 700px;
           }
 
-          .game-title {
-            font-size: clamp(68px, 13vw, 110px);
+          .landing-title {
+            font-size:
+              clamp(
+                64px,
+                12vw,
+                105px
+              );
           }
 
-          .game-scene {
-            height: 52vh;
+          .landing-scene {
+            height: 53vh;
             min-height: 420px;
-            margin-top: -40px;
+
+            margin-top: -30px;
           }
 
-          .game-plane {
-            width: min(55%, 520px);
-            right: 0;
+          .landing-plane {
+            width: min(55%, 550px);
           }
 
-          .game-rocket {
+          .landing-rocket {
             width: 25%;
-            left: 4%;
           }
 
-          .game-people {
+          .landing-people {
             width: 78%;
           }
         }
 
         /*
-          MOBILE
+        ========================================
+        MOBILE
+        ========================================
         */
 
         @media (max-width: 650px) {
-          .game-topbar {
-            height: 68px;
-            padding: 0 22px;
+          .landing-header {
+            height: 67px;
+
+            padding:
+              0 22px;
           }
 
-          .game-status {
+          .landing-hud {
             display: none;
           }
 
-          .game-main {
+          .landing-main {
             min-height: 100svh;
 
             padding:
-              100px
+              96px
               22px
-              30px;
+              28px;
 
             display: flex;
             flex-direction: column;
 
             justify-content: space-between;
+
+            gap: 0;
           }
 
-          .game-copy {
-            width: 100%;
-          }
+          .landing-kicker {
+            margin-bottom: 16px;
 
-          .game-eyebrow {
-            margin-bottom: 17px;
             font-size: 9px;
           }
 
-          .game-title {
-            font-size: clamp(55px, 16vw, 82px);
-            line-height: 0.84;
+          .landing-title {
+            font-size:
+              clamp(
+                54px,
+                16vw,
+                82px
+              );
           }
 
-          .game-description {
-            max-width: 330px;
-            margin-top: 20px;
+          .landing-description {
+            max-width: 340px;
+
+            margin-top: 19px;
 
             font-size: 13px;
           }
 
-          .game-play {
+          .landing-start {
             margin-top: 24px;
           }
 
-          .game-play-icon {
-            width: 54px;
-            height: 54px;
+          .landing-start-icon {
+            width: 53px;
+            height: 53px;
           }
 
-          .game-scene {
+          .landing-scene {
             width: 100%;
-            height: 45vh;
-            min-height: 310px;
-            margin-top: -10px;
+
+            height: 43vh;
+
+            min-height: 300px;
+
+            margin-top: -5px;
           }
 
-          .game-plane {
-            width: 64%;
-            right: -5%;
-            top: 5%;
+          .landing-plane {
+            width: 67%;
+
+            right: -8%;
+
+            top: 4%;
           }
 
-          .game-rocket {
-            width: 28%;
-            left: 0;
+          .landing-rocket {
+            width: 29%;
+
+            left: -2%;
+
             top: 20%;
           }
 
-          .game-people {
-            width: 108%;
-            left: -4%;
+          .landing-people {
+            width: 110%;
+
+            left: -5%;
+
             bottom: 4%;
           }
 
-          .game-person {
+          .landing-person {
             width: 34%;
           }
 
-          .game-corner {
+          .landing-horizon-label {
             display: none;
           }
 
-          .game-overlay {
+          .landing-footer {
+            display: none;
+          }
+
+          .landing-overlay {
             align-items: flex-end;
+
             padding: 0;
           }
 
-          .game-role-screen {
+          .landing-role-screen {
             width: 100%;
-            padding: 24px 20px 28px;
+
+            padding:
+              25px
+              20px
+              30px;
 
             background:
               linear-gradient(
                 to bottom,
-                rgba(11,17,19,0.96),
-                rgba(7,12,14,1)
+                #092443,
+                #06172d
               );
 
-            border-top: 1px solid rgba(255,255,255,0.12);
+            border-top:
+              1px solid
+              rgba(255,255,255,0.12);
           }
 
-          .game-close {
+          .landing-role-header {
+            padding-right: 50px;
+
+            margin-bottom: 17px;
+          }
+
+          .landing-role-title {
+            font-size: 42px;
+          }
+
+          .landing-close {
             top: 20px;
             right: 20px;
           }
 
-          .game-role-header {
-            padding-right: 50px;
-            margin-bottom: 18px;
-          }
-
-          .game-role-title {
-            font-size: 43px;
-          }
-
-          .game-role-grid {
+          .landing-role-grid {
             grid-template-columns: 1fr;
+
+            gap: 9px;
           }
 
-          .game-role {
+          .landing-role {
             min-height: 145px;
+
             padding: 20px;
           }
 
-          .game-role-name {
-            font-size: 40px;
+          .landing-role-name {
+            font-size: 39px;
           }
 
-          .game-role-description {
-            margin-top: 8px;
+          .landing-role-description {
+            margin-top: 7px;
           }
 
-          .game-role-enter {
+          .landing-role-enter {
             margin-top: 12px;
           }
         }
 
+        /*
+        ========================================
+        REDUCED MOTION
+        ========================================
+        */
+
         @media (prefers-reduced-motion: reduce) {
-          .game-plane,
-          .game-rocket,
-          .game-role-screen,
-          .game-overlay {
+          .landing-plane,
+          .landing-rocket,
+          .landing-overlay,
+          .landing-role-screen {
             animation: none;
           }
 
-          .game-role,
-          .game-play-icon,
-          .game-person {
+          .landing-person,
+          .landing-start-icon,
+          .landing-role {
             transition: none;
           }
         }
       `}</style>
 
-      <div className="game-page">
+      <div className="landing-page">
 
-        {/* GAME HUD */}
+        <div className="landing-grid" />
+        <div className="landing-scene-glow" />
 
-        <header className="game-topbar">
-          <div className="game-brand">
-            <span className="game-brand-mark" />
+        {/* GAME HEADER */}
+
+        <header className="landing-header">
+          <div className="landing-brand">
+            <span className="landing-brand-dot" />
             MARSHOUT
           </div>
 
-          <div className="game-status">
-            <span>ONLINE</span>
-            <span className="game-status-line" />
-            <span>WORLD 01</span>
+          <div className="landing-hud">
+            <span className="landing-hud-status">
+              ONLINE
+            </span>
+
+            <span className="landing-hud-line" />
+
+            <span>
+              WORLD 01
+            </span>
           </div>
         </header>
 
-        {/* MAIN GAME SCREEN */}
+        {/* GAME SCREEN */}
 
-        <main className="game-main">
+        <main className="landing-main">
 
-          <section className="game-copy">
+          <section className="landing-copy">
 
-            <p className="game-eyebrow">
+            <p className="landing-kicker">
               A trip worth taking
             </p>
 
-            <h1 className="game-title">
+            <h1 className="landing-title">
               Pick up
-              <span>your homies.</span>
+              <span className="landing-title-accent">
+                your homies.
+              </span>
             </h1>
 
-            <p className="game-description">
-              Fly somewhere new. Cross the world, leave the planet,
-              or just pick up your friends and figure out where you're
-              going next.
+            <p className="landing-description">
+              Fly somewhere new. Pick up your crew,
+              choose your destination, and see where
+              the trip takes you.
             </p>
 
             <button
               type="button"
-              className="game-play"
+              className="landing-start"
               onClick={() => setRolePanelOpen(true)}
+              aria-label="Start game"
             >
-              <span className="game-play-icon" />
+              <span className="landing-start-icon" />
 
-              <span className="game-play-text">
-                <span>Start Game</span>
-                <span className="game-play-sub">
+              <span className="landing-start-copy">
+                <span className="landing-start-main">
+                  Start Game
+                </span>
+
+                <span className="landing-start-sub">
                   Choose your role
                 </span>
               </span>
@@ -1143,73 +1380,79 @@ export default function LandingPage() {
 
           </section>
 
+          {/* GAME SCENE */}
+
           <section
-            className="game-scene"
-            aria-label="Plane, rocket and passengers"
+            className="landing-scene"
+            aria-label="Marshout game scene"
           >
 
-            <div className="game-horizon" />
+            <div className="landing-horizon" />
 
-            <div className="game-horizon-label">
+            <div className="landing-horizon-label">
               Destination unknown
             </div>
 
-            <AssetImage
-              webp="/rocket.webp"
-              png="/rocket.png"
+            <GameImage
+              src="/rocket.webp"
+              fallback="/rocket.png"
               alt="Rocket"
               width={300}
               height={450}
-              className="game-vehicle game-rocket"
+              className="landing-vehicle landing-rocket"
+              priority
             />
 
-            <AssetImage
-              webp="/plane.webp"
-              png="/plane.png"
+            <GameImage
+              src="/plane.webp"
+              fallback="/plane.png"
               alt="Plane"
               width={620}
               height={400}
-              className="game-vehicle game-plane"
+              className="landing-vehicle landing-plane"
+              priority
             />
 
-            <div className="game-people">
+            <div className="landing-people">
 
-              <AssetImage
-                webp="/homie-1.webp"
-                png="/homie-1.png"
-                alt="Homie 1"
-                width={290}
-                height={430}
-                className="game-person"
+              <GameImage
+                src="/man.webp"
+                fallback="/man.png"
+                alt="Passenger"
+                width={300}
+                height={450}
+                className="landing-person"
                 priority
               />
 
-              <AssetImage
-                webp="/homie-2.webp"
-                png="/homie-2.png"
-                alt="Homie 2"
-                width={290}
-                height={430}
-                className="game-person"
+              <GameImage
+                src="/mann.webp"
+                fallback="/mann.png"
+                alt="Passenger"
+                width={300}
+                height={450}
+                className="landing-person"
                 priority
               />
 
-              <AssetImage
-                webp="/homie-3.webp"
-                png="/homie-3.png"
-                alt="Homie 3"
-                width={290}
-                height={430}
-                className="game-person"
+              <GameImage
+                src="/woman.webp"
+                fallback="/woman.png"
+                alt="Passenger"
+                width={300}
+                height={450}
+                className="landing-person"
                 priority
               />
 
             </div>
+
           </section>
+
         </main>
 
-        <div className="game-corner">
-          <span className="game-corner-dot" />
+        <div className="landing-footer">
+          <span className="landing-footer-dot" />
           Flight system ready
         </div>
 
@@ -1217,7 +1460,7 @@ export default function LandingPage() {
 
         {rolePanelOpen && (
           <div
-            className="game-overlay"
+            className="landing-overlay"
             role="presentation"
             onMouseDown={(event) => {
               if (event.currentTarget === event.target) {
@@ -1225,91 +1468,98 @@ export default function LandingPage() {
               }
             }}
           >
+
             <div
-              className="game-role-screen"
+              className="landing-role-screen"
               role="dialog"
               aria-modal="true"
-              aria-labelledby="game-role-title"
+              aria-labelledby="landing-role-title"
             >
 
               <button
                 type="button"
-                className="game-close"
+                className="landing-close"
                 aria-label="Close"
                 onClick={() => setRolePanelOpen(false)}
               >
                 ×
               </button>
 
-              <div className="game-role-header">
+              <div className="landing-role-header">
 
-                <p className="game-role-kicker">
+                <p className="landing-role-kicker">
                   Before takeoff
                 </p>
 
                 <h2
-                  id="game-role-title"
-                  className="game-role-title"
+                  id="landing-role-title"
+                  className="landing-role-title"
                 >
                   Choose your role
                 </h2>
 
               </div>
 
-              <div className="game-role-grid">
+              <div className="landing-role-grid">
 
                 <button
                   type="button"
-                  className="game-role"
+                  className="landing-role"
                   onClick={() => selectRole('pilot')}
                 >
-                  <span className="game-role-number">
+                  <span className="landing-role-number">
                     01
                   </span>
 
-                  <span className="game-role-content">
-                    <span className="game-role-name">
+                  <span className="landing-role-content">
+
+                    <span className="landing-role-name">
                       Pilot
                     </span>
 
-                    <span className="game-role-description">
-                      Take control. Pick your destination and
-                      fly the crew there.
+                    <span className="landing-role-description">
+                      Take control, choose where you're
+                      going, and fly the crew there.
                     </span>
 
-                    <span className="game-role-enter">
+                    <span className="landing-role-enter">
                       Enter cockpit →
                     </span>
+
                   </span>
                 </button>
 
                 <button
                   type="button"
-                  className="game-role"
+                  className="landing-role"
                   onClick={() => selectRole('homie')}
                 >
-                  <span className="game-role-number">
+                  <span className="landing-role-number">
                     02
                   </span>
 
-                  <span className="game-role-content">
-                    <span className="game-role-name">
+                  <span className="landing-role-content">
+
+                    <span className="landing-role-name">
                       Homie
                     </span>
 
-                    <span className="game-role-description">
-                      Get picked up. Travel with your crew
+                    <span className="landing-role-description">
+                      Get picked up, join the crew,
                       and see where they take you.
                     </span>
 
-                    <span className="game-role-enter">
+                    <span className="landing-role-enter">
                       Join the crew →
                     </span>
+
                   </span>
                 </button>
 
               </div>
+
             </div>
+
           </div>
         )}
 
@@ -1317,3 +1567,144 @@ export default function LandingPage() {
     </>
   );
 }
+```
+
+### 2. Add automatic PNG → WebP conversion
+
+This is the part that makes your request actually work.
+
+Install `sharp`:
+
+```bash
+npm install -D sharp
+```
+
+Then create this file in the **root of your project**, beside `package.json`:
+
+```text
+convert-images.mjs
+```
+
+Put this inside:
+
+```js
+import sharp from 'sharp';
+import fs from 'fs';
+import path from 'path';
+
+const publicDir = path.resolve('public');
+
+const images = [
+  'man.png',
+  'mann.png',
+  'woman.png',
+  'plane.png',
+  'rocket.png',
+];
+
+async function convertImages() {
+  for (const filename of images) {
+    const input = path.join(publicDir, filename);
+    const output = path.join(
+      publicDir,
+      filename.replace(/\.png$/i, '.webp')
+    );
+
+    if (!fs.existsSync(input)) {
+      console.warn(`Skipping ${filename}: file not found`);
+      continue;
+    }
+
+    await sharp(input)
+      .webp({
+        quality: 82,
+        effort: 4,
+      })
+      .toFile(output);
+
+    console.log(
+      `Converted ${filename} → ${path.basename(output)}`
+    );
+  }
+
+  console.log('Image conversion complete.');
+}
+
+convertImages().catch((error) => {
+  console.error('Image conversion failed:', error);
+  process.exit(1);
+});
+```
+
+### 3. Update `package.json`
+
+Add the conversion to your build process:
+
+```json
+{
+  "scripts": {
+    "dev": "vite",
+    "convert-images": "node convert-images.mjs",
+    "build": "npm run convert-images && vite build",
+    "preview": "vite preview"
+  }
+}
+```
+
+So now when you run:
+
+```bash
+npm run build
+```
+
+it automatically does:
+
+```text
+man.png      → man.webp
+mann.png     → mann.webp
+woman.png    → woman.webp
+plane.png    → plane.webp
+rocket.png   → rocket.webp
+```
+
+and then Vite builds the application.
+
+### One more thing about speed
+
+Your **PNG files should stay in `public/`**. Don't delete them.
+
+The resulting structure becomes:
+
+```text
+public/
+│
+├── man.png
+├── man.webp
+│
+├── mann.png
+├── mann.webp
+│
+├── woman.png
+├── woman.webp
+│
+├── plane.png
+├── plane.webp
+│
+├── rocket.png
+└── rocket.webp
+```
+
+The browser gets:
+
+```html
+<source src="/plane.webp" type="image/webp" />
+<img src="/plane.png" ... />
+```
+
+Modern browsers take the WebP.
+
+Older/unsupported browsers use the PNG.
+
+And because we're generating WebP **during build**, there is **zero PNG-to-WebP conversion happening while the player waits for the game to load**.
+
+That's the setup I'd use here. The page itself is now **white + navy first, gold second**, while still retaining the cinematic game feel we established.
