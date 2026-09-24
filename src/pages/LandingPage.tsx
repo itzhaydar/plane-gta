@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useGameStore } from '../store';
+import { usePlaneStore } from '../store';
 
 // Before deploy: compress image exports to WebP (80–200KB) with Squoosh.
 
@@ -59,7 +59,7 @@ function AssetImage({
 
 export default function LandingPage() {
   const navigate = useNavigate();
-  const setRole = useGameStore((state) => state.setRole);
+  const setRole = usePlaneStore((state) => state.setRole);
 
   const [rolePanelOpen, setRolePanelOpen] = useState(false);
 
