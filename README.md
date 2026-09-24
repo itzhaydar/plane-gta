@@ -77,7 +77,7 @@ AI-generated.
 Astronaut  
 Pilot  
 Homies on the plane landing  
-Rocket landing  
+Rocket landing homies
 
 Models from Sketchfab under Creative Commons Attribution. Add author names and model URLs here when you have them.
 
