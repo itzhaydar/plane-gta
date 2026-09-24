@@ -831,8 +831,10 @@ function FlagPanel({
         renderOrder={3}
       >
         <planeGeometry args={[0.30, 0.50]} />
-        <FlagSkin url={livery} />
-      </mesh>
+<FlagSkin
+  url={livery}
+  fallback={side === 1 ? '/templates/flag-left.svg' : '/templates/flag-right.svg'}
+/>      </mesh>
     </group>
   );
 }
