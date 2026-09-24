@@ -298,7 +298,7 @@ export default function Homie() {
         <div className="workspace">
           <aside className="leftColumn">
             <div className="controls">
-              <Step number="01" title="WHERE ARE WE GOING?">
+              <Step number="01" title="WHERE ARE WE GOING? TYPE MARS OR A CITY ON EARTH">
                 <input
                   className="city"
                   value={city}
