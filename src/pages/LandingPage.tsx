@@ -560,36 +560,50 @@ button {
 .landing-art-frame {
   position: relative;
   z-index: 5;
-  width: min(100%, 900px);
-  aspect-ratio: 16 / 9;
+  width: min(108%, 980px);
   display: flex;
   align-items: center;
   justify-content: center;
-  overflow: visible;
-  filter:
-    drop-shadow(
-      0 35px 30px rgba(7, 26, 56, 0.16)
-    );
   transform: translateY(-1%);
+  filter: drop-shadow(0 35px 35px rgba(7, 26, 56, 0.12));
 }
 
 .landing-art {
   display: block;
   width: 100%;
-  height: 100%;
 }
 
 .landing-art img {
   display: block;
   width: 100%;
-  height: 100%;
-  object-fit: contain;
+  height: auto;
+  object-fit: cover;
   object-position: center;
   user-select: none;
   -webkit-user-drag: none;
-}
 
-/* FOOTER */
+  /*
+    Softly blends the edges of the white artwork
+    into the landing page.
+  */
+  -webkit-mask-image:
+    linear-gradient(
+      to right,
+      transparent 0%,
+      black 5%,
+      black 95%,
+      transparent 100%
+    );
+
+  mask-image:
+    linear-gradient(
+      to right,
+      transparent 0%,
+      black 5%,
+      black 95%,
+      transparent 100%
+    );
+}/* FOOTER */
 
 .landing-footer {
   position: absolute;
