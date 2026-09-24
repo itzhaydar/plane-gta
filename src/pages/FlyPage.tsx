@@ -1,14 +1,8 @@
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { Html, RoundedBox, useTexture } from '@react-three/drei';
+import { Html, RoundedBox, useTexture, OrbitControls } from '@react-three/drei';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { usePlaneStore, type Face } from '../store';
-
-const TAKEOFF_SPEED = 115;
-const CRUISE_SPEED = 245;
-const ROAD_LENGTH = 260;
-
-type FlightPhase = 'parked' | 'rolling' | 'ready' | 'takeoff' | 'climb' | 'cruise' | 'descent' | 'landing' | 'landed' | 'off';
 
 function FlagSkin({
   url,
@@ -671,198 +665,331 @@ function Plane({
 
 
 
-function FlightRoad() {
-  const trees = useMemo(() => Array.from({ length: 42 }, (_, i) => -110 + i * 5.5), []);
-  const buildings = useMemo(() => Array.from({ length: 28 }, (_, i) => ({
-    z: -92 + i * 7,
-    side: i % 2 ? 1 : -1,
-    h: 2.2 + (i % 6) * 0.65,
-    w: 1.2 + (i % 3) * 0.35,
-  })), []);
+const TAKEOFF_SPEED = 115;
+const CRUISE_SPEED = 235;
+const ROUTE_END_Z = -640;
+const DESTINATION_NAME = 'LOS SANTOS';
+const START_NAME = 'VICE CITY';
 
-  return <group>
-    <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-      <planeGeometry args={[52, 300]} />
-      <meshStandardMaterial color="#88aa66" roughness={1} />
-    </mesh>
-    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.012, -18]} receiveShadow>
-      <planeGeometry args={[4.8, ROAD_LENGTH]} />
-      <meshStandardMaterial color="#4f4b47" roughness={0.98} />
-    </mesh>
-    {[-2.25, 2.25].map(x => <mesh key={x} rotation={[-Math.PI / 2,0,0]} position={[x,0.025,-18]}>
-      <planeGeometry args={[0.08, ROAD_LENGTH]} /><meshBasicMaterial color="#f1d25d" />
+type FlightPhase =
+  | 'parked'
+  | 'rolling'
+  | 'ready'
+  | 'takeoff'
+  | 'climb'
+  | 'cruise'
+  | 'approach'
+  | 'landing'
+  | 'landed'
+  | 'off';
+
+type Telemetry = {
+  speed: number;
+  altitude: number;
+  heading: number;
+  distance: number;
+  routeError: number;
+  progress: number;
+  canLand: boolean;
+};
+
+type Controls = {
+  left: boolean;
+  right: boolean;
+  throttle: boolean;
+  brake: boolean;
+  climb: boolean;
+  descend: boolean;
+};
+
+function Building({ x, z, h, w, warm = false }: { x:number; z:number; h:number; w:number; warm?:boolean }) {
+  return <group position={[x,h/2,z]}>
+    <RoundedBox args={[w,h,w*.82]} radius={.06} smoothness={2} castShadow receiveShadow>
+      <meshStandardMaterial color={warm ? '#b9a99a' : '#8998a5'} roughness={.72}/>
+    </RoundedBox>
+    {Array.from({length:Math.max(2,Math.floor(h/.7))},(_,i)=><mesh key={i} position={[0,h/2-i*.68-h/2,w*.415+.006]}>
+      <planeGeometry args={[w*.58,.16]}/><meshBasicMaterial color={warm?'#f3d59b':'#b9d7e8'} toneMapped={false}/>
     </mesh>)}
-    {Array.from({length: 58},(_,i)=>-140+i*4.5).map(z => <mesh key={z} rotation={[-Math.PI/2,0,0]} position={[0,0.03,z]}>
-      <planeGeometry args={[0.16,1.5]} /><meshBasicMaterial color="#f7f4ea" />
-    </mesh>)}
-    {trees.map((z,i)=><group key={z}><Tree x={-5.2} z={z} s={i%3===0?1.2:.9}/><Tree x={5.2} z={z+2} s={i%2?1.05:.85}/></group>)}
-    {buildings.map((b,i)=><group key={i} position={[b.side*(8+(i%4)*1.8), b.h/2, b.z]}>
-      <RoundedBox args={[b.w,b.h,b.w*1.05]} radius={0.06} smoothness={2} castShadow receiveShadow>
-        <meshStandardMaterial color={i%3===0?'#9ca8b2':i%3===1?'#c4c9cc':'#7e8992'} roughness={0.72}/>
-      </RoundedBox>
-      {Array.from({length:Math.max(2,Math.floor(b.h/.55))},(_,j)=><mesh key={j} position={[0,b.h/2-j*.52-b.h/2,b.side>0?-b.w*.53:b.w*.53]}>
-        <planeGeometry args={[b.w*.55,.18]}/><meshBasicMaterial color="#b8d8e8" toneMapped={false}/>
-      </mesh>)}
-    </group>)}
   </group>;
 }
 
-function Clouds() {
-  const clouds = useMemo(()=>Array.from({length:24},(_,i)=>({x:(i%2?1:-1)*(4+(i%5)*3),y:8+(i%4)*1.2,z:-35-i*10,s:1.2+(i%3)*.45})),[]);
+function Runway({ z, length=210 }:{z:number;length?:number}) {
+  return <group position={[0,0,z]}>
+    <mesh rotation={[-Math.PI/2,0,0]} position={[0,0,0]} receiveShadow>
+      <planeGeometry args={[42,length+30]}/><meshStandardMaterial color="#78945f" roughness={1}/>
+    </mesh>
+    <mesh rotation={[-Math.PI/2,0,0]} position={[0,.012,0]} receiveShadow>
+      <planeGeometry args={[5.2,length]}/><meshStandardMaterial color="#4d4d4b" roughness={.98}/>
+    </mesh>
+    {[-2.43,2.43].map(x=><mesh key={x} rotation={[-Math.PI/2,0,0]} position={[x,.025,0]}>
+      <planeGeometry args={[.08,length]}/><meshBasicMaterial color="#e6c95a"/>
+    </mesh>)}
+    {Array.from({length:Math.floor(length/7)},(_,i)=>-length/2+4+i*7).map(v=><mesh key={v} rotation={[-Math.PI/2,0,0]} position={[0,.03,v]}>
+      <planeGeometry args={[.16,2.2]}/><meshBasicMaterial color="#f6f3e9"/>
+    </mesh>)}
+    {[-1,1].flatMap(side=>Array.from({length:12},(_,i)=><mesh key={`${side}-${i}`} position={[side*2.7,.06,-length/2+8+i*(length-16)/11]}>
+      <sphereGeometry args={[.035,8,6]}/><meshBasicMaterial color="#e8f5ff" toneMapped={false}/>
+    </mesh>))}
+  </group>;
+}
+
+function WorldEnvironment() {
+  const departureTrees=useMemo(()=>Array.from({length:28},(_,i)=>45-i*6.5),[]);
+  const destinationTrees=useMemo(()=>Array.from({length:30},(_,i)=>-545-i*6.2),[]);
+  const skyline=useMemo(()=>Array.from({length:34},(_,i)=>({
+    x:(i%2?1:-1)*(7+(i%5)*2.1), z:-570-(i%9)*8.5, h:3.5+(i%7)*1.05, w:1.3+(i%3)*.45
+  })),[]);
+  return <group>
+    <mesh rotation={[-Math.PI/2,0,0]} position={[0,-.035,-300]} receiveShadow>
+      <planeGeometry args={[240,1000]}/><meshStandardMaterial color="#6f8e5d" roughness={1}/>
+    </mesh>
+    <Runway z={-35} length={230}/>
+    <Runway z={ROUTE_END_Z} length={250}/>
+    {departureTrees.map((z,i)=><group key={`a${z}`}><Tree x={-6.2} z={z} s={i%3?1:.8}/><Tree x={6.2} z={z-2} s={i%2?.9:1.1}/></group>)}
+    {destinationTrees.map((z,i)=><group key={`b${z}`}><Tree x={-6.5} z={z} s={i%2?1:.85}/><Tree x={6.5} z={z-2} s={i%3?.9:1.12}/></group>)}
+    {skyline.map((b,i)=><Building key={i} {...b} warm={i%4===0}/>)}
+    <group position={[0,.02,-315]}>
+      <mesh rotation={[-Math.PI/2,0,0]}><planeGeometry args={[220,300]}/><meshStandardMaterial color="#557d91" roughness={.55} metalness={.05}/></mesh>
+      {Array.from({length:18},(_,i)=><mesh key={i} rotation={[-Math.PI/2,0,0]} position={[(i%2?1:-1)*(15+(i%6)*12),.015,-125+(i%9)*30]}>
+        <circleGeometry args={[2+(i%3),18]}/><meshBasicMaterial color="#8eb5c5" transparent opacity={.35}/>
+      </mesh>)}
+    </group>
+  </group>;
+}
+
+function HighClouds() {
+  const clouds=useMemo(()=>Array.from({length:34},(_,i)=>({
+    x:(i%2?1:-1)*(8+(i%6)*5.2), y:15+(i%5)*1.8, z:20-i*20, s:1.4+(i%4)*.38
+  })),[]);
   return <group>{clouds.map((c,i)=><group key={i} position={[c.x,c.y,c.z]} scale={c.s}>
-    {[[-.8,0,0],[0,0.18,0],[.8,0,0],[.25,-.05,.35]].map((p,j)=><mesh key={j} position={p as [number,number,number]}>
-      <sphereGeometry args={[1,14,10]}/><meshStandardMaterial color="#ffffff" transparent opacity={0.82} roughness={1}/>
+    {[[-.9,0,0],[0,.22,0],[.9,0,0],[.2,-.08,.55],[-.35,.05,-.45]].map((p,j)=><mesh key={j} position={p as [number,number,number]}>
+      <sphereGeometry args={[1.2,12,9]}/><meshStandardMaterial color="#fff" transparent opacity={.76} roughness={1} depthWrite={false}/>
     </mesh>)}
   </group>)}</group>;
 }
 
-function CityMarker({name, position}:{name:string;position:[number,number,number]}) {
-  return <group position={position}><Html center distanceFactor={13} style={{pointerEvents:'none'}}>
-    <div className="fly-city-marker"><span></span>{name}</div>
-  </Html></group>;
+function DestinationBeacon({distance}:{distance:number}) {
+  const scale=Math.max(.72,Math.min(1.45,120/Math.max(distance,80)));
+  return <group position={[0,12,ROUTE_END_Z]} scale={scale}>
+    <Html center distanceFactor={15} style={{pointerEvents:'none'}}>
+      <div className="destination-beacon"><span className="destination-pulse"/><b>{DESTINATION_NAME}</b><small>{Math.max(0,Math.round(distance))} KM</small></div>
+    </Html>
+  </group>;
 }
 
-function FlightWorld({phase,setPhase,onSpeed}:{phase:FlightPhase;setPhase:(p:FlightPhase)=>void;onSpeed:(v:number)=>void}) {
-  const { liveries } = usePlaneStore();
-  const plane = useRef<THREE.Group>(null);
-  const speed = useRef(0);
-  const z = useRef(34);
-  const altitude = useRef(.72);
-  const pitch = useRef(0);
-  const lastHud = useRef(0);
-  const { camera } = useThree();
+function FlightWorld({phase,setPhase,onTelemetry,controls}:{
+  phase:FlightPhase;
+  setPhase:(p:FlightPhase)=>void;
+  onTelemetry:(t:Telemetry)=>void;
+  controls:import('react').MutableRefObject<Controls>;
+}) {
+  const {liveries}=usePlaneStore();
+  const aircraft=useRef<THREE.Group>(null);
+  const orbit=useRef<any>(null);
+  const speed=useRef(0);
+  const x=useRef(0);
+  const z=useRef(52);
+  const altitude=useRef(.72);
+  const yaw=useRef(0);
+  const bank=useRef(0);
+  const pitch=useRef(0);
+  const lastHud=useRef(0);
+  const {camera}=useThree();
+  const userOrbiting=useRef(false);
 
   useFrame((state,dt)=>{
-    const d=Math.min(dt,.05);
-    if (phase==='rolling' || phase==='ready') {
-      speed.current=Math.min(TAKEOFF_SPEED, speed.current+d*24);
-      z.current-=d*(2.2+speed.current*.035);
-      if(speed.current>=TAKEOFF_SPEED && phase==='rolling') setPhase('ready');
-    } else if(phase==='takeoff') {
-      speed.current=Math.min(155,speed.current+d*18);
-      z.current-=d*(5.8+speed.current*.03);
-      altitude.current=Math.min(3.2,altitude.current+d*.72);
-      pitch.current=THREE.MathUtils.lerp(pitch.current,.12,d*1.6);
-      if(altitude.current>=3.15) setPhase('climb');
-    } else if(phase==='climb') {
-      speed.current=Math.min(CRUISE_SPEED,speed.current+d*22);
-      z.current-=d*(7+speed.current*.035);
-      altitude.current=Math.min(10.5,altitude.current+d*1.2);
-      pitch.current=THREE.MathUtils.lerp(pitch.current,.08,d*1.5);
-      if(altitude.current>=10.4) setPhase('cruise');
-    } else if(phase==='cruise') {
-      speed.current=THREE.MathUtils.lerp(speed.current,CRUISE_SPEED,d*1.2);
-      z.current-=d*11;
-      pitch.current=THREE.MathUtils.lerp(pitch.current,0,d*2);
-    } else if(phase==='descent') {
-      speed.current=THREE.MathUtils.lerp(speed.current,170,d*.8);
-      z.current-=d*8.5;
-      altitude.current=Math.max(3.4,altitude.current-d*.85);
-      pitch.current=THREE.MathUtils.lerp(pitch.current,-.055,d*1.5);
-      if(altitude.current<=3.45) setPhase('landing');
-    } else if(phase==='landing') {
-      speed.current=Math.max(48,speed.current-d*18);
-      z.current-=d*(3+speed.current*.025);
-      altitude.current=Math.max(.72,altitude.current-d*.55);
-      pitch.current=THREE.MathUtils.lerp(pitch.current,.025,d*1.8);
-      if(altitude.current<=.725){ altitude.current=.72; setPhase('landed'); }
-    } else if(phase==='landed') {
-      speed.current=Math.max(0,speed.current-d*30);
-      z.current-=d*(speed.current*.018);
+    const d=Math.min(dt,.045);
+    const c=controls.current;
+    const destinationDistance=Math.hypot(x.current,z.current-ROUTE_END_Z);
+    const routeError=Math.abs(x.current);
+
+    if(phase==='rolling'||phase==='ready'){
+      const accel=c.brake?-45:c.throttle?34:22;
+      speed.current=THREE.MathUtils.clamp(speed.current+accel*d,0,145);
+      if(speed.current>=TAKEOFF_SPEED&&phase==='rolling')setPhase('ready');
+    } else if(phase==='takeoff'){
+      speed.current=Math.min(165,speed.current+d*18);
+      altitude.current=Math.min(4.5,altitude.current+d*.95);
+      pitch.current=THREE.MathUtils.lerp(pitch.current,.13,d*2);
+      if(altitude.current>=4.45)setPhase('climb');
+    } else if(phase==='climb'){
+      speed.current=Math.min(CRUISE_SPEED,speed.current+d*19);
+      altitude.current=Math.min(18.5,altitude.current+d*1.55);
+      pitch.current=THREE.MathUtils.lerp(pitch.current,.075,d*1.8);
+      if(altitude.current>=18.4)setPhase('cruise');
+    } else if(phase==='cruise'){
+      speed.current=THREE.MathUtils.clamp(speed.current+(c.throttle?18:c.brake?-28:0)*d,145,CRUISE_SPEED);
+      altitude.current=THREE.MathUtils.clamp(altitude.current+(c.climb?1.8:c.descend?-1.8:0)*d,13,23);
+      pitch.current=THREE.MathUtils.lerp(pitch.current,c.climb?.045:c.descend?-.045:0,d*2.4);
+      if(destinationDistance<175)setPhase('approach');
+    } else if(phase==='approach'){
+      speed.current=THREE.MathUtils.lerp(speed.current,c.brake?125:155,d*.9);
+      const targetAlt=THREE.MathUtils.mapLinear(THREE.MathUtils.clamp(destinationDistance,25,175),25,175,2.2,15);
+      if(c.descend||destinationDistance<105) altitude.current=THREE.MathUtils.lerp(altitude.current,targetAlt,d*.8);
+      if(c.climb) altitude.current=Math.min(17,altitude.current+d*1.2);
+      pitch.current=THREE.MathUtils.lerp(pitch.current,c.descend?-.06:0,d*2);
+      if(destinationDistance<46&&routeError<8&&altitude.current<6.2)setPhase('landing');
+    } else if(phase==='landing'){
+      speed.current=Math.max(58,speed.current-d*22);
+      altitude.current=Math.max(.72,altitude.current-d*.75);
+      yaw.current=THREE.MathUtils.lerp(yaw.current,0,d*1.7);
+      x.current=THREE.MathUtils.lerp(x.current,0,d*1.25);
+      pitch.current=THREE.MathUtils.lerp(pitch.current,.018,d*2);
+      if(altitude.current<=.725){altitude.current=.72;setPhase('landed');}
+    } else if(phase==='landed'){
+      speed.current=Math.max(0,speed.current-(c.brake?55:30)*d);
+      yaw.current=THREE.MathUtils.lerp(yaw.current,0,d*2);
+      x.current=THREE.MathUtils.lerp(x.current,0,d*2);
     } else if(phase==='off') speed.current=0;
 
-    if(plane.current){
-      plane.current.position.set(0,altitude.current,z.current);
-      plane.current.rotation.x=pitch.current;
+    const steerAllowed=!['parked','off'].includes(phase);
+    if(steerAllowed){
+      const steer=(c.left?1:0)-(c.right?1:0);
+      const steerPower=(phase==='rolling'||phase==='ready'||phase==='landed') ? .38 : .72;
+      yaw.current+=steer*steerPower*d;
+      yaw.current=THREE.MathUtils.clamp(yaw.current,-.62,.62);
+      if(!steer)yaw.current=THREE.MathUtils.lerp(yaw.current,0,d*((phase==='cruise'||phase==='approach') ? .38 : 1.25));
+      bank.current=THREE.MathUtils.lerp(bank.current,-steer*.28,d*3.2);
     }
-    const camTarget = new THREE.Vector3(5.7, altitude.current+2.15, z.current+7.4);
-    camera.position.lerp(camTarget,1-Math.pow(.001,d));
-    camera.lookAt(0,altitude.current+.35,z.current-2.8);
 
-    if(state.clock.elapsedTime-lastHud.current>.09){onSpeed(Math.round(speed.current));lastHud.current=state.clock.elapsedTime;}
+    if(!['parked','off'].includes(phase)&&speed.current>0){
+      const worldSpeed=(speed.current/CRUISE_SPEED)*23;
+      x.current+=Math.sin(yaw.current)*worldSpeed*d;
+      z.current-=Math.cos(yaw.current)*worldSpeed*d;
+    }
+
+    if(aircraft.current){
+      aircraft.current.position.set(x.current,altitude.current,z.current);
+      aircraft.current.rotation.set(pitch.current,yaw.current,bank.current);
+    }
+
+    const chaseOffset=new THREE.Vector3(7.2,3.6,10.5).applyAxisAngle(new THREE.Vector3(0,1,0),yaw.current);
+    const desired=new THREE.Vector3(x.current,altitude.current,z.current).add(chaseOffset);
+    if(!userOrbiting.current)camera.position.lerp(desired,1-Math.pow(.002,d));
+    const look=new THREE.Vector3(x.current,altitude.current+.5,z.current-5.2);
+    if(orbit.current){
+      orbit.current.target.lerp(look,1-Math.pow(.001,d));
+      orbit.current.update();
+    } else camera.lookAt(look);
+
+    if(state.clock.elapsedTime-lastHud.current>.08){
+      const progress=THREE.MathUtils.clamp(1-destinationDistance/692,0,1);
+      onTelemetry({speed:Math.round(speed.current),altitude:Math.max(0,Math.round((altitude.current-.72)*120)),heading:Math.round(180+THREE.MathUtils.radToDeg(yaw.current)),distance:Math.max(0,Math.round(destinationDistance)),routeError:Math.round(routeError),progress,canLand:destinationDistance<46&&routeError<8&&altitude.current<6.2});
+      lastHud.current=state.clock.elapsedTime;
+    }
   });
 
   return <>
-    <color attach="background" args={['#b9d7e8']}/>
-    <fog attach="fog" args={['#cfe1ea',28,125]}/>
-    <hemisphereLight intensity={1.1} groundColor="#71845e"/>
-    <directionalLight position={[8,16,7]} intensity={2.1} castShadow shadow-mapSize-width={1024} shadow-mapSize-height={1024}/>
-    <FlightRoad/><Clouds/>
-    <CityMarker name="VICE CITY" position={[-8,7,-145]}/>
-    <CityMarker name="PORT GELLHORN" position={[9,6,-205]}/>
-    <CityMarker name="AMBROSIA" position={[-11,5,-265]}/>
-    <group ref={plane} position={[0,.72,34]}><Plane liveries={liveries}/></group>
+    <color attach="background" args={['#a9ccdf']}/><fog attach="fog" args={['#bfd7e3',55,260]}/>
+    <hemisphereLight intensity={1.15} groundColor="#71845e"/>
+    <directionalLight position={[10,22,8]} intensity={2.25} castShadow shadow-mapSize-width={1024} shadow-mapSize-height={1024}/>
+    <WorldEnvironment/><HighClouds/><DestinationBeacon distance={Math.hypot(x.current,z.current-ROUTE_END_Z)}/>
+    <group ref={aircraft} position={[0,.72,52]}><Plane liveries={liveries}/></group>
+    <OrbitControls ref={orbit} enablePan={false} enableDamping dampingFactor={.08} minDistance={5} maxDistance={18} minPolarAngle={.35} maxPolarAngle={1.38}
+      onStart={()=>{userOrbiting.current=true}} onEnd={()=>{userOrbiting.current=false}}/>
   </>;
 }
 
 function SoundButton({muted,onClick}:{muted:boolean;onClick:()=>void}){
-  return <button className="fly-icon-btn" onClick={onClick} title={muted?'Unmute':'Mute'}>{muted?'🔇':'🔊'}</button>;
+  return <button className="fly-icon-btn" onClick={onClick} title={muted?'Unmute':'Mute'} aria-label={muted?'Unmute':'Mute'}>{muted?'🔇':'🔊'}</button>;
 }
+
+const initialTelemetry:Telemetry={speed:0,altitude:0,heading:180,distance:692,routeError:0,progress:0,canLand:false};
 
 export default function FlyPage(){
   const [phase,setPhase]=useState<FlightPhase>('parked');
-  const [speed,setSpeed]=useState(0);
+  const [telemetry,setTelemetry]=useState<Telemetry>(initialTelemetry);
   const [muted,setMuted]=useState(true);
+  const [location,setLocation]=useState(START_NAME);
   const audioRef=useRef<HTMLAudioElement|null>(null);
+  const controls=useRef<Controls>({left:false,right:false,throttle:false,brake:false,climb:false,descend:false});
 
   useEffect(()=>{
-    const audio=new Audio('/boot.mp3'); audio.loop=true; audio.volume=.35; audio.muted=true; audioRef.current=audio;
-    return()=>{audio.pause();audio.src='';audioRef.current=null;};
+    const audio=new Audio('/boot.mp3');audio.loop=true;audio.volume=.35;audio.muted=true;audioRef.current=audio;
+    return()=>{audio.pause();audio.src='';audioRef.current=null};
   },[]);
-  const toggleSound=()=>{const a=audioRef.current;if(!a)return;a.muted=!a.muted;setMuted(a.muted);if(!a.muted)a.play().catch(()=>{});};
+  const toggleSound=()=>{const a=audioRef.current;if(!a)return;a.muted=!a.muted;setMuted(a.muted);if(!a.muted)a.play().catch(()=>{})};
 
-  const action=()=>{
-    if(phase==='parked') setPhase('rolling');
-    else if(phase==='ready') setPhase('takeoff');
-    else if(phase==='cruise') setPhase('descent');
-    else if(phase==='landed') setPhase('off');
-  };
+  useEffect(()=>{if(phase==='landed'||phase==='off')setLocation(DESTINATION_NAME)},[phase]);
+
   useEffect(()=>{
-    const key=(e:KeyboardEvent)=>{
+    const set=(e:KeyboardEvent,value:boolean)=>{
       const k=e.key.toLowerCase();
-      if(k==='s' && phase==='parked') setPhase('rolling');
-      if(k==='t' && phase==='ready') setPhase('takeoff');
-      if((k==='d'||e.key==='ArrowDown') && phase==='cruise') setPhase('descent');
-      if(k==='x' && phase==='landed') setPhase('off');
-      if(k==='m') toggleSound();
+      if(['arrowleft','arrowright','arrowup','arrowdown','a','d','w','s'].includes(k))e.preventDefault();
+      if(k==='a'||k==='arrowleft')controls.current.left=value;
+      if(k==='d'||k==='arrowright')controls.current.right=value;
+      if(k==='w')controls.current.throttle=value;
+      if(k==='s'&&phase!=='parked')controls.current.brake=value;
+      if(k==='arrowup')controls.current.climb=value;
+      if(k==='arrowdown')controls.current.descend=value;
+      if(!value)return;
+      if(k==='s'&&phase==='parked')setPhase('rolling');
+      if(k==='t'&&phase==='ready')setPhase('takeoff');
+      if(k==='x'&&phase==='landed'&&telemetry.speed<4)setPhase('off');
+      if(k==='m')toggleSound();
     };
-    window.addEventListener('keydown',key);return()=>window.removeEventListener('keydown',key);
-  },[phase]);
+    const down=(e:KeyboardEvent)=>set(e,true),up=(e:KeyboardEvent)=>set(e,false);
+    window.addEventListener('keydown',down,{passive:false});window.addEventListener('keyup',up,{passive:false});
+    return()=>{window.removeEventListener('keydown',down);window.removeEventListener('keyup',up)};
+  },[phase,telemetry.speed]);
 
-  const copy:Record<FlightPhase,[string,string,string]>={
-    parked:['READY ON RUNWAY','Start the engine and begin your takeoff roll.','S · START ENGINE'],
-    rolling:['ACCELERATING',`Building airspeed — ${Math.max(0,TAKEOFF_SPEED-speed)} km/h to rotation speed.`,'HOLD COURSE'],
-    ready:['ROTATION SPEED','Aircraft is ready for takeoff.','T · TAKE OFF'],
-    takeoff:['LIFT OFF','Positive climb. Keep the nose steady.','CLIMBING'],
-    climb:['CLIMBING','Clearing the skyline and climbing toward the cloud layer.','GAIN ALTITUDE'],
-    cruise:['CRUISE','You are above the city. Choose your descent when ready.','D / ↓ · DESCEND'],
-    descent:['DESCENDING','City lights and rooftops are coming into view.','APPROACH'],
-    landing:['FINAL APPROACH','Reducing speed and lining up with the runway.','LANDING'],
-    landed:['TOUCHDOWN','Brakes applied. Bring the aircraft to a complete stop.','X · TURN OFF'],
-    off:['FLIGHT COMPLETE','Aircraft secured. Welcome to the city.','ENGINE OFF'],
+  const mainAction=()=>{
+    if(phase==='parked')setPhase('rolling');
+    else if(phase==='ready')setPhase('takeoff');
+    else if(phase==='landed'&&telemetry.speed<4)setPhase('off');
   };
-  const [title,desc,button]=copy[phase];
-  const clickable=['parked','ready','cruise','landed'].includes(phase);
+
+  const phaseText:Record<FlightPhase,[string,string]>= {
+    parked:['READY AT VICE CITY','Start the aircraft and build speed on the runway.'],
+    rolling:['TAKEOFF ROLL',telemetry.speed<TAKEOFF_SPEED?`${TAKEOFF_SPEED-telemetry.speed} km/h to rotation speed. W adds throttle; S reduces speed.`:'Rotation speed reached.'],
+    ready:['READY FOR TAKEOFF','You have rotation speed. Press T and climb through the skyline.'],
+    takeoff:['LIFT OFF','Positive climb. Hold course and clear the buildings.'],
+    climb:['CLIMBING','Keep the destination marker ahead. The cloud layer is above the skyline.'],
+    cruise:['EN ROUTE TO LOS SANTOS','Fly the route with A/D. W adds speed, S reduces it. Use the mini-map to stay on course.'],
+    approach:['LOS SANTOS APPROACH',telemetry.routeError>8?'Line up with the runway: steer toward the gold route centerline.':'Good alignment. Use ↓ to descend and S to reduce speed.'],
+    landing:['FINAL APPROACH','Runway captured. Aircraft is settling onto the road.'],
+    landed:['TOUCHDOWN',telemetry.speed>3?'Hold S to brake to a complete stop.':'Aircraft stopped. Press X to shut down.'],
+    off:['THANK YOU, DAWG','Los Santos reached. Aircraft secured.'],
+  };
+  const [title,desc]=phaseText[phase];
+  const actionLabel=phase==='parked'?'S · START':phase==='ready'?'T · TAKE OFF':phase==='landed'&&telemetry.speed<4?'X · TURN OFF':'';
 
   return <main className="fly-page"><style>{FLY_CSS}</style>
-    <Canvas shadows dpr={[1,1.35]} camera={{position:[5.7,2.9,41],fov:42,near:.1,far:500}} gl={{antialias:true,powerPreference:'high-performance'}}>
-      <FlightWorld phase={phase} setPhase={setPhase} onSpeed={setSpeed}/>
+    <Canvas shadows dpr={[1,1.35]} camera={{position:[7.2,4.3,63],fov:43,near:.1,far:1100}} gl={{antialias:true,powerPreference:'high-performance',stencil:false}}>
+      <FlightWorld phase={phase} setPhase={setPhase} onTelemetry={setTelemetry} controls={controls}/>
     </Canvas>
     <div className="fly-vignette"/>
+
     <header className="fly-hud-top">
-      <div className="fly-brand"><span className="fly-live-dot"/>MARSHOUT <b>FLIGHT</b></div>
+      <div className="fly-route-title"><span className="fly-live-dot"/>MARSHOUT <b>FLIGHT</b></div>
+      <div className="fly-route-locations"><span><small>CURRENT LOCATION</small><b>{location}</b></span><i>→</i><span><small>DESTINATION</small><b>{DESTINATION_NAME}</b></span></div>
       <SoundButton muted={muted} onClick={toggleSound}/>
     </header>
-    <aside className="fly-speed"><span>AIRSPEED</span><strong>{String(speed).padStart(3,'0')}</strong><em>KM/H</em><div><i style={{width:`${Math.min(100,speed/CRUISE_SPEED*100)}%`}}/></div></aside>
+
+    <aside className="fly-instruments">
+      <div className="fly-speed"><span>AIRSPEED</span><strong>{String(telemetry.speed).padStart(3,'0')}</strong><em>KM/H</em><div><i style={{width:`${Math.min(100,telemetry.speed/CRUISE_SPEED*100)}%`}}/></div></div>
+      <div className="fly-stat"><span>ALTITUDE</span><b>{telemetry.altitude.toLocaleString()} FT</b></div>
+      <div className="fly-stat"><span>HEADING</span><b>{String(telemetry.heading).padStart(3,'0')}°</b></div>
+    </aside>
+
+    <aside className="fly-map">
+      <div className="fly-map-head"><span>ROUTE</span><b>{telemetry.distance} KM</b></div>
+      <div className="fly-map-track"><i className="map-route"/><span className="map-start">VC</span><span className="map-plane" style={{top:`${8+telemetry.progress*76}%`,left:`${50+Math.max(-28,Math.min(28,telemetry.routeError*(0)))}%`}}>▲</span><span className="map-end">LS</span></div>
+      <div className="fly-map-foot"><span className={telemetry.routeError<8?'good':''}>{telemetry.routeError<8?'ON ROUTE':'CORRECT COURSE'}</span><b>{Math.round(telemetry.progress*100)}%</b></div>
+    </aside>
+
     <section className="fly-command">
-      <div className="fly-phase">{title}</div><h1>{phase==='off'?'WELCOME.':'FLIGHT CONTROL'}</h1><p>{desc}</p>
-      <button disabled={!clickable} onClick={action} className={clickable?'active':''}><span>{button}</span><b>→</b></button>
-      <div className="fly-keys"><span><kbd>S</kbd> Start</span><span><kbd>T</kbd> Take off</span><span><kbd>D</kbd> Descend</span><span><kbd>X</kbd> Shutdown</span><span><kbd>M</kbd> Sound</span></div>
+      <div className="fly-phase">{title}</div><h1>{phase==='off'?'THANK YOU, DAWG':'FLIGHT CONTROL'}</h1><p>{desc}</p>
+      {actionLabel&&<button onClick={mainAction} className="active"><span>{actionLabel}</span><b>→</b></button>}
+      {phase==='approach'&&!telemetry.canLand&&<div className="landing-gate"><b>LANDING GATE</b><span>{telemetry.routeError<8?'✓ Aligned':'○ Align runway'} · {telemetry.altitude<660?'✓ Low enough':'○ Descend'} · {telemetry.distance<46?'✓ In range':'○ Continue approach'}</span></div>}
+      <div className="fly-keys"><span><kbd>W</kbd> Throttle</span><span><kbd>S</kbd> Brake</span><span><kbd>A</kbd><kbd>D</kbd> Steer</span><span><kbd>↑</kbd><kbd>↓</kbd> Altitude</span><span><kbd>T</kbd> Take off</span><span><kbd>M</kbd> Sound</span></div>
     </section>
+
+    <div className="fly-guidance"><span className={telemetry.routeError<8?'locked':''}>◆</span><b>{DESTINATION_NAME}</b><small>{telemetry.distance} KM · KEEP MARKER CENTERED</small></div>
     <div className="fly-reticle"><span/><span/></div>
   </main>;
 }
 
 const FLY_CSS=`
-*{box-sizing:border-box}.fly-page{position:fixed;inset:0;overflow:hidden;background:#b9d7e8;font-family:Inter,ui-sans-serif,system-ui;color:white}.fly-page canvas{position:absolute!important;inset:0}.fly-vignette{position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(2,12,25,.22),transparent 24%,transparent 65%,rgba(2,10,22,.55)),radial-gradient(circle at center,transparent 52%,rgba(2,10,22,.26));z-index:2}.fly-hud-top{position:absolute;z-index:5;top:0;left:0;right:0;padding:24px 28px;display:flex;justify-content:space-between;align-items:center}.fly-brand{font-size:11px;font-weight:900;letter-spacing:.18em;text-shadow:0 2px 12px #0008}.fly-brand b{color:#e0ad65}.fly-live-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#e0ad65;margin-right:10px;box-shadow:0 0 0 5px #e0ad6522}.fly-icon-btn{width:43px;height:43px;border:1px solid #ffffff38;background:#071a38b8;color:white;border-radius:7px;backdrop-filter:blur(12px);cursor:pointer}.fly-speed{position:absolute;z-index:5;right:28px;top:94px;width:150px;padding:15px 16px;background:#071a38c9;border:1px solid #ffffff24;border-radius:8px;backdrop-filter:blur(12px);box-shadow:0 14px 34px #00102030}.fly-speed span{display:block;font-size:8px;font-weight:900;letter-spacing:.18em;color:#ffffff80}.fly-speed strong{display:inline-block;font-size:38px;line-height:1.1;letter-spacing:-.04em;font-variant-numeric:tabular-nums}.fly-speed em{font-style:normal;font-size:8px;font-weight:900;margin-left:5px;color:#e0ad65}.fly-speed div{height:3px;background:#ffffff20;margin-top:8px;overflow:hidden}.fly-speed i{display:block;height:100%;background:#e0ad65;transition:width .15s}.fly-command{position:absolute;z-index:5;left:28px;bottom:28px;width:min(430px,calc(100vw - 56px));padding:20px;background:#06182edb;border:1px solid #ffffff20;border-radius:10px;backdrop-filter:blur(14px);box-shadow:0 20px 55px #00102055}.fly-phase{font-size:9px;font-weight:950;letter-spacing:.19em;color:#e0ad65}.fly-command h1{margin:7px 0 5px;font-size:24px;letter-spacing:-.03em}.fly-command p{margin:0 0 16px;color:#ffffffa8;font-size:12px;line-height:1.55}.fly-command button{width:100%;height:47px;padding:0 16px;display:flex;align-items:center;justify-content:space-between;border:1px solid #ffffff18;border-radius:6px;background:#ffffff12;color:#ffffff55;font-size:10px;font-weight:950;letter-spacing:.16em}.fly-command button.active{background:#f4f6f8;color:#071a38;cursor:pointer;box-shadow:0 10px 24px #0004}.fly-command button.active b{color:#c58b3c;font-size:18px}.fly-keys{display:flex;flex-wrap:wrap;gap:11px;margin-top:13px;color:#ffffff75;font-size:8px;font-weight:800;text-transform:uppercase;letter-spacing:.08em}.fly-keys kbd{display:inline-flex;min-width:19px;height:19px;align-items:center;justify-content:center;border:1px solid #ffffff32;border-radius:3px;background:#ffffff10;color:#fff;font:800 8px Inter}.fly-reticle{position:absolute;z-index:4;left:50%;top:50%;width:28px;height:28px;transform:translate(-50%,-50%);opacity:.32;pointer-events:none}.fly-reticle span:first-child{position:absolute;left:13px;top:0;width:1px;height:28px;background:white}.fly-reticle span:last-child{position:absolute;left:0;top:13px;width:28px;height:1px;background:white}.fly-city-marker{padding:7px 10px;border-radius:4px;background:#071a38d9;border:1px solid #ffffff35;color:#fff;font:900 9px Inter;letter-spacing:.15em;white-space:nowrap;box-shadow:0 6px 20px #00102044}.fly-city-marker span{display:inline-block;width:6px;height:6px;border-radius:50%;background:#e0ad65;margin-right:7px}@media(max-width:650px){.fly-hud-top{padding:16px}.fly-speed{right:16px;top:72px}.fly-command{left:16px;bottom:16px;width:calc(100vw - 32px)}.fly-keys{display:none}}
+*{box-sizing:border-box}.fly-page{position:fixed;left:0;right:0;top:48px;bottom:0;overflow:hidden;background:#a9ccdf;font-family:Inter,ui-sans-serif,system-ui;color:#fff;z-index:1}.fly-page canvas{position:absolute!important;inset:0}.fly-vignette{position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(2,12,25,.18),transparent 22%,transparent 64%,rgba(2,10,22,.52)),radial-gradient(circle at center,transparent 54%,rgba(2,10,22,.24));z-index:2}.fly-hud-top{position:absolute;z-index:6;top:0;left:0;right:0;padding:16px 24px;display:grid;grid-template-columns:1fr auto 1fr;align-items:start;pointer-events:none}.fly-route-title{font-size:10px;font-weight:950;letter-spacing:.18em;text-shadow:0 2px 12px #0008;padding-top:9px}.fly-route-title b{color:#dda04c}.fly-live-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#dda04c;margin-right:10px;box-shadow:0 0 0 5px #dda04c22}.fly-route-locations{display:flex;align-items:center;gap:16px;padding:10px 16px;border:1px solid #ffffff25;background:#071a38b8;border-radius:8px;backdrop-filter:blur(12px);box-shadow:0 10px 30px #0010202d}.fly-route-locations span{display:flex;flex-direction:column;gap:2px;min-width:120px}.fly-route-locations span:last-child{text-align:right}.fly-route-locations small{font-size:7px;letter-spacing:.15em;color:#ffffff6f;font-weight:900}.fly-route-locations b{font-size:10px;letter-spacing:.1em}.fly-route-locations i{font-style:normal;color:#dda04c}.fly-icon-btn{justify-self:end;pointer-events:auto;width:42px;height:42px;border:1px solid #ffffff30;background:#071a38c4;color:#fff;border-radius:7px;backdrop-filter:blur(12px);cursor:pointer}.fly-instruments{position:absolute;z-index:5;right:24px;top:84px;width:150px;display:grid;gap:7px}.fly-speed,.fly-stat{padding:13px 15px;background:#071a38cc;border:1px solid #ffffff20;border-radius:8px;backdrop-filter:blur(12px);box-shadow:0 14px 34px #0010202b}.fly-speed>span,.fly-stat span{display:block;font-size:7px;font-weight:900;letter-spacing:.18em;color:#ffffff72}.fly-speed strong{display:inline-block;font-size:34px;line-height:1.08;letter-spacing:-.04em;font-variant-numeric:tabular-nums}.fly-speed em{font-style:normal;font-size:7px;font-weight:900;margin-left:4px;color:#dda04c}.fly-speed div{height:3px;background:#ffffff1c;margin-top:7px;overflow:hidden}.fly-speed i{display:block;height:100%;background:#dda04c;transition:width .12s}.fly-stat{display:flex;align-items:center;justify-content:space-between}.fly-stat b{font-size:10px;letter-spacing:.08em}.fly-map{position:absolute;z-index:5;right:24px;bottom:24px;width:170px;height:215px;padding:13px;background:#06182edc;border:1px solid #ffffff22;border-radius:9px;backdrop-filter:blur(14px);box-shadow:0 18px 44px #00102048}.fly-map-head,.fly-map-foot{display:flex;justify-content:space-between;align-items:center;font-size:8px;font-weight:900;letter-spacing:.12em}.fly-map-head span{color:#ffffff70}.fly-map-head b{color:#dda04c}.fly-map-track{position:relative;height:155px;margin:8px 0;background:linear-gradient(90deg,#ffffff05,#ffffff0b,#ffffff05);overflow:hidden;border:1px solid #ffffff10}.map-route{position:absolute;left:50%;top:9%;bottom:9%;width:1px;background:linear-gradient(#dda04c,#fff8,#dda04c);transform:translateX(-50%)}.map-start,.map-end{position:absolute;left:50%;transform:translateX(-50%);font-size:7px;font-weight:950;background:#071a38;padding:3px 5px;border:1px solid #ffffff28}.map-start{top:4px}.map-end{bottom:4px;color:#dda04c}.map-plane{position:absolute;transform:translate(-50%,-50%);font-size:13px;color:#fff;text-shadow:0 0 10px #dda04c;transition:top .15s}.fly-map-foot span{color:#e39b82}.fly-map-foot span.good{color:#8ed2a9}.fly-command{position:absolute;z-index:5;left:24px;bottom:24px;width:min(450px,calc(100vw - 48px));padding:19px;background:#06182edc;border:1px solid #ffffff20;border-radius:10px;backdrop-filter:blur(14px);box-shadow:0 20px 55px #00102055}.fly-phase{font-size:8px;font-weight:950;letter-spacing:.19em;color:#dda04c}.fly-command h1{margin:6px 0 5px;font-size:22px;letter-spacing:-.03em}.fly-command p{margin:0 0 13px;color:#ffffffa8;font-size:11px;line-height:1.5}.fly-command button{width:100%;height:44px;padding:0 15px;display:flex;align-items:center;justify-content:space-between;border:0;border-radius:6px;background:#f5f6f7;color:#071a38;font-size:9px;font-weight:950;letter-spacing:.16em;cursor:pointer;box-shadow:0 10px 24px #0004}.fly-command button b{color:#c58b3c;font-size:17px}.landing-gate{display:flex;justify-content:space-between;gap:12px;padding:10px 12px;border:1px solid #ffffff18;background:#ffffff09;border-radius:5px;margin-bottom:11px;font-size:8px;letter-spacing:.08em}.landing-gate b{color:#dda04c}.landing-gate span{color:#ffffff9b;text-align:right}.fly-keys{display:flex;flex-wrap:wrap;gap:9px;margin-top:11px;color:#ffffff72;font-size:7px;font-weight:800;text-transform:uppercase;letter-spacing:.07em}.fly-keys kbd{display:inline-flex;min-width:18px;height:18px;padding:0 4px;align-items:center;justify-content:center;border:1px solid #ffffff32;border-radius:3px;background:#ffffff10;color:#fff;font:800 7px Inter;margin-right:2px}.fly-guidance{position:absolute;z-index:4;left:50%;top:22%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;text-shadow:0 2px 12px #001020c0;pointer-events:none}.fly-guidance span{font-size:18px;color:#e39b82}.fly-guidance span.locked{color:#dda04c}.fly-guidance b{font-size:9px;letter-spacing:.18em;margin-top:3px}.fly-guidance small{font-size:7px;font-weight:800;letter-spacing:.1em;color:#ffffff9a;margin-top:3px}.fly-reticle{position:absolute;z-index:4;left:50%;top:50%;width:28px;height:28px;transform:translate(-50%,-50%);opacity:.3;pointer-events:none}.fly-reticle span:first-child{position:absolute;left:13px;top:0;width:1px;height:28px;background:#fff}.fly-reticle span:last-child{position:absolute;left:0;top:13px;width:28px;height:1px;background:#fff}.destination-beacon{display:flex;flex-direction:column;align-items:center;min-width:120px;padding:8px 12px;background:#071a38d5;border:1px solid #ffffff35;border-radius:5px;color:#fff;font-family:Inter;box-shadow:0 8px 24px #00102044}.destination-beacon b{font-size:9px;letter-spacing:.15em}.destination-beacon small{font-size:7px;color:#dda04c;margin-top:2px}.destination-pulse{width:8px;height:8px;border-radius:50%;background:#dda04c;box-shadow:0 0 0 6px #dda04c28;margin-bottom:6px}@media(max-width:800px){.fly-page{top:48px}.fly-hud-top{padding:12px}.fly-route-title{display:none}.fly-route-locations{grid-column:1/3;justify-self:start}.fly-route-locations span{min-width:92px}.fly-instruments{right:12px;top:74px}.fly-map{right:12px;bottom:12px;width:145px;height:190px}.fly-map-track{height:132px}.fly-command{left:12px;bottom:12px;width:min(390px,calc(100vw - 181px))}.fly-keys{display:none}}@media(max-width:600px){.fly-route-locations{transform:scale(.88);transform-origin:top left}.fly-instruments{transform:scale(.82);transform-origin:top right}.fly-map{display:none}.fly-command{width:calc(100vw - 24px)}.fly-guidance{top:25%}}
 `;
