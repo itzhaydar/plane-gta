@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 
-export type Face = 'top' | 'bottom' | 'left' | 'right' | 'flag';
-
+export type Face = 'flag-left' | 'flag-right';
 export type Liveries = Record<Face, string | null>;
 
 export type LastRun = {
@@ -24,13 +23,10 @@ type State = {
 };
 
 export const usePlaneStore = create<State>((set) => ({
-  liveries: {
-    top: null,
-    bottom: null,
-    left: null,
-    right: null,
-    flag: null,
-  },
+liveries: {
+  'flag-left': null,
+  'flag-right': null,
+},
 
   activeFace: 'top',
   lastRun: null,
