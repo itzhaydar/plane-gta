@@ -3,6 +3,9 @@ import LandingPage from './pages/LandingPage';
 import HangarPage from './pages/HangarPage';
 import FlyPage from './pages/FlyPage';
 import ResultPage from './pages/ResultPage';
+import RockHangarPage from './pages/RockHangarPage';
+import FlyRocket from './pages/FlyRocket';
+import Homie from './pages/Homie';
 
 const link = ({ isActive }: { isActive: boolean }) => ({
   color: isActive ? '#ff2bd6' : '#e8e8e8',
