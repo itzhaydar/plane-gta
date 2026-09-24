@@ -1,6 +1,7 @@
-import { Canvas, useFrame } from '@react-three/fiber';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import {
   OrbitControls,
+  Html,
   useTexture,
   RoundedBox,
   useGLTF,
@@ -16,7 +17,9 @@ import {
 import * as THREE from 'three';
 import { SkeletonUtils } from 'three-stdlib';
 
-import LiveryEditor from '../components/LiveryEditor';
+import { lazy } from 'react';
+
+const LiveryEditor = lazy(() => import('../components/LiveryEditor'));
 import { usePlaneStore, type Face } from '../store';
 
 // ============================================================
@@ -32,6 +35,9 @@ const FACES: Face[] = [
 ];
 
 const FLAG_FALLBACK = '/templates/plane-flag.svg';
+
+// Preload the pilot while the landing page is still on screen.
+useGLTF.preload('/pilot-out.glb');
 
 // ============================================================
 // FLAG MATERIAL
@@ -84,7 +90,6 @@ function Tree({
     >
       <mesh
         position={[0, 0.45, 0]}
-        castShadow
       >
         <cylinderGeometry
           args={[0.06, 0.08, 0.9, 6]}
@@ -98,7 +103,6 @@ function Tree({
 
       <mesh
         position={[0, 1.15, 0]}
-        castShadow
       >
         <coneGeometry
           args={[0.55, 1.1, 6]}
@@ -232,6 +236,7 @@ function HangarMan({
   position = [1.65, 0, 0.15] as [number, number, number],
 }) {
   const group = useRef<THREE.Group>(null);
+  const invalidate = useThree((state) => state.invalidate);
 
   const { scene, animations } = useGLTF('/pilot-out.glb');
 
@@ -242,7 +247,6 @@ function HangarMan({
       if (!(obj instanceof THREE.Mesh)) return;
       obj.castShadow = true;
       obj.receiveShadow = true;
-      obj.frustumCulled = false;
     });
 
     clone.updateMatrixWorld(true);
@@ -283,7 +287,12 @@ function HangarMan({
     };
   }, [actions]);
 
-  useFrame((_, delta) => mixer?.update(delta));
+  useFrame((_, delta) => {
+    if (mixer) {
+      mixer.update(delta);
+      invalidate();
+    }
+  });
 
   return (
     <group ref={group} position={position} rotation={[0, -Math.PI / 2, 0]}>
@@ -396,15 +405,12 @@ function Cockpit() {
         position={[0.02, 0.10, 0]}
         renderOrder={4}
       >
-        <meshPhysicalMaterial
+        <meshStandardMaterial
           color="#9ec2d2"
-          transmission={0.86}
           transparent
-          opacity={0.30}
-          roughness={0.06}
-          metalness={0.05}
-          thickness={0.08}
-          ior={1.45}
+          opacity={0.34}
+          roughness={0.18}
+          metalness={0.08}
           side={THREE.DoubleSide}
           depthWrite={false}
         />
@@ -436,59 +442,58 @@ function Wing({
 }: {
   side: 1 | -1;
 }) {
-  const geometry = new THREE.BufferGeometry();
+  const geometry = useMemo(() => {
+    const geometry = new THREE.BufferGeometry();
+    const s = side;
 
-  const s = side;
+    const vertices = new Float32Array([
+      // TOP
+      0.24, 0.03, 0,
+      -0.35, 0.03, s * 0.65,
+      -1.05, 0.07, s * 1.35,
+      -1.45, 0.13, s * 1.78,
 
-  const vertices = new Float32Array([
-    // TOP
-    0.24, 0.03, 0,
-    -0.35, 0.03, s * 0.65,
-    -1.05, 0.07, s * 1.35,
-    -1.45, 0.13, s * 1.78,
+      // BOTTOM
+      0.24, -0.04, 0,
+      -0.35, -0.04, s * 0.65,
+      -1.05, 0.00, s * 1.35,
+      -1.45, 0.06, s * 1.78,
+    ]);
 
-    // BOTTOM
-    0.24, -0.04, 0,
-    -0.35, -0.04, s * 0.65,
-    -1.05, 0.00, s * 1.35,
-    -1.45, 0.06, s * 1.78,
-  ]);
+    const indices = [
+      // Top
+      0, 1, 2,
+      0, 2, 3,
 
-  const indices = [
-    // Top
-    0, 1, 2,
-    0, 2, 3,
+      // Bottom
+      4, 6, 5,
+      4, 7, 6,
 
-    // Bottom
-    4, 6, 5,
-    4, 7, 6,
+      // Front / leading edge
+      0, 4, 5,
+      0, 5, 1,
 
-    // Front / leading edge
-    0, 4, 5,
-    0, 5, 1,
+      // Outer section
+      1, 5, 6,
+      1, 6, 2,
 
-    // Outer section
-    1, 5, 6,
-    1, 6, 2,
+      2, 6, 7,
+      2, 7, 3,
 
-    2, 6, 7,
-    2, 7, 3,
+      // Tip
+      3, 7, 4,
+      3, 4, 0,
+    ];
 
-    // Tip
-    3, 7, 4,
-    3, 4, 0,
-  ];
+    geometry.setAttribute(
+      'position',
+      new THREE.BufferAttribute(vertices, 3)
+    );
+    geometry.setIndex(indices);
+    geometry.computeVertexNormals();
 
-  geometry.setAttribute(
-    'position',
-    new THREE.BufferAttribute(
-      vertices,
-      3
-    )
-  );
-
-  geometry.setIndex(indices);
-  geometry.computeVertexNormals();
+    return geometry;
+  }, [side]);
 
   return (
     <mesh
@@ -577,11 +582,13 @@ function Tail() {
 function Propeller() {
   const propellerRef =
     useRef<THREE.Group>(null);
+  const invalidate = useThree((state) => state.invalidate);
 
   useFrame((_, delta) => {
     if (propellerRef.current) {
       propellerRef.current.rotation.x +=
         delta * 8;
+      invalidate();
     }
   });
 
@@ -794,12 +801,14 @@ function LandingGear() {
 
 function FlagPanel({
   livery,
+  side,
 }: {
   livery: string | null;
+  side: 1 | -1;
 }) {
   return (
     <group
-      position={[-1.08, 0.30, 0]}
+      position={[-1.08, 0.30, side * 0.31]}
       rotation={[0, 0, 0]}
     >
       {/* Small raised mounting plate */}
@@ -819,16 +828,12 @@ function FlagPanel({
 
       {/* Actual flag artwork wrapper */}
       <mesh
-        position={[0.005, 0, 0.018]}
+        position={[0.005, 0, side * 0.018]}
+        rotation={[0, side === 1 ? 0 : Math.PI, 0]}
         renderOrder={3}
       >
-        <planeGeometry
-          args={[0.30, 0.50]}
-        />
-
-        <FlagSkin
-          url={livery}
-        />
+        <planeGeometry args={[0.30, 0.50]} />
+        <FlagSkin url={livery} />
       </mesh>
     </group>
   );
@@ -939,6 +944,11 @@ function Plane({
 
       <FlagPanel
         livery={liveries.flag}
+        side={1}
+      />
+      <FlagPanel
+        livery={liveries.flag}
+        side={-1}
       />
     </group>
   );
@@ -962,230 +972,693 @@ export default function HangarPage() {
   );
 
   return (
-    <main
-      style={{
-        display: 'grid',
-        gridTemplateColumns: '1.15fr 0.85fr',
-        height: 'calc(100vh - 52px)',
-        overflow: 'hidden',
-      }}
-    >
-      {/* ==================================================
-          LEFT: LIVERY EDITOR
-         ================================================== */}
+    <main className="launch-bay">
+      <style>{LAUNCH_BAY_CSS}</style>
 
-      <section
-        style={{
-          padding: 16,
-          borderRight: '1px solid #2a1638',
-          minHeight: 0,
-          overflow: 'hidden',
-          display: 'flex',
-          flexDirection: 'column',
-        }}
-      >
-        <p
-          style={{
-            margin: '0 0 12px',
-            color: '#c9b8e0',
-            letterSpacing: '0.06em',
-            fontSize: 13,
-            flexShrink: 0,
-          }}
-        >
-          Stamp every panel. No half-done birds leave this hangar.
-        </p>
+      <header className="launch-bay-header">
+        <div className="launch-bay-brand">
+          <span className="launch-bay-brand-dot" />
+          MARSHOUT
+        </div>
 
-        <div
-          style={{
-            display: 'flex',
-            gap: 8,
-            marginBottom: 12,
-            flexWrap: 'wrap',
-            flexShrink: 0,
-          }}
-        >
-          {FACES.map((face) => (
-            <button
-              key={face}
-              type="button"
-              onClick={() => setActiveFace(face)}
+        <div className="launch-bay-hud">
+          <span className="launch-bay-status">ONLINE</span>
+          <span className="launch-bay-line" />
+          <span>LAUNCH BAY</span>
+        </div>
+      </header>
+
+      <section className="launch-bay-layout">
+        <aside className="launch-bay-editor">
+          <div className="launch-bay-editor-head">
+            <div>
+              <p className="launch-bay-kicker">Aircraft preparation</p>
+              <h1>Launch Bay</h1>
+            </div>
+            <span className="launch-bay-step">01 / 02</span>
+          </div>
+
+          <p className="launch-bay-copy">
+            Finish the livery, check the aircraft, then take the crew somewhere unexpected.
+          </p>
+
+          <div className="launch-bay-faces">
+            {FACES.map((face) => (
+              <button
+                key={face}
+                type="button"
+                onClick={() => setActiveFace(face)}
+                className={`launch-bay-face ${
+                  activeFace === face ? 'is-active' : ''
+                } ${liveries[face] ? 'is-done' : ''}`}
+              >
+                <span>{face.toUpperCase()}</span>
+                {liveries[face] && <span className="launch-bay-check">✓</span>}
+              </button>
+            ))}
+          </div>
+
+          <div className="launch-bay-editor-body">
+            <Suspense
+              fallback={
+                <div className="launch-bay-editor-loading">
+                  <span className="launch-bay-loading-dot" />
+                  Loading editor…
+                </div>
+              }
+            >
+              <LiveryEditor />
+            </Suspense>
+          </div>
+
+          <div className="launch-bay-footer">
+            <span className="launch-bay-footer-dot" />
+            Flight system ready
+          </div>
+        </aside>
+
+        <section className="launch-bay-preview">
+          <div className="launch-bay-preview-top">
+            <div>
+              <p className="launch-bay-kicker">Aircraft 01</p>
+              <span className="launch-bay-preview-title">Ready for inspection</span>
+            </div>
+
+            <span className="launch-bay-destination">
+              Destination unknown
+            </span>
+          </div>
+
+          <div className="launch-bay-viewport">
+            <Canvas
+              shadows
+              dpr={[1, 1.25]}
+              frameloop="demand"
+              gl={{
+                antialias: false,
+                powerPreference: 'high-performance',
+                alpha: false,
+                stencil: false,
+              }}
+              camera={{
+                position: [3.4, 1.8, 3.4],
+                fov: 38,
+                near: 0.1,
+                far: 40,
+              }}
               style={{
-                padding: '8px 14px',
-                border: 0,
-                cursor: 'pointer',
-                letterSpacing: '0.12em',
-                background:
-                  activeFace === face
-                    ? '#ff2bd6'
-                    : liveries[face]
-                      ? '#1e4a3a'
-                      : '#2b1c3d',
-                color:
-                  activeFace === face
-                    ? '#12081c'
-                    : '#f4f0ff',
+                width: '100%',
+                height: '100%',
+                display: 'block',
               }}
             >
-              {face.toUpperCase()}
-              {liveries[face] ? ' ✓' : ''}
-            </button>
-          ))}
-        </div>
-
-        <div
-          style={{
-            flex: 1,
-            minHeight: 0,
-            overflow: 'hidden',
-          }}
-        >
-          <LiveryEditor />
-        </div>
-      </section>
-
-      {/* ==================================================
-          RIGHT: 3D AIRCRAFT PREVIEW
-         ================================================== */}
-
-      <aside
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          minHeight: 0,
-          overflow: 'hidden',
-        }}
-      >
-        {/* Takeoff button */}
-        <button
-          type="button"
-          onClick={() => {
-            if (painted) {
-              go('/fly');
-            }
-          }}
-          disabled={!painted}
-          style={{
-            margin: 12,
-            padding: '16px 20px',
-            border: 0,
-            flexShrink: 0,
-            background:
-              painted
-                ? '#ffe600'
-                : '#3a3044',
-            color:
-              painted
-                ? '#12081c'
-                : '#8a7a98',
-            letterSpacing: '0.18em',
-            fontWeight: 800,
-            fontSize: painted ? 18 : 13,
-            cursor:
-              painted
-                ? 'pointer'
-                : 'not-allowed',
-            boxShadow:
-              painted
-                ? '0 0 0 3px #ff2bd6'
-                : 'none',
-          }}
-        >
-          {painted
-            ? 'TAKE OFF'
-            : "WE CAN'T TAKE OFF WITHOUT A CAMOUFLAGE, YOU DAWG."}
-        </button>
-
-        {/* 3D viewport */}
-        <div
-          style={{
-            flex: 1,
-            minHeight: 0,
-            background: '#87CEEB',
-          }}
-        >
-          <Canvas
-            shadows
-            dpr={[1, 1.25]}
-            frameloop="always"
-            gl={{
-              antialias: true,
-              powerPreference: 'high-performance',
-              alpha: false,
-            }}
-            camera={{
-              position: [3.4, 1.8, 3.4],
-              fov: 38,
-              near: 0.1,
-              far: 40,
-            }}
-            style={{
-              width: '100%',
-              height: '100%',
-              display: 'block',
-            }}
-          >
-            {/* Sky */}
-            <color
-              attach="background"
-              args={['#87CEEB']}
-            />
-
-            {/* ==================================================
-                LIGHTING
-               ================================================== */}
-
-            <ambientLight
-              intensity={0.65}
-            />
-
-            <directionalLight
-              position={[5, 8, 5]}
-              intensity={2}
-              castShadow
-              shadow-mapSize-width={1024}
-              shadow-mapSize-height={1024}
-            />
-
-            <directionalLight
-              position={[-4, 3, -5]}
-              intensity={0.7}
-            />
-
-            {/* ==================================================
-                WORLD + PLANE
-               ================================================== */}
-
-            <Suspense fallback={null}>
-              <Road />
-
-              {/* Plane stays completely independent */}
-              <Plane
-                liveries={liveries}
+              <color
+                attach="background"
+                args={['#edf2f5']}
               />
 
-              {/* Pilot is completely independent and stands
-                  on the grass shoulder beside the road */}
-<HangarMan position={[1.3, 0, -0.2]} /></Suspense>
+              <ambientLight intensity={0.65} />
 
-            {/* ==================================================
-                CAMERA CONTROL
-               ================================================== */}
+              <directionalLight
+                position={[5, 8, 5]}
+                intensity={2}
+                castShadow
+                shadow-mapSize-width={1024}
+                shadow-mapSize-height={1024}
+              />
 
-            <OrbitControls
-              makeDefault
-              enablePan={false}
-              enableDamping
-              dampingFactor={0.12}
-              minDistance={2.6}
-              maxDistance={8}
-              maxPolarAngle={1.3}
-              minPolarAngle={0.3}
-              target={[0, 0.65, 0]}
-            />
-          </Canvas>
-        </div>
-      </aside>
+              <directionalLight
+                position={[-4, 3, -5]}
+                intensity={0.7}
+              />
+
+              <Road />
+              <Plane liveries={liveries} />
+
+              <Suspense
+                fallback={
+                  <Html
+                    center
+                    style={{
+                      color: '#071a38',
+                      fontSize: '10px',
+                      fontWeight: 900,
+                      letterSpacing: '0.18em',
+                      textTransform: 'uppercase',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    rolling the bird out…
+                  </Html>
+                }
+              >
+                <HangarMan position={[1.3, 0, -0.2]} />
+              </Suspense>
+
+              <OrbitControls
+                makeDefault
+                enablePan={false}
+                enableDamping
+                dampingFactor={0.12}
+                minDistance={2.6}
+                maxDistance={8}
+                maxPolarAngle={1.3}
+                minPolarAngle={0.3}
+                target={[0, 0.65, 0]}
+              />
+            </Canvas>
+
+            <div className="launch-bay-viewport-label">
+              <span>LIVE PREVIEW</span>
+              <span>DRAG TO INSPECT</span>
+            </div>
+          </div>
+
+          <div className="launch-bay-takeoff">
+            <div className="launch-bay-readiness">
+              <span
+                className={`launch-bay-readiness-dot ${
+                  painted ? 'is-ready' : ''
+                }`}
+              />
+              <div>
+                <strong>{painted ? 'Aircraft ready' : 'Livery incomplete'}</strong>
+                <span>
+                  {painted
+                    ? 'All required panels are finished.'
+                    : 'Complete every panel before departure.'}
+                </span>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                if (painted) {
+                  go('/fly');
+                }
+              }}
+              disabled={!painted}
+              className={`launch-bay-takeoff-button ${
+                painted ? 'is-ready' : ''
+              }`}
+            >
+              <span>TAKE OFF</span>
+              <span className="launch-bay-arrow">→</span>
+            </button>
+          </div>
+        </section>
+      </section>
     </main>
   );
 }
+
+const LAUNCH_BAY_CSS = `
+  .launch-bay {
+    min-height: 100vh;
+    min-height: 100svh;
+    position: relative;
+    overflow: hidden;
+    color: #071a38;
+    background:
+      radial-gradient(circle at 78% 22%, rgba(31, 71, 119, 0.055), transparent 27%),
+      linear-gradient(135deg, #fbfcfc 0%, #f5f7f9 55%, #eef2f6 100%);
+    font-family:
+      Inter,
+      ui-sans-serif,
+      system-ui,
+      -apple-system,
+      BlinkMacSystemFont,
+      "Segoe UI",
+      sans-serif;
+  }
+
+  .launch-bay::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.22;
+    background-image:
+      linear-gradient(rgba(7, 26, 56, 0.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(7, 26, 56, 0.035) 1px, transparent 1px);
+    background-size: 72px 72px;
+    mask-image: linear-gradient(to bottom, black, transparent 82%);
+  }
+
+  .launch-bay-header {
+    position: relative;
+    z-index: 20;
+    height: 78px;
+    padding: 0 clamp(22px, 5vw, 76px);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid rgba(7, 26, 56, 0.08);
+    background: linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0.7),
+      rgba(255, 255, 255, 0)
+    );
+  }
+
+  .launch-bay-brand {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    font-size: 13px;
+    font-weight: 950;
+    letter-spacing: 0.2em;
+  }
+
+  .launch-bay-brand-dot,
+  .launch-bay-footer-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #c58b3c;
+    box-shadow: 0 0 0 4px rgba(197, 139, 60, 0.1);
+  }
+
+  .launch-bay-hud {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    color: rgba(7, 26, 56, 0.38);
+    font-size: 9px;
+    font-weight: 850;
+    letter-spacing: 0.17em;
+    text-transform: uppercase;
+  }
+
+  .launch-bay-status {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+
+  .launch-bay-status::before {
+    content: "";
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: #c58b3c;
+  }
+
+  .launch-bay-line {
+    width: 32px;
+    height: 1px;
+    background: rgba(7, 26, 56, 0.14);
+  }
+
+  .launch-bay-layout {
+    position: relative;
+    z-index: 5;
+    height: calc(100vh - 78px);
+    height: calc(100svh - 78px);
+    display: grid;
+    grid-template-columns: minmax(330px, 0.72fr) minmax(560px, 1.28fr);
+    max-width: 1680px;
+    margin: 0 auto;
+    padding: 24px clamp(22px, 5vw, 76px) 28px;
+    gap: clamp(22px, 3vw, 52px);
+  }
+
+  .launch-bay-editor {
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    padding: clamp(4px, 1vw, 14px) 0;
+  }
+
+  .launch-bay-editor-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20px;
+  }
+
+  .launch-bay-kicker {
+    margin: 0 0 10px;
+    color: rgba(7, 26, 56, 0.42);
+    font-size: 9px;
+    font-weight: 900;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+  }
+
+  .launch-bay-editor h1 {
+    margin: 0;
+    color: #071a38;
+    font-size: clamp(48px, 5.5vw, 78px);
+    line-height: 0.86;
+    letter-spacing: -0.075em;
+    font-weight: 950;
+    text-transform: uppercase;
+  }
+
+  .launch-bay-step {
+    color: rgba(7, 26, 56, 0.28);
+    font-size: 9px;
+    font-weight: 900;
+    letter-spacing: 0.16em;
+  }
+
+  .launch-bay-copy {
+    max-width: 420px;
+    margin: 21px 0 22px;
+    color: rgba(7, 26, 56, 0.52);
+    font-size: 13px;
+    line-height: 1.6;
+  }
+
+  .launch-bay-faces {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+  }
+
+  .launch-bay-face {
+    min-width: 64px;
+    padding: 9px 11px;
+    border: 1px solid rgba(7, 26, 56, 0.1);
+    border-radius: 3px;
+    background: rgba(255, 255, 255, 0.54);
+    color: rgba(7, 26, 56, 0.48);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-size: 8px;
+    font-weight: 900;
+    letter-spacing: 0.13em;
+    transition:
+      color 150ms ease,
+      background 150ms ease,
+      border-color 150ms ease,
+      transform 150ms ease;
+  }
+
+  .launch-bay-face:hover {
+    transform: translateY(-2px);
+    border-color: rgba(197, 139, 60, 0.45);
+  }
+
+  .launch-bay-face.is-active {
+    border-color: #0a2850;
+    background: #0a2850;
+    color: #ffffff;
+  }
+
+  .launch-bay-face.is-done:not(.is-active) {
+    border-color: rgba(52, 111, 83, 0.28);
+    background: rgba(52, 111, 83, 0.08);
+    color: #356d52;
+  }
+
+  .launch-bay-check {
+    font-size: 10px;
+  }
+
+  .launch-bay-editor-body {
+    min-height: 0;
+    flex: 1;
+    overflow: hidden;
+    border-top: 1px solid rgba(7, 26, 56, 0.08);
+    padding-top: 14px;
+  }
+
+  .launch-bay-editor-loading {
+    min-height: 120px;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    color: rgba(7, 26, 56, 0.4);
+    font-size: 9px;
+    font-weight: 900;
+    letter-spacing: 0.17em;
+    text-transform: uppercase;
+  }
+
+  .launch-bay-loading-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #c58b3c;
+    animation: launchBayPulse 900ms ease-in-out infinite alternate;
+  }
+
+  @keyframes launchBayPulse {
+    from { opacity: 0.35; transform: scale(0.8); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  .launch-bay-footer {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    margin-top: 15px;
+    color: rgba(7, 26, 56, 0.28);
+    font-size: 8px;
+    font-weight: 850;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+  }
+
+  .launch-bay-footer-dot {
+    width: 5px;
+    height: 5px;
+    box-shadow: none;
+  }
+
+  .launch-bay-preview {
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .launch-bay-preview-top {
+    min-height: 52px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20px;
+    padding: 5px 2px 13px;
+  }
+
+  .launch-bay-preview-title {
+    display: block;
+    color: #071a38;
+    font-size: 15px;
+    font-weight: 900;
+    letter-spacing: -0.02em;
+  }
+
+  .launch-bay-destination {
+    margin-top: 17px;
+    color: rgba(7, 26, 56, 0.26);
+    font-size: 8px;
+    font-weight: 900;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+  }
+
+  .launch-bay-viewport {
+    position: relative;
+    min-height: 0;
+    flex: 1;
+    overflow: hidden;
+    border: 1px solid rgba(7, 26, 56, 0.09);
+    border-radius: 5px;
+    background: #edf2f5;
+    box-shadow:
+      0 24px 60px rgba(7, 26, 56, 0.08),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.48);
+  }
+
+  .launch-bay-viewport-label {
+    position: absolute;
+    z-index: 4;
+    left: 17px;
+    right: 17px;
+    bottom: 14px;
+    display: flex;
+    justify-content: space-between;
+    pointer-events: none;
+    color: rgba(7, 26, 56, 0.3);
+    font-size: 7px;
+    font-weight: 900;
+    letter-spacing: 0.18em;
+  }
+
+  .launch-bay-takeoff {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    padding-top: 13px;
+  }
+
+  .launch-bay-readiness {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .launch-bay-readiness-dot {
+    width: 7px;
+    height: 7px;
+    flex: 0 0 auto;
+    border-radius: 50%;
+    background: #b8bec5;
+  }
+
+  .launch-bay-readiness-dot.is-ready {
+    background: #c58b3c;
+    box-shadow: 0 0 0 4px rgba(197, 139, 60, 0.1);
+  }
+
+  .launch-bay-readiness strong,
+  .launch-bay-readiness span {
+    display: block;
+  }
+
+  .launch-bay-readiness strong {
+    color: #071a38;
+    font-size: 9px;
+    font-weight: 900;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+  }
+
+  .launch-bay-readiness div > span {
+    margin-top: 3px;
+    color: rgba(7, 26, 56, 0.34);
+    font-size: 8px;
+  }
+
+  .launch-bay-takeoff-button {
+    min-width: 185px;
+    padding: 15px 17px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    border: 0;
+    border-radius: 3px;
+    background: #dfe4e8;
+    color: rgba(7, 26, 56, 0.3);
+    font-size: 10px;
+    font-weight: 950;
+    letter-spacing: 0.16em;
+    cursor: not-allowed;
+    transition:
+      transform 150ms ease,
+      background 150ms ease;
+  }
+
+  .launch-bay-takeoff-button.is-ready {
+    background: #0a2850;
+    color: #ffffff;
+    cursor: pointer;
+    box-shadow: 0 12px 25px rgba(7, 26, 56, 0.14);
+  }
+
+  .launch-bay-takeoff-button.is-ready:hover {
+    transform: translateY(-2px);
+    background: #123b6b;
+  }
+
+  .launch-bay-arrow {
+    color: #d8a35c;
+    font-size: 16px;
+  }
+
+  @media (max-width: 1050px) {
+    .launch-bay-layout {
+      grid-template-columns: 1fr;
+      height: auto;
+      min-height: calc(100svh - 78px);
+      overflow: auto;
+    }
+
+    .launch-bay-editor {
+      min-height: 430px;
+    }
+
+    .launch-bay-preview {
+      min-height: 650px;
+    }
+
+    .launch-bay-viewport {
+      min-height: 500px;
+    }
+  }
+
+  @media (max-width: 650px) {
+    .launch-bay-header {
+      height: 67px;
+      padding: 0 22px;
+    }
+
+    .launch-bay-hud {
+      display: none;
+    }
+
+    .launch-bay-layout {
+      padding: 22px 22px 30px;
+      gap: 30px;
+    }
+
+    .launch-bay-editor {
+      min-height: 440px;
+    }
+
+    .launch-bay-editor h1 {
+      font-size: 52px;
+    }
+
+    .launch-bay-copy {
+      font-size: 12px;
+      margin-top: 17px;
+    }
+
+    .launch-bay-preview {
+      min-height: 560px;
+    }
+
+    .launch-bay-preview-top {
+      padding-top: 0;
+    }
+
+    .launch-bay-destination {
+      display: none;
+    }
+
+    .launch-bay-viewport {
+      min-height: 410px;
+    }
+
+    .launch-bay-takeoff {
+      align-items: stretch;
+      flex-direction: column;
+    }
+
+    .launch-bay-takeoff-button {
+      width: 100%;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .launch-bay-loading-dot,
+    .launch-bay-face,
+    .launch-bay-takeoff-button {
+      animation: none;
+      transition: none;
+    }
+  }
+`;
