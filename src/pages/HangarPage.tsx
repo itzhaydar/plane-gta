@@ -17,7 +17,6 @@ import {
 import * as THREE from 'three';
 import { SkeletonUtils } from 'three-stdlib';
 
-import { lazy } from 'react';
 
 const LiveryEditor = lazy(() => import('../components/LiveryEditor'));
 import { usePlaneStore, type Face } from '../store';
@@ -1007,16 +1006,7 @@ export default function HangarPage() {
           </div>
 
           <div className="launch-bay-editor-body">
-            <Suspense
-              fallback={
-                <div className="launch-bay-editor-loading">
-                  <span className="launch-bay-loading-dot" />
-                  Loading editor…
-                </div>
-              }
-            >
-              <LiveryEditor />
-            </Suspense>
+           <LiveryEditor />
           </div>
 
           <div className="launch-bay-footer">
