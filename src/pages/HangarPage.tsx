@@ -27,11 +27,8 @@ import { usePlaneStore, type Face } from '../store';
 // ============================================================
 
 const FACES: Face[] = [
-  'top',
-  'bottom',
-  'left',
-  'right',
-  'flag',
+  'flag-right', 
+  'flag-left',
 ];
 
 const FLAG_LEFT_FALLBACK = '/templates/flag-left.svg';
