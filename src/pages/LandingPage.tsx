@@ -289,7 +289,7 @@ export default function LandingPage() {
                     </span>
 
                     <span className="landing-role-enter">
-                      Enter hangar →
+                      Enter plane launch bay→
                     </span>
                   </span>
                 </button>
@@ -312,7 +312,7 @@ export default function LandingPage() {
                     </span>
 
                     <span className="landing-role-enter">
-                      Enter rock-hangar →
+                      Enter rocket launch bay→
                     </span>
                   </span>
                 </button>
