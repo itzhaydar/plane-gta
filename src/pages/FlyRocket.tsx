@@ -625,7 +625,7 @@ export default function FlyRocket() {
           <span>MARSHOUT MARS PROGRAM</span>
           <h1>Finish both mission insignias first.</h1>
           <p>Your rocket carries the exact designs saved in the rocket hangar.</p>
-          <button onClick={() => go('/rockhangar')}>RETURN TO ROCKET HANGAR <b>→</b></button>
+          <button onClick={() => go('/rock-hangar')}>RETURN TO ROCKET HANGAR <b>→</b></button>
         </div>
       </main>
     );
