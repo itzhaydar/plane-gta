@@ -19,6 +19,7 @@ const DEFAULT_CITY = 'Los Angeles';
 
 export default function Homie() {
   const [city, setCity] = useState(DEFAULT_CITY);
+  const [name, setName] = useState('');
   const [vehicle, setVehicle] = useState<Vehicle>('Plane');
   const [person, setPerson] = useState<PersonId>('man');
   const [portraitSrc, setPortraitSrc] = useState('/man.webp');
@@ -162,6 +163,12 @@ export default function Homie() {
       ctx.font = '800 18px Arial, sans-serif';
       ctx.fillText('DESIGN WHERE YOU WANNA BE TAKEN', 72, 170);
 
+      if (name.trim()) {
+        ctx.fillStyle = '#d3a252';
+        ctx.font = '900 18px Arial, sans-serif';
+        ctx.fillText(`MADE FOR ${name.trim().toUpperCase()}`, 72, 208);
+      }
+
       ctx.fillStyle = '#ffffff';
       ctx.font = '900 86px Arial, sans-serif';
       ctx.fillText('TAKE ME TO', 72, 300);
@@ -299,6 +306,17 @@ export default function Homie() {
                   placeholder="Los Angeles"
                   maxLength={42}
                 />
+
+                <div className="personalField">
+                  <span>YOUR NAME</span>
+                  <input
+                    className="city nameInput"
+                    value={name}
+                    onChange={(event) => setName(event.target.value)}
+                    placeholder="e.g. Aliyu"
+                    maxLength={32}
+                  />
+                </div>
               </Step>
 
               <Step number="02" title="CHOOSE YOUR VEHICLE">
@@ -456,6 +474,12 @@ export default function Homie() {
                   <small>DESIGN WHERE YOU WANNA BE TAKEN</small>
                 </div>
 
+                {name.trim() && (
+                  <div className="madeFor">
+                    MADE FOR {name.trim().toUpperCase()}
+                  </div>
+                )}
+
                 <div className="headline">
                   <span>TAKE ME TO</span>
                   <strong>{destination}</strong>
@@ -503,15 +527,15 @@ export default function Homie() {
               {portraitEdited ? (
                 <button
                   type="button"
-                  className="download downloadIcon"
+                  className="download downloadReady"
                   disabled={exporting}
                   onClick={downloadFlyer}
                   aria-label="Download flyer"
                   title="Download flyer"
                 >
-                  {exporting ? (
-                    <span className="exportingText">...</span>
-                  ) : (
+                  <span>{exporting ? 'EXPORTING...' : 'DOWNLOAD'}</span>
+
+                  {!exporting && (
                     <svg
                       viewBox="0 0 24 24"
                       aria-hidden="true"
@@ -714,6 +738,37 @@ const CSS = `
 .city:focus {
   border-color: #173f6d;
   box-shadow: 0 0 0 3px rgba(23, 63, 109, .08);
+}
+
+
+.personalField {
+  margin-top: 13px;
+}
+
+.personalField > span {
+  display: block;
+  margin-bottom: 7px;
+  color: rgba(7, 26, 56, .38);
+  font-size: 7px;
+  font-weight: 950;
+  letter-spacing: .14em;
+}
+
+.nameInput {
+  height: 44px;
+  font-size: 14px;
+}
+
+.madeFor {
+  position: absolute;
+  top: 14.5%;
+  left: 7%;
+  z-index: 5;
+  color: #d3a252;
+  font-size: clamp(6px, .65vw, 9px);
+  font-weight: 950;
+  letter-spacing: .15em;
+  text-transform: uppercase;
 }
 
 .vehicles {
@@ -1253,22 +1308,15 @@ const CSS = `
 }
 
 
-.downloadIcon {
-  min-width: 48px;
-  width: 48px;
-  padding: 0;
-  display: grid;
-  place-items: center;
+.downloadReady {
+  min-width: 148px;
+  padding: 0 16px;
 }
 
 .downloadSvg {
-  width: 20px;
-  height: 20px;
-}
-
-.exportingText {
-  font-size: 11px;
-  letter-spacing: .08em;
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
 }
 
 .downloadLocked {
@@ -1358,9 +1406,9 @@ const CSS = `
     width: 100%;
   }
 
-  .downloadIcon {
-    width: 48px;
-    min-width: 48px;
+  .downloadReady {
+    width: 100%;
+    min-width: 0;
   }
 
   .downloadLocked {
