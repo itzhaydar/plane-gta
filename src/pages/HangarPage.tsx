@@ -1229,8 +1229,8 @@ const LAUNCH_BAY_CSS = `
 
   .launch-bay-editor-body {
     flex: 1 1 auto;
-    min-height: 0;
-    display: flex;
+min-height: calc(100% + 1%);
+display: flex;
     flex-direction: column;
     overflow: hidden;
     border: 1px solid rgba(7, 26, 56, 0.09);
