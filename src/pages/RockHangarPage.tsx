@@ -36,7 +36,7 @@ const FACES: Face[] = ['flag-left', 'flag-right'];
 const LEFT_PANEL_FALLBACK = '/templates/flag-left.svg';
 const RIGHT_PANEL_FALLBACK = '/templates/flag-right.svg';
 
-useGLTF.preload('/astro.glb');
+useGLTF.preload('/atro.glb');
 
 // ============================================================
 // EDITABLE MISSION PANEL MATERIAL
@@ -80,7 +80,7 @@ function HangarMan({
   position = [1.7, 0, 0.55] as [number, number, number],
 }) {
   const invalidate = useThree((state) => state.invalidate);
-  const { scene, animations } = useGLTF('/astro.glb');
+  const { scene, animations } = useGLTF('/atro.glb');
 
   const man = useMemo(() => {
     const clone = SkeletonUtils.clone(scene);
@@ -536,45 +536,36 @@ function LandingLeg({
 
 function MissionPanel({
   livery,
-  side,
+  position,
+  fallback,
 }: {
   livery: string | null;
-  side: 1 | -1;
+  position: [number, number, number];
+  fallback: string;
 }) {
-  const z = side * 0.404;
-
   return (
-    <group position={[0, 1.55, z]}>
-      {/* physical recessed panel frame */}
+    <group position={position}>
+      {/* Bright white physical wrapper, intentionally visible even before editing */}
       <RoundedBox
-        args={[0.58, 0.42, 0.028]}
-        radius={0.045}
+        args={[0.46, 0.30, 0.035]}
+        radius={0.035}
         smoothness={4}
-        position={[0, 0, side * 0.008]}
         renderOrder={2}
+        castShadow
       >
         <meshStandardMaterial
           color="#ffffff"
-          metalness={0.12}
-          roughness={0.42}
+          emissive="#ffffff"
+          emissiveIntensity={0.08}
+          metalness={0.02}
+          roughness={0.30}
         />
       </RoundedBox>
 
-      {/* editable texture */}
-      <mesh
-        position={[0, 0, side * 0.026]}
-        rotation={[0, side === 1 ? 0 : Math.PI, 0]}
-        renderOrder={3}
-      >
-        <planeGeometry args={[0.51, 0.35]} />
-        <MissionSkin
-          url={livery}
-          fallback={
-            side === 1
-              ? RIGHT_PANEL_FALLBACK
-              : LEFT_PANEL_FALLBACK
-          }
-        />
+      {/* The saved editor result is drawn directly over the white wrapper */}
+      <mesh position={[0, 0, 0.021]} renderOrder={3}>
+        <planeGeometry args={[0.405, 0.245]} />
+        <MissionSkin url={livery} fallback={fallback} />
       </mesh>
     </group>
   );
@@ -668,14 +659,18 @@ function Rocket({
       <Porthole y={2.10} />
       <Porthole y={1.77} />
 
-      {/* opposite editable mission panels */}
+      {/* Two compact white mission insignia wrappers on the visible hull.
+          Existing flag-left/right keys + SVG files are intentionally reused so
+          the current store and LiveryEditor continue working unchanged. */}
       <MissionPanel
         livery={liveries['flag-left']}
-        side={-1}
+        fallback={LEFT_PANEL_FALLBACK}
+        position={[0, 2.56, 0.435]}
       />
       <MissionPanel
         livery={liveries['flag-right']}
-        side={1}
+        fallback={RIGHT_PANEL_FALLBACK}
+        position={[0, 1.28, 0.495]}
       />
 
       {/* stabilizer fins */}
@@ -744,8 +739,8 @@ function SoundToggle({
 // ============================================================
 
 function faceLabel(face: Face) {
-  if (face === 'flag-left') return 'PORT PANEL';
-  if (face === 'flag-right') return 'STARBOARD PANEL';
+  if (face === 'flag-left') return 'UPPER INSIGNIA';
+  if (face === 'flag-right') return 'LOWER INSIGNIA';
   return String(face).toUpperCase();
 }
 
@@ -800,7 +795,7 @@ export default function RockHangar() {
         <aside className="rocket-bay-editor">
           <div className="rocket-bay-editor-head">
             <p className="rocket-bay-prompt">
-              Suit up, astronaut. Paint both flags, then we launch for Mars.
+              Suit up, astronaut. Finish both mission insignias, then we launch for Mars.
             </p>
 
             <div className="rocket-bay-faces">
@@ -848,7 +843,7 @@ export default function RockHangar() {
               type="button"
               onClick={() => {
                 if (painted) {
-                  go('/fly');
+                  go('/flyrocket');
                 }
               }}
               disabled={!painted}
