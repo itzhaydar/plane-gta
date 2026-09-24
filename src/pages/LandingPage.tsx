@@ -89,6 +89,11 @@ export default function LandingPage() {
               board, and see where the journey takes you.
             </p>
 
+            <div className="landing-desktop-notice">
+              <span>DESKTOP FIRST</span>
+              <b>The game won’t work on a smartphone.</b>
+            </div>
+
             <button
               type="button"
               className="landing-start"
@@ -539,8 +544,24 @@ button {
   line-height: 1.65;
 }
 
+.landing-desktop-notice {
+  width: fit-content;
+  max-width: 430px;
+  margin-top: 22px;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-left: 3px solid #c58b3c;
+  background: rgba(7, 26, 56, 0.07);
+  color: #071a38;
+}
+
+.landing-desktop-notice span { color: #c58b3c; font-size: 8px; font-weight: 950; letter-spacing: .16em; }
+.landing-desktop-notice b { font-size: 11px; font-weight: 900; }
+
 .landing-start {
-  margin-top: 34px;
+  margin-top: 24px;
   display: inline-flex;
   align-items: center;
   gap: 15px;
