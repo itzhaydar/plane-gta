@@ -843,7 +843,7 @@ export default function RockHangar() {
               type="button"
               onClick={() => {
                 if (painted) {
-                  go('/flyrocket');
+                  go('/fly-rocket');
                 }
               }}
               disabled={!painted}
