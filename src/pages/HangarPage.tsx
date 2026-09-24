@@ -1262,14 +1262,13 @@ const LAUNCH_BAY_CSS = `
   .launch-bay-layout {
     position: relative;
     z-index: 5;
-    height: calc(100vh - 78px);
-    height: calc(100svh - 78px);
+    height: calc(100svh - 48px);
     display: grid;
-    grid-template-columns: minmax(330px, 0.72fr) minmax(560px, 1.28fr);
+    grid-template-columns: 1fr 1fr;
     max-width: 1680px;
     margin: 0 auto;
-    padding: 24px clamp(22px, 5vw, 76px) 28px;
-    gap: clamp(22px, 3vw, 52px);
+    padding: 10px clamp(22px, 5vw, 76px) 14px;
+    gap: 20px;
   }
 
   .launch-bay-editor {
@@ -1277,18 +1276,19 @@ const LAUNCH_BAY_CSS = `
     min-height: 0;
     display: flex;
     flex-direction: column;
-    padding: clamp(4px, 1vw, 14px) 0;
+    padding: 0;
   }
 
   .launch-bay-editor-head {
     display: flex;
-    align-items: flex-start;
+    align-items: flex-end;
     justify-content: space-between;
-    gap: 20px;
+    gap: 12px;
+    margin-bottom: 4px;
   }
 
   .launch-bay-kicker {
-    margin: 0 0 10px;
+    margin: 0 0 4px;
     color: rgba(7, 26, 56, 0.42);
     font-size: 9px;
     font-weight: 900;
@@ -1299,33 +1299,26 @@ const LAUNCH_BAY_CSS = `
   .launch-bay-editor h1 {
     margin: 0;
     color: #071a38;
-    font-size: clamp(48px, 5.5vw, 78px);
-    line-height: 0.86;
-    letter-spacing: -0.075em;
+    font-size: 32px;
+    line-height: 0.92;
+    letter-spacing: -0.06em;
     font-weight: 950;
     text-transform: uppercase;
   }
 
-  .launch-bay-step {
-    color: rgba(7, 26, 56, 0.28);
-    font-size: 9px;
-    font-weight: 900;
-    letter-spacing: 0.16em;
-  }
-
   .launch-bay-copy {
     max-width: 420px;
-    margin: 21px 0 22px;
+    margin: 6px 0 8px;
     color: rgba(7, 26, 56, 0.52);
-    font-size: 13px;
-    line-height: 1.6;
+    font-size: 12px;
+    line-height: 1.45;
   }
 
   .launch-bay-faces {
     display: flex;
     gap: 6px;
     flex-wrap: wrap;
-    margin-bottom: 14px;
+    margin-bottom: 8px;
   }
 
   .launch-bay-face {
@@ -1371,14 +1364,26 @@ const LAUNCH_BAY_CSS = `
     font-size: 10px;
   }
 
-  .launch-bay-editor-body {
+   .launch-bay-editor-body {
+    flex: 1 1 auto;
     min-height: 0;
-    flex: 1;
+    display: flex;
+    flex-direction: column;
     overflow: hidden;
-    border-top: 1px solid rgba(7, 26, 56, 0.08);
-    padding-top: 14px;
+    border: 1px solid rgba(7, 26, 56, 0.09);
+    border-radius: 5px;
+    background: #edf2f5;
+    box-shadow:
+      0 24px 60px rgba(7, 26, 56, 0.08),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.48);
   }
 
+  .launch-bay-editor-body > * {
+    flex: 1 1 auto;
+    min-height: 0;
+    width: 100%;
+    height: 100%;
+  }
   .launch-bay-editor-loading {
     min-height: 120px;
     display: flex;
@@ -1430,24 +1435,16 @@ const LAUNCH_BAY_CSS = `
   }
 
   .launch-bay-preview-top {
-    min-height: 52px;
+    min-height: 0;
     display: flex;
-    align-items: flex-start;
+    align-items: flex-end;
     justify-content: space-between;
-    gap: 20px;
-    padding: 5px 2px 13px;
-  }
-
-  .launch-bay-preview-title {
-    display: block;
-    color: #071a38;
-    font-size: 15px;
-    font-weight: 900;
-    letter-spacing: -0.02em;
+    gap: 16px;
+    padding: 0 2px 8px;
   }
 
   .launch-bay-destination {
-    margin-top: 17px;
+    margin-top: 0;
     color: rgba(7, 26, 56, 0.26);
     font-size: 8px;
     font-weight: 900;
@@ -1458,7 +1455,7 @@ const LAUNCH_BAY_CSS = `
   .launch-bay-viewport {
     position: relative;
     min-height: 0;
-    flex: 1;
+    flex: 1 1 auto;
     overflow: hidden;
     border: 1px solid rgba(7, 26, 56, 0.09);
     border-radius: 5px;
@@ -1468,19 +1465,16 @@ const LAUNCH_BAY_CSS = `
       inset 0 0 0 1px rgba(255, 255, 255, 0.48);
   }
 
-  .launch-bay-viewport-label {
-    position: absolute;
-    z-index: 4;
-    left: 17px;
-    right: 17px;
-    bottom: 14px;
+  .launch-bay-footer {
     display: flex;
-    justify-content: space-between;
-    pointer-events: none;
-    color: rgba(7, 26, 56, 0.3);
-    font-size: 7px;
-    font-weight: 900;
+    align-items: center;
+    gap: 9px;
+    margin-top: 8px;
+    color: rgba(7, 26, 56, 0.28);
+    font-size: 8px;
+    font-weight: 850;
     letter-spacing: 0.18em;
+    text-transform: uppercase;
   }
 
   .launch-bay-takeoff {
@@ -1488,10 +1482,8 @@ const LAUNCH_BAY_CSS = `
     align-items: center;
     justify-content: space-between;
     gap: 20px;
-    padding-top: 13px;
-  }
-
-  .launch-bay-readiness {
+    padding-top: 8px;
+  }  .launch-bay-readiness {
     display: flex;
     align-items: center;
     gap: 10px;
