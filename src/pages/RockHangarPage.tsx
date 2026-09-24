@@ -27,7 +27,7 @@ import { usePlaneStore, type Face } from '../store';
 // NOTE:
 // This intentionally keeps the existing Face keys so your current
 // store + LiveryEditor work without requiring another file change.
-// Same flag wrappers as the plane: flag-left / flag-right.
+// Rocket mission panels reuse the existing plane SVG artwork internally.
 // They stay visibly white until the user paints them.
 // ============================================================
 
@@ -36,7 +36,7 @@ const FACES: Face[] = ['flag-left', 'flag-right'];
 const LEFT_PANEL_FALLBACK = '/templates/flag-left.svg';
 const RIGHT_PANEL_FALLBACK = '/templates/flag-right.svg';
 
-useGLTF.preload('/astro.glb');
+useGLTF.preload('/pilot-out.glb');
 
 // ============================================================
 // EDITABLE MISSION PANEL MATERIAL
@@ -80,7 +80,7 @@ function HangarMan({
   position = [1.7, 0, 0.55] as [number, number, number],
 }) {
   const invalidate = useThree((state) => state.invalidate);
-  const { scene, animations } = useGLTF('/astro.glb');
+  const { scene, animations } = useGLTF('/pilot-out.glb');
 
   const man = useMemo(() => {
     const clone = SkeletonUtils.clone(scene);
@@ -744,8 +744,8 @@ function SoundToggle({
 // ============================================================
 
 function faceLabel(face: Face) {
-  if (face === 'flag-left') return 'FLAG LEFT';
-  if (face === 'flag-right') return 'FLAG RIGHT';
+  if (face === 'flag-left') return 'PORT PANEL';
+  if (face === 'flag-right') return 'STARBOARD PANEL';
   return String(face).toUpperCase();
 }
 
