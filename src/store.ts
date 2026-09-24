@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-export type Face = 'flag-left' | 'flag-right';
+export type Face = 'top'|'flag-left' | 'flag-right';
 export type Liveries = Record<Face, string | null>;
 
 export type LastRun = {
