@@ -24,7 +24,7 @@ Title screen. Start Game. Role select.
 
 2. Homie
 You are cargo, not the captain.  
-Open flyer design and dress the pickup poster in Unlayer’s image editor. That flyer is how the crew finds you.
+Open flyer design and dress the pickup poster and sign your image in Unlayer’s image editor. That flyer is how the crew finds you.
 
 3. Pilot
 You fly. First pick the vehicle.
@@ -45,11 +45,11 @@ Where the Image Editor sits
 | --- | --- |
 | Homie | Flyer art for the pickup |
 | Plane hangar | Left / right flag faces on the plane |
-| Rocket hangar | Left / right flag faces on the rocket |
+| Rocket hangar | Lower insignias / Upper insignias on the rocket |
 
 Save writes a data URL into Zustand. The 3D hangar / flight scenes read those textures and put them on the vehicle.
 
-Templates live in /public/templates/ (flag-left, flag-right).
+Templates live in /public/templates/ (flag-left, flag-right). They are used for both the plane and the rocket (Just different placements and display names).
 
 Stack
 
@@ -78,8 +78,6 @@ Astronaut
 Pilot  
 Homies on the plane landing  
 Rocket landing homies
-
-Models from Sketchfab under Creative Commons Attribution. Add author names and model URLs here when you have them.
 
 Challenge  
 Unlayer React Image Editor challenge.  
