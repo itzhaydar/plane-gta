@@ -11,6 +11,8 @@ import { useNavigate } from 'react-router-dom';
 import {
   Suspense,
   useLayoutEffect,
+  useEffect,
+  useState,
   useRef,
   useMemo,
 } from 'react';
@@ -883,17 +885,74 @@ function Plane({
 }
 
 // ============================================================
+// SOUND TOGGLE (FA3-style volume icon)
+// ============================================================
+
+function SoundToggle({
+  muted,
+  onToggle,
+}: {
+  muted: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      className="launch-bay-sound-toggle"
+      aria-label={muted ? 'Unmute sound' : 'Mute sound'}
+    >
+      {muted ? (
+        <svg viewBox="0 0 576 512" width="15" height="15" fill="currentColor">
+          <path d="M301.1 34.8C312.6 40 320 51.4 320 64l0 384c0 12.6-7.4 24-18.9 29.2s-25 3.1-34.4-5.3L131.8 352 64 352c-35.3 0-64-28.7-64-64l0-64c0-35.3 28.7-64 64-64l67.8 0L266.7 40.1c9.4-8.4 22.9-10.4 34.4-5.3zM425 167l55 55 55-55c9.4-9.4 24.6-9.4 33.9 0s9.4 24.6 0 33.9l-55 55 55 55c9.4 9.4 9.4 24.6 0 33.9s-24.6 9.4-33.9 0l-55-55-55 55c-9.4 9.4-24.6 9.4-33.9 0s-9.4-24.6 0-33.9l55-55-55-55c-9.4-9.4-9.4-24.6 0-33.9s24.6-9.4 33.9 0z" />
+        </svg>
+      ) : (
+        <svg viewBox="0 0 576 512" width="15" height="15" fill="currentColor">
+          <path d="M301.1 34.8C312.6 40 320 51.4 320 64l0 384c0 12.6-7.4 24-18.9 29.2s-25 3.1-34.4-5.3L131.8 352 64 352c-35.3 0-64-28.7-64-64l0-64c0-35.3 28.7-64 64-64l67.8 0L266.7 40.1c9.4-8.4 22.9-10.4 34.4-5.3zM425.6 88.3C476 138.7 512 209.2 512 288s-36 149.3-86.4 199.7c-9.4 9.4-24.6 9.4-33.9 0s-9.4-24.6 0-33.9C435.6 410.9 464 353.3 464 288s-28.4-122.9-72.3-165.8c-9.4-9.4-9.4-24.6 0-33.9s24.6-9.4 33.9 0zM356.1 174.6C384 202.5 400 240.6 400 288s-16 85.5-43.9 113.4c-9.4 9.4-24.6 9.4-33.9 0s-9.4-24.6 0-33.9C339.5 350.1 352 320.5 352 288s-12.5-62.1-29.7-79.4c-9.4-9.4-9.4-24.6 0-33.9s24.6-9.4 33.9 0z" />
+        </svg>
+      )}
+    </button>
+  );
+}
+
+// ============================================================
 // HANGAR PAGE
 // ============================================================
 
 export default function HangarPage() {
   const go = useNavigate();
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [muted, setMuted] = useState(false);
 
   const {
     activeFace,
     setActiveFace,
     liveries,
   } = usePlaneStore();
+
+  useEffect(() => {
+    audioRef.current = new Audio('/boot.mp3');
+    audioRef.current.volume = 0.6;
+
+    audioRef.current.play().catch(() => {
+      const playOnce = () => {
+        audioRef.current?.play();
+        window.removeEventListener('pointerdown', playOnce);
+      };
+      window.addEventListener('pointerdown', playOnce, { once: true });
+    });
+
+    return () => {
+      audioRef.current?.pause();
+      audioRef.current = null;
+    };
+  }, []);
+
+  const toggleSound = () => {
+    if (!audioRef.current) return;
+    audioRef.current.muted = !audioRef.current.muted;
+    setMuted(audioRef.current.muted);
+  };
 
   const painted = FACES.every(
     (face) => Boolean(liveries[face])
@@ -939,6 +998,8 @@ export default function HangarPage() {
                 painted ? 'is-ready' : ''
               }`}
             />
+
+            <SoundToggle muted={muted} onToggle={toggleSound} />
 
             <button
               type="button"
@@ -1193,7 +1254,7 @@ const LAUNCH_BAY_CSS = `
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    gap: 12px;
+    gap: 14px;
     margin-bottom: 12px;
   }
 
@@ -1203,6 +1264,7 @@ const LAUNCH_BAY_CSS = `
     flex: 0 0 auto;
     border-radius: 50%;
     background: #b8bec5;
+    margin-right: auto;
   }
 
   .launch-bay-readiness-dot.is-ready {
@@ -1210,9 +1272,36 @@ const LAUNCH_BAY_CSS = `
     box-shadow: 0 0 0 4px rgba(197, 139, 60, 0.1);
   }
 
+  .launch-bay-sound-toggle {
+    width: 46px;
+    height: 46px;
+    flex: 0 0 auto;
+    border: 1px solid rgba(7, 26, 56, 0.1);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.7);
+    color: rgba(7, 26, 56, 0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 8px 18px rgba(7, 26, 56, 0.06);
+    transition:
+      color 150ms ease,
+      border-color 150ms ease,
+      transform 150ms ease,
+      background 150ms ease;
+  }
+
+  .launch-bay-sound-toggle:hover {
+    color: #0a2850;
+    border-color: rgba(197, 139, 60, 0.45);
+    transform: translateY(-2px);
+  }
+
   .launch-bay-takeoff-button {
     min-width: 185px;
-    padding: 15px 17px;
+    height: 46px;
+    padding: 0 17px;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -1306,6 +1395,7 @@ const LAUNCH_BAY_CSS = `
 
   @media (prefers-reduced-motion: reduce) {
     .launch-bay-face,
+    .launch-bay-sound-toggle,
     .launch-bay-takeoff-button {
       transition: none;
     }
