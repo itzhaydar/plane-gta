@@ -34,8 +34,8 @@ const FACES: Face[] = [
   'flag',
 ];
 
-const FLAG_FALLBACK = '/templates/plane-flag.svg';
-
+const FLAG_LEFT_FALLBACK = '/templates/flag-left.svg';
+const FLAG_RIGHT_FALLBACK = '/templates/flag-right.svg';
 // Preload the pilot while the landing page is still on screen.
 useGLTF.preload('/pilot-out.glb');
 
@@ -46,10 +46,12 @@ useGLTF.preload('/pilot-out.glb');
 
 function FlagSkin({
   url,
+  fallback,
 }: {
   url: string | null;
+  fallback: string;
 }) {
-  const map = useTexture(url ?? FLAG_FALLBACK);
+  const map = useTexture(url ?? fallback);
 
   useLayoutEffect(() => {
     map.colorSpace = THREE.SRGBColorSpace;
@@ -941,15 +943,15 @@ function Plane({
           ONLY LIVERY WRAPPER
           FLAG
          ================================================== */}
+<FlagPanel
+  livery={liveries['flag-left']}
+  side={1}
+/>
 
-      <FlagPanel
-        livery={liveries.flag}
-        side={1}
-      />
-      <FlagPanel
-        livery={liveries.flag}
-        side={-1}
-      />
+<FlagPanel
+  livery={liveries['flag-right']}
+  side={-1}
+/>
     </group>
   );
 }
