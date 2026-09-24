@@ -27,7 +27,8 @@ import { usePlaneStore, type Face } from '../store';
 // NOTE:
 // This intentionally keeps the existing Face keys so your current
 // store + LiveryEditor work without requiring another file change.
-// In the UI they are presented as PORT / STARBOARD mission panels.
+// Same flag wrappers as the plane: flag-left / flag-right.
+// They stay visibly white until the user paints them.
 // ============================================================
 
 const FACES: Face[] = ['flag-left', 'flag-right'];
@@ -553,9 +554,9 @@ function MissionPanel({
         renderOrder={2}
       >
         <meshStandardMaterial
-          color="#b9c3cb"
-          metalness={0.48}
-          roughness={0.35}
+          color="#ffffff"
+          metalness={0.12}
+          roughness={0.42}
         />
       </RoundedBox>
 
@@ -743,8 +744,8 @@ function SoundToggle({
 // ============================================================
 
 function faceLabel(face: Face) {
-  if (face === 'flag-left') return 'PORT PANEL';
-  if (face === 'flag-right') return 'STARBOARD PANEL';
+  if (face === 'flag-left') return 'FLAG LEFT';
+  if (face === 'flag-right') return 'FLAG RIGHT';
   return String(face).toUpperCase();
 }
 
@@ -799,7 +800,7 @@ export default function RockHangar() {
         <aside className="rocket-bay-editor">
           <div className="rocket-bay-editor-head">
             <p className="rocket-bay-prompt">
-              Suit up, astronaut. Mark both mission panels, then we launch for Mars.
+              Suit up, astronaut. Paint both flags, then we launch for Mars.
             </p>
 
             <div className="rocket-bay-faces">
