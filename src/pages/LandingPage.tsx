@@ -91,7 +91,7 @@ export default function LandingPage() {
 
             <div className="landing-desktop-notice">
               <span>DESKTOP FIRST</span>
-              <b>The game won’t work on some smartphones.</b>
+              <b>The game won’t work on a smartphone.</b>
             </div>
 
             <button
@@ -142,8 +142,21 @@ export default function LandingPage() {
         </main>
 
         <div className="landing-footer">
-          <span className="landing-footer-dot" />
-          Flight system ready
+          <span className="landing-footer-status">
+            <span className="landing-footer-dot" />
+            Flight system ready
+          </span>
+
+          <span className="landing-developer">
+            Developed by{' '}
+            <a
+              href="https://x.com/itzhaydar"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              @itzhaydar
+            </a>
+          </span>
         </div>
 
         {/* ROLE SELECTION */}
@@ -728,12 +741,37 @@ button {
   bottom: 28px;
   display: flex;
   align-items: center;
-  gap: 9px;
+  gap: 24px;
   color: rgba(7, 26, 56, 0.28);
   font-size: 8px;
   font-weight: 850;
   letter-spacing: 0.18em;
   text-transform: uppercase;
+}
+
+.landing-footer-status {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.landing-developer {
+  padding-left: 20px;
+  border-left: 1px solid rgba(7, 26, 56, 0.12);
+  color: rgba(7, 26, 56, 0.42);
+  letter-spacing: 0.12em;
+  text-transform: none;
+}
+
+.landing-developer a {
+  color: #123b6b;
+  font-weight: 950;
+  text-decoration: none;
+  transition: color 150ms ease, opacity 150ms ease;
+}
+
+.landing-developer a:hover {
+  color: #c58b3c;
 }
 
 .landing-footer-dot {
