@@ -717,7 +717,7 @@ function AnimatedPerson({url,height,position,rotation=[0,-Math.PI/2,0]}:{url:str
   return <group position={position} rotation={rotation}><primitive object={person}/></group>;
 }
 
-function StartCrew(){return <><AnimatedPerson url="/pilot-out.glb" height={1.42} position={[1.65,-.72,.35]}/><AnimatedPerson url="/homie1.glb" height={1.42} position={[-1.15,-.72,.65]} rotation={[0,Math.PI/2,0]}/></>}
+function StartCrew(){return <><AnimatedPerson url="/pilot-out.glb" height={1.42} position={[1.55,-.72,1.05]}/><AnimatedPerson url="/homie1.glb" height={1.42} position={[2.45,-.72,.25]} rotation={[0,Math.PI/2,0]}/></>}
 function ExitHomie(){return <AnimatedPerson url="/homie1.glb" height={1.48} position={[1.45,-.72,.42]}/>;}
 
 function DestinationBeacon({distance}:{distance:number}){return <group position={[0,13,ROUTE_END_Z]}><Html center distanceFactor={16} style={{pointerEvents:'none'}}><div className="destination-beacon"><span/><b>{DESTINATION_NAME}</b><small>{Math.max(0,Math.round(distance))} KM</small></div></Html></group>}
@@ -748,7 +748,7 @@ function FlightWorld({phase,setPhase,onTelemetry}:{phase:FlightPhase;setPhase:(p
       speed.current=0;
     }
     if(aircraft.current){aircraft.current.position.set(0,altitude.current,z.current);aircraft.current.rotation.set(pitch.current,0,0)}
-    const chase=new THREE.Vector3(7.4,3.8,z.current+11.5);if(!orbit.current?.__dragging)camera.position.lerp(chase,1-Math.pow(.003,d));if(orbit.current){orbit.current.target.lerp(new THREE.Vector3(0,altitude.current+.5,z.current-5),1-Math.pow(.002,d));orbit.current.update()}
+    const chase=new THREE.Vector3(5.8,3.45,z.current+9.2);if(!orbit.current?.__dragging)camera.position.lerp(chase,1-Math.pow(.003,d));if(orbit.current){orbit.current.target.lerp(new THREE.Vector3(0,altitude.current+.5,z.current-5),1-Math.pow(.002,d));orbit.current.update()}
     if(state.clock.elapsedTime-lastHud.current>.08){onTelemetry({speed:Math.round(speed.current),altitude:Math.max(0,Math.round((altitude.current-.72)*120)),distance:Math.round(Math.max(0,dist)),progress:THREE.MathUtils.clamp(1-dist/785,0,1)});lastHud.current=state.clock.elapsedTime}
   });
   return <><color attach="background" args={['#a9cede']}/><fog attach="fog" args={['#b8d5e2',55,330]}/><ambientLight intensity={.82}/><directionalLight position={[7,12,5]} intensity={1.8} castShadow/><WorldEnvironment/><HighClouds/><group ref={aircraft} position={[0,.72,65]}><Plane liveries={liveries}/>{phase==='outside'&&<StartCrew/>}{phase==='exited'&&<ExitHomie/>}</group>{!['outside','parked','takeoff'].includes(phase)&&<DestinationBeacon distance={Math.max(0,z.current-ROUTE_END_Z)}/>}<OrbitControls ref={orbit} enablePan={false} enableZoom minDistance={5} maxDistance={18} maxPolarAngle={Math.PI*.48} minPolarAngle={.35} onStart={()=>{if(orbit.current)orbit.current.__dragging=true}} onEnd={()=>{if(orbit.current)orbit.current.__dragging=false}}/></>;
@@ -776,7 +776,7 @@ export default function FlyPage(){
   const mapProgress=['landing','landed','stopped','exited'].includes(phase)?1:telemetry.progress;
   const mapLeft=22 + mapProgress*67 + Math.sin(mapProgress*Math.PI)*15;
   const mapTop=12 + mapProgress*77;
-  return <main className="fly-page"><style>{FLY_CSS}</style><Canvas shadows dpr={[1,1.3]} camera={{position:[7.4,4.5,76],fov:43,near:.1,far:1200}} gl={{antialias:true,powerPreference:'high-performance',stencil:false}}><FlightWorld phase={phase} setPhase={setPhase} onTelemetry={setTelemetry}/></Canvas><div className="fly-vignette"/>
+  return <main className="fly-page"><style>{FLY_CSS}</style><Canvas shadows dpr={[1,1.3]} camera={{position:[5.8,3.8,74.2],fov:40,near:.1,far:1200}} gl={{antialias:true,powerPreference:'high-performance',stencil:false}}><FlightWorld phase={phase} setPhase={setPhase} onTelemetry={setTelemetry}/></Canvas><div className="fly-vignette"/>
     <header className="fly-hud"><div className="flight-brand"><i/>MARSHOUT <b>FLIGHT</b></div>{['landed','stopped','exited'].includes(phase)?<div className="route-card route-card-arrived"><span><small>CURRENT LOCATION</small><b>{DESTINATION_NAME}</b></span></div>:<div className="route-card"><span><small>CURRENT LOCATION</small><b>{current}</b></span><em>→</em><span><small>DESTINATION</small><b>{DESTINATION_NAME}</b></span></div>}<SoundButton muted={muted} onClick={toggleSound}/></header>
     <aside className="instruments"><div className="speed"><small>AIRSPEED</small><strong>{String(telemetry.speed).padStart(3,'0')}</strong><em> KM/H</em><i><b style={{width:`${Math.min(100,telemetry.speed/CRUISE_SPEED*100)}%`}}/></i></div><div className="stat"><small>ALTITUDE</small><b>{telemetry.altitude.toLocaleString()} FT</b></div><div className="stat"><small>AUTOPILOT</small><b>{phase==='outside'||phase==='parked'?'STANDBY':phase==='exited'?'COMPLETE':'ENGAGED'}</b></div></aside>
     <aside className={`nav-map ${mapProgress > .72 ? 'is-approach' : ''}`}>
