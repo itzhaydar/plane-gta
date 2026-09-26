@@ -758,15 +758,31 @@ function FlightWorld({phase,setPhase,onTelemetry}:{phase:FlightPhase;setPhase:(p
     }
     if(aircraft.current){aircraft.current.position.set(0,altitude.current,z.current);aircraft.current.rotation.set(pitch.current,0,0)}
     const arrivalView=['landed','stopped','exited'].includes(phase);
-    // Arrival framing deliberately moves the aircraft into the clear center/right portion
-    // of the viewport so the left control card never hides the plane or crew.
-    const chase=new THREE.Vector3(arrivalView?6.8:5.8,arrivalView?3.15:3.45,z.current+(arrivalView?7.6:9.2));
-    if(!orbit.current?.__dragging)camera.position.lerp(chase,1-Math.pow(.003,d));
+    const preflightView=['outside','parked'].includes(phase);
+
+    // Keep the aircraft and crew in the clear center/right side of the viewport.
+    // Preflight gets a slightly wider three-quarter view so the full plane + both people
+    // stay visible beside the left control card. Arrival keeps the same clean framing.
+    const chase = preflightView
+      ? new THREE.Vector3(8.4, 3.65, z.current + 11.4)
+      : new THREE.Vector3(arrivalView ? 6.8 : 5.8, arrivalView ? 3.15 : 3.45, z.current + (arrivalView ? 7.6 : 9.2));
+
+    if(!orbit.current?.__dragging) camera.position.lerp(chase,1-Math.pow(.003,d));
+
     if(orbit.current){
-      const targetX=arrivalView?-1.55:0;
-      const targetZ=z.current-(arrivalView?2.4:5);
+      const targetX = preflightView ? -2.15 : arrivalView ? -1.55 : 0;
+      const targetZ = z.current - (preflightView ? 1.0 : arrivalView ? 2.4 : 5);
       orbit.current.target.lerp(new THREE.Vector3(targetX,altitude.current+.5,targetZ),1-Math.pow(.002,d));
       orbit.current.update();
+    }
+
+    // Subtle speed sensation: widen the perspective as airspeed rises, then naturally
+    // return to the normal lens as the aircraft slows for approach/landing.
+    if(camera instanceof THREE.PerspectiveCamera){
+      const speedRatio = THREE.MathUtils.clamp(speed.current / CRUISE_SPEED, 0, 1);
+      const targetFov = 40 + speedRatio * 5;
+      camera.fov = THREE.MathUtils.lerp(camera.fov, targetFov, 1-Math.pow(.025,d));
+      camera.updateProjectionMatrix();
     }
     if(state.clock.elapsedTime-lastHud.current>.08){onTelemetry({speed:Math.round(speed.current),altitude:Math.max(0,Math.round((altitude.current-.72)*120)),distance:Math.round(Math.max(0,dist)),progress:THREE.MathUtils.clamp(1-dist/785,0,1)});lastHud.current=state.clock.elapsedTime}
   });
