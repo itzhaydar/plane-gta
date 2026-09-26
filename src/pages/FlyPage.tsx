@@ -708,17 +708,26 @@ function HighClouds(){
 useGLTF.preload('/pilot-out.glb');
 useGLTF.preload('/homie1.glb');
 
-function AnimatedPerson({url,height,position,rotation=[0,-Math.PI/2,0]}:{url:string;height:number;position:[number,number,number];rotation?:[number,number,number]}){
+function AnimatedPerson({url,height,position,rotation=[0,-Math.PI/2,0],animate=true}:{url:string;height:number;position:[number,number,number];rotation?:[number,number,number];animate?:boolean}){
   const {scene,animations}=useGLTF(url);
   const person=useMemo(()=>{const c=SkeletonUtils.clone(scene);c.traverse(o=>{if(o instanceof THREE.Mesh){o.castShadow=true;o.receiveShadow=true}});c.updateMatrixWorld(true);const b=new THREE.Box3().setFromObject(c),sz=b.getSize(new THREE.Vector3());c.scale.multiplyScalar(height/Math.max(sz.y,1e-6));c.updateMatrixWorld(true);const f=new THREE.Box3().setFromObject(c),center=f.getCenter(new THREE.Vector3());c.position.x-=center.x;c.position.z-=center.z;c.position.y-=f.min.y;return c},[scene,height]);
   const {actions,mixer}=useAnimations(animations,person);
-  useEffect(()=>{const names=Object.keys(actions);const action=actions.idle||actions.Idle||actions.walk||actions.Walk||actions[names[0]];if(!action)return;action.reset().setLoop(THREE.LoopRepeat,Infinity).fadeIn(.2).play();return()=>{action.fadeOut(.2)}},[actions]);
-  useFrame((_,dt)=>mixer?.update(dt));
+  useEffect(()=>{
+    if(!animate){mixer?.stopAllAction();return;}
+    const names=Object.keys(actions);const action=actions.idle||actions.Idle||actions.walk||actions.Walk||actions[names[0]];
+    if(!action)return;
+    action.reset().setLoop(THREE.LoopRepeat,Infinity).fadeIn(.2).play();
+    return()=>{action.fadeOut(.2)};
+  },[actions,mixer,animate]);
+  useFrame((_,dt)=>{if(animate)mixer?.update(dt)});
   return <group position={position} rotation={rotation}><primitive object={person}/></group>;
 }
 
 function StartCrew(){return <><AnimatedPerson url="/pilot-out.glb" height={1.42} position={[1.55,-.72,1.05]}/><AnimatedPerson url="/homie1.glb" height={1.42} position={[2.45,-.72,.25]} rotation={[0,Math.PI/2,0]}/></>}
-function ExitHomie(){return <AnimatedPerson url="/homie1.glb" height={1.48} position={[1.45,-.72,.42]}/>;}
+function ExitCrew(){return <>
+  <AnimatedPerson url="/pilot-out.glb" height={1.46} position={[1.35,-.72,.95]} rotation={[0,-Math.PI/2,0]} animate={false}/>
+  <AnimatedPerson url="/homie1.glb" height={1.48} position={[2.15,-.72,.20]} rotation={[0,-Math.PI/2,0]} animate/>
+</>;}
 
 function DestinationBeacon({distance}:{distance:number}){return <group position={[0,13,ROUTE_END_Z]}><Html center distanceFactor={16} style={{pointerEvents:'none'}}><div className="destination-beacon"><span/><b>{DESTINATION_NAME}</b><small>{Math.max(0,Math.round(distance))} KM</small></div></Html></group>}
 
@@ -748,10 +757,20 @@ function FlightWorld({phase,setPhase,onTelemetry}:{phase:FlightPhase;setPhase:(p
       speed.current=0;
     }
     if(aircraft.current){aircraft.current.position.set(0,altitude.current,z.current);aircraft.current.rotation.set(pitch.current,0,0)}
-    const chase=new THREE.Vector3(5.8,3.45,z.current+9.2);if(!orbit.current?.__dragging)camera.position.lerp(chase,1-Math.pow(.003,d));if(orbit.current){orbit.current.target.lerp(new THREE.Vector3(0,altitude.current+.5,z.current-5),1-Math.pow(.002,d));orbit.current.update()}
+    const arrivalView=['landed','stopped','exited'].includes(phase);
+    // Arrival framing deliberately moves the aircraft into the clear center/right portion
+    // of the viewport so the left control card never hides the plane or crew.
+    const chase=new THREE.Vector3(arrivalView?6.8:5.8,arrivalView?3.15:3.45,z.current+(arrivalView?7.6:9.2));
+    if(!orbit.current?.__dragging)camera.position.lerp(chase,1-Math.pow(.003,d));
+    if(orbit.current){
+      const targetX=arrivalView?-1.55:0;
+      const targetZ=z.current-(arrivalView?2.4:5);
+      orbit.current.target.lerp(new THREE.Vector3(targetX,altitude.current+.5,targetZ),1-Math.pow(.002,d));
+      orbit.current.update();
+    }
     if(state.clock.elapsedTime-lastHud.current>.08){onTelemetry({speed:Math.round(speed.current),altitude:Math.max(0,Math.round((altitude.current-.72)*120)),distance:Math.round(Math.max(0,dist)),progress:THREE.MathUtils.clamp(1-dist/785,0,1)});lastHud.current=state.clock.elapsedTime}
   });
-  return <><color attach="background" args={['#a9cede']}/><fog attach="fog" args={['#b8d5e2',55,330]}/><ambientLight intensity={.82}/><directionalLight position={[7,12,5]} intensity={1.8} castShadow/><WorldEnvironment/><HighClouds/><group ref={aircraft} position={[0,.72,65]}><Plane liveries={liveries}/>{phase==='outside'&&<StartCrew/>}{phase==='exited'&&<ExitHomie/>}</group>{!['outside','parked','takeoff'].includes(phase)&&<DestinationBeacon distance={Math.max(0,z.current-ROUTE_END_Z)}/>}<OrbitControls ref={orbit} enablePan={false} enableZoom minDistance={5} maxDistance={18} maxPolarAngle={Math.PI*.48} minPolarAngle={.35} onStart={()=>{if(orbit.current)orbit.current.__dragging=true}} onEnd={()=>{if(orbit.current)orbit.current.__dragging=false}}/></>;
+  return <><color attach="background" args={['#a9cede']}/><fog attach="fog" args={['#b8d5e2',55,330]}/><ambientLight intensity={.82}/><directionalLight position={[7,12,5]} intensity={1.8} castShadow/><WorldEnvironment/><HighClouds/><group ref={aircraft} position={[0,.72,65]}><Plane liveries={liveries}/>{phase==='outside'&&<StartCrew/>}{phase==='exited'&&<ExitCrew/>}</group>{!['outside','parked','takeoff'].includes(phase)&&<DestinationBeacon distance={Math.max(0,z.current-ROUTE_END_Z)}/>}<OrbitControls ref={orbit} enablePan={false} enableZoom minDistance={5} maxDistance={18} maxPolarAngle={Math.PI*.48} minPolarAngle={.35} onStart={()=>{if(orbit.current)orbit.current.__dragging=true}} onEnd={()=>{if(orbit.current)orbit.current.__dragging=false}}/></>;
 }
 
 function SoundButton({muted,onClick}:{muted:boolean;onClick:()=>void}){return <button className="fly-sound" onClick={onClick} aria-label={muted?'Unmute':'Mute'}>{muted?'🔇':'🔊'}</button>}
