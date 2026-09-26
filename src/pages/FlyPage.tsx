@@ -1,5 +1,5 @@
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { Html, RoundedBox, useTexture, OrbitControls, useGLTF } from '@react-three/drei';
+import { Html, RoundedBox, useTexture, OrbitControls, useGLTF, useAnimations } from '@react-three/drei';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { SkeletonUtils } from 'three-stdlib';
@@ -672,11 +672,22 @@ const ROUTE_END_Z = -720;
 const DESTINATION_NAME = 'LOS SANTOS';
 const START_NAME = 'VICE CITY';
 
-type FlightPhase = 'parked'|'takeoff'|'climb'|'cruise'|'approach'|'landing'|'landed'|'stopped'|'exited';
+type FlightPhase = 'outside'|'parked'|'takeoff'|'climb'|'cruise'|'approach'|'landing'|'landed'|'stopped'|'exited';
 type Telemetry = { speed:number; altitude:number; distance:number; progress:number };
 
 function Building({x,z,h,w,warm=false}:{x:number;z:number;h:number;w:number;warm?:boolean}){
-  return <group position={[x,h/2,z]}><RoundedBox args={[w,h,w*.82]} radius={.06} smoothness={2} castShadow receiveShadow><meshStandardMaterial color={warm?'#b7a99d':'#8798a7'} roughness={.72}/></RoundedBox>{Array.from({length:Math.max(2,Math.floor(h/.72))},(_,i)=><mesh key={i} position={[0,h/2-i*.68-h/2,w*.415+.006]}><planeGeometry args={[w*.58,.14]}/><meshBasicMaterial color={warm?'#f1d398':'#c0dceb'} toneMapped={false}/></mesh>)}</group>;
+  const floors=Math.max(3,Math.floor(h/.62));
+  return <group position={[x,0,z]}>
+    <RoundedBox args={[w,h,w*.82]} radius={.055} smoothness={3} position={[0,h/2,0]} castShadow receiveShadow>
+      <meshStandardMaterial color={warm?'#a99b91':'#748795'} roughness={.62} metalness={.08}/>
+    </RoundedBox>
+    <mesh position={[0,h+.16,0]} castShadow><boxGeometry args={[w*.52,.32,w*.48]}/><meshStandardMaterial color={warm?'#80766f':'#596b78'} roughness={.7}/></mesh>
+    <mesh position={[0,h+.42,0]}><cylinderGeometry args={[.025,.025,.55,8]}/><meshStandardMaterial color="#4e5b64" metalness={.45}/></mesh>
+    {Array.from({length:floors},(_,i)=>{const y=.42+i*.62;return <group key={i}>
+      <mesh position={[0,y,w*.415+.007]}><planeGeometry args={[w*.62,.16]}/><meshBasicMaterial color={i%3===0?'#f1d398':'#bdd9e8'} toneMapped={false}/></mesh>
+      <mesh position={[w*.501,y,0]} rotation={[0,Math.PI/2,0]}><planeGeometry args={[w*.48,.14]}/><meshBasicMaterial color={i%4===0?'#efd08f':'#a9cfdf'} toneMapped={false}/></mesh>
+    </group>})}
+  </group>;
 }
 
 function Runway({z,length=250}:{z:number;length?:number}){
@@ -685,7 +696,7 @@ function Runway({z,length=250}:{z:number;length?:number}){
 
 function WorldEnvironment(){
   const trees=useMemo(()=>Array.from({length:58},(_,i)=>55-i*13),[]);
-  const skyline=useMemo(()=>Array.from({length:44},(_,i)=>({x:(i%2?1:-1)*(7+(i%6)*2.2),z:-635-(i%11)*9,h:4+(i%8)*1.15,w:1.3+(i%4)*.4})),[]);
+  const skyline=useMemo(()=>[...Array.from({length:34},(_,i)=>({x:(i%2?1:-1)*(7+(i%5)*2.15),z:58-i*5.7,h:4.5+(i%7)*1.05,w:1.35+(i%4)*.38})),...Array.from({length:64},(_,i)=>({x:(i%2?1:-1)*(7+(i%6)*2.2),z:-610-(i%16)*8,h:5+(i%9)*1.18,w:1.4+(i%4)*.42}))],[]);
   return <group><mesh rotation={[-Math.PI/2,0,0]} position={[0,-.04,-330]} receiveShadow><planeGeometry args={[260,1150]}/><meshStandardMaterial color="#6d8b5a" roughness={1}/></mesh><Runway z={-45} length={260}/><Runway z={ROUTE_END_Z} length={280}/>{trees.map((z,i)=><group key={z}><Tree x={-6.6} z={z} s={i%3?.9:1.1}/><Tree x={6.6} z={z-3} s={i%2?1:.85}/></group>)}{skyline.map((b,i)=><Building key={i} {...b} warm={i%5===0}/>)}</group>;
 }
 
@@ -697,54 +708,17 @@ function HighClouds(){
 useGLTF.preload('/pilot-out.glb');
 useGLTF.preload('/homie1.glb');
 
-function ExitPerson({
-  src,
-  position,
-  rotation = [0, -Math.PI / 2, 0],
-  height = 1.42,
-}: {
-  src: string;
-  position: [number, number, number];
-  rotation?: [number, number, number];
-  height?: number;
-}) {
-  const { scene } = useGLTF(src);
-  const man = useMemo(() => {
-    const c = SkeletonUtils.clone(scene);
-    c.traverse((o) => {
-      if (o instanceof THREE.Mesh) {
-        o.castShadow = true;
-        o.receiveShadow = true;
-      }
-    });
-    c.updateMatrixWorld(true);
-    const b = new THREE.Box3().setFromObject(c);
-    const sz = b.getSize(new THREE.Vector3());
-    c.scale.multiplyScalar(height / Math.max(sz.y, 1e-6));
-    c.updateMatrixWorld(true);
-    const f = new THREE.Box3().setFromObject(c);
-    const center = f.getCenter(new THREE.Vector3());
-    c.position.x -= center.x;
-    c.position.z -= center.z;
-    c.position.y -= f.min.y;
-    return c;
-  }, [scene, height]);
-
-  return (
-    <group position={position} rotation={rotation}>
-      <primitive object={man} />
-    </group>
-  );
+function AnimatedPerson({url,height,position,rotation=[0,-Math.PI/2,0]}:{url:string;height:number;position:[number,number,number];rotation?:[number,number,number]}){
+  const {scene,animations}=useGLTF(url);
+  const person=useMemo(()=>{const c=SkeletonUtils.clone(scene);c.traverse(o=>{if(o instanceof THREE.Mesh){o.castShadow=true;o.receiveShadow=true}});c.updateMatrixWorld(true);const b=new THREE.Box3().setFromObject(c),sz=b.getSize(new THREE.Vector3());c.scale.multiplyScalar(height/Math.max(sz.y,1e-6));c.updateMatrixWorld(true);const f=new THREE.Box3().setFromObject(c),center=f.getCenter(new THREE.Vector3());c.position.x-=center.x;c.position.z-=center.z;c.position.y-=f.min.y;return c},[scene,height]);
+  const {actions,mixer}=useAnimations(animations,person);
+  useEffect(()=>{const names=Object.keys(actions);const action=actions.idle||actions.Idle||actions.walk||actions.Walk||actions[names[0]];if(!action)return;action.reset().setLoop(THREE.LoopRepeat,Infinity).fadeIn(.2).play();return()=>{action.fadeOut(.2)}},[actions]);
+  useFrame((_,dt)=>mixer?.update(dt));
+  return <group position={position} rotation={rotation}><primitive object={person}/></group>;
 }
 
-function ExitCrew() {
-  return (
-    <>
-      <ExitPerson src="/pilot-out.glb" position={[1.65, -0.72, 0.35]} />
-      <ExitPerson src="/homie1.glb" position={[1.65, -0.72, -1.05]} />
-    </>
-  );
-}
+function StartCrew(){return <><AnimatedPerson url="/pilot-out.glb" height={1.42} position={[1.65,-.72,.35]}/><AnimatedPerson url="/homie1.glb" height={1.42} position={[-1.15,-.72,.65]} rotation={[0,Math.PI/2,0]}/></>}
+function ExitHomie(){return <AnimatedPerson url="/homie1.glb" height={1.48} position={[1.45,-.72,.42]}/>;}
 
 function DestinationBeacon({distance}:{distance:number}){return <group position={[0,13,ROUTE_END_Z]}><Html center distanceFactor={16} style={{pointerEvents:'none'}}><div className="destination-beacon"><span/><b>{DESTINATION_NAME}</b><small>{Math.max(0,Math.round(distance))} KM</small></div></Html></group>}
 
@@ -777,7 +751,7 @@ function FlightWorld({phase,setPhase,onTelemetry}:{phase:FlightPhase;setPhase:(p
     const chase=new THREE.Vector3(7.4,3.8,z.current+11.5);if(!orbit.current?.__dragging)camera.position.lerp(chase,1-Math.pow(.003,d));if(orbit.current){orbit.current.target.lerp(new THREE.Vector3(0,altitude.current+.5,z.current-5),1-Math.pow(.002,d));orbit.current.update()}
     if(state.clock.elapsedTime-lastHud.current>.08){onTelemetry({speed:Math.round(speed.current),altitude:Math.max(0,Math.round((altitude.current-.72)*120)),distance:Math.round(Math.max(0,dist)),progress:THREE.MathUtils.clamp(1-dist/785,0,1)});lastHud.current=state.clock.elapsedTime}
   });
-  return <><color attach="background" args={['#a9cede']}/><fog attach="fog" args={['#b8d5e2',55,330]}/><ambientLight intensity={.82}/><directionalLight position={[7,12,5]} intensity={1.8} castShadow/><WorldEnvironment/><HighClouds/><group ref={aircraft} position={[0,.72,65]}><Plane liveries={liveries}/>{phase==='exited'&&<ExitCrew/>}</group>{!['parked','takeoff'].includes(phase)&&<DestinationBeacon distance={Math.max(0,z.current-ROUTE_END_Z)}/>}<OrbitControls ref={orbit} enablePan={false} enableZoom minDistance={5} maxDistance={18} maxPolarAngle={Math.PI*.48} minPolarAngle={.35} onStart={()=>{if(orbit.current)orbit.current.__dragging=true}} onEnd={()=>{if(orbit.current)orbit.current.__dragging=false}}/></>;
+  return <><color attach="background" args={['#a9cede']}/><fog attach="fog" args={['#b8d5e2',55,330]}/><ambientLight intensity={.82}/><directionalLight position={[7,12,5]} intensity={1.8} castShadow/><WorldEnvironment/><HighClouds/><group ref={aircraft} position={[0,.72,65]}><Plane liveries={liveries}/>{phase==='outside'&&<StartCrew/>}{phase==='exited'&&<ExitHomie/>}</group>{!['outside','parked','takeoff'].includes(phase)&&<DestinationBeacon distance={Math.max(0,z.current-ROUTE_END_Z)}/>}<OrbitControls ref={orbit} enablePan={false} enableZoom minDistance={5} maxDistance={18} maxPolarAngle={Math.PI*.48} minPolarAngle={.35} onStart={()=>{if(orbit.current)orbit.current.__dragging=true}} onEnd={()=>{if(orbit.current)orbit.current.__dragging=false}}/></>;
 }
 
 function SoundButton({muted,onClick}:{muted:boolean;onClick:()=>void}){return <button className="fly-sound" onClick={onClick} aria-label={muted?'Unmute':'Mute'}>{muted?'🔇':'🔊'}</button>}
@@ -785,17 +759,18 @@ function SoundButton({muted,onClick}:{muted:boolean;onClick:()=>void}){return <b
 export default function FlyPage(){
   const go=useNavigate(); const {liveries}=usePlaneStore();
   const flagsReady=Boolean(liveries['flag-left']&&liveries['flag-right']);
-  const [phase,setPhase]=useState<FlightPhase>('parked'); const [muted,setMuted]=useState(true); const [rideNotice,setRideNotice]=useState(true); const audioRef=useRef<HTMLAudioElement|null>(null);
+  const [phase,setPhase]=useState<FlightPhase>('outside'); const [muted,setMuted]=useState(true); const [rideNotice,setRideNotice]=useState(true); const audioRef=useRef<HTMLAudioElement|null>(null);
   const [telemetry,setTelemetry]=useState<Telemetry>({speed:0,altitude:0,distance:785,progress:0});
   useEffect(()=>{const a=new Audio('/boot.mp3');a.loop=true;a.volume=.35;a.muted=true;audioRef.current=a;return()=>{a.pause();a.src=''}},[]);
   const toggleSound=()=>{const a=audioRef.current;if(!a)return;a.muted=!a.muted;setMuted(a.muted);if(!a.muted)a.play().catch(()=>{})};
+  const getIn=()=>phase==='outside'&&setPhase('parked');
   const takeOff=()=>{if(!flagsReady)return;audioRef.current?.play().catch(()=>{});setPhase('takeoff')};
   const stop=()=>phase==='landed'&&setPhase('stopped');
   const exitPlane=()=>phase==='stopped'&&setPhase('exited');
-  useEffect(()=>{const key=(e:KeyboardEvent)=>{if(e.repeat)return;const k=e.key.toLowerCase();if(k==='t'&&phase==='parked')takeOff();if(k==='s'&&phase==='landed')stop();if(k==='e'&&phase==='stopped')exitPlane();if(k==='m')toggleSound()};window.addEventListener('keydown',key);return()=>window.removeEventListener('keydown',key)},[phase,flagsReady]);
+  useEffect(()=>{const key=(e:KeyboardEvent)=>{if(e.repeat)return;const k=e.key.toLowerCase();if(k==='g'&&phase==='outside')getIn();if(k==='t'&&phase==='parked')takeOff();if(k==='s'&&phase==='landed')stop();if(k==='e'&&phase==='stopped')exitPlane();if(k==='m')toggleSound()};window.addEventListener('keydown',key);return()=>window.removeEventListener('keydown',key)},[phase,flagsReady]);
   if(!flagsReady)return <main className="fly-gate"><style>{FLY_CSS}</style><div className="gate-card"><span>MARSHOUT FLIGHT</span><h1>Paint them flags, dawg, then we out.</h1><p>Your aircraft needs both flags painted before it can leave Vice City.</p><button onClick={()=>go('/hangar')}>GO TO HANGAR <b>→</b></button></div></main>;
   const current=phase==='landed'||phase==='stopped'||phase==='exited'?DESTINATION_NAME:START_NAME;
-  const status:Record<FlightPhase,[string,string]>={parked:['READY AT VICE CITY','Autopilot is ready. Take off and enjoy the flight.'],takeoff:['TAKEOFF ROLL','Autopilot accelerating and rotating from the runway.'],climb:['CLIMBING','Clearing the skyline. Cloud layer ahead.'],cruise:['EN ROUTE','Autopilot locked for Los Santos.'],approach:['APPROACH','Descending automatically toward Los Santos.'],landing:['FINAL APPROACH','Runway captured. Landing automatically.'],landed:['TOUCHDOWN','Automatic braking engaged. The aircraft will stop on its own.'],stopped:['PARKED','Aircraft stopped completely. You can get out now.'],exited:['ARRIVED','Thank you, dawg']};
+  const status:Record<FlightPhase,[string,string]>={outside:['CREW READY','Pilot and homie are waiting beside the aircraft. Get in when you are ready.'],parked:['READY AT VICE CITY','Autopilot is ready. Take off and enjoy the flight.'],takeoff:['TAKEOFF ROLL','Autopilot accelerating and rotating from the runway.'],climb:['CLIMBING','Clearing the skyline. Cloud layer ahead.'],cruise:['EN ROUTE','Autopilot locked for Los Santos.'],approach:['APPROACH','Descending automatically toward Los Santos.'],landing:['FINAL APPROACH','Runway captured. Landing automatically.'],landed:['TOUCHDOWN','Automatic braking engaged. The aircraft will stop on its own.'],stopped:['PARKED','Aircraft stopped completely. You can get out now.'],exited:['ARRIVED','Thank you, dawg']};
   const [title,desc]=status[phase];
   // On final approach the nav display snaps to the destination/runway, so the map agrees with the actual landing state.
   const mapProgress=['landing','landed','stopped','exited'].includes(phase)?1:telemetry.progress;
@@ -803,7 +778,7 @@ export default function FlyPage(){
   const mapTop=12 + mapProgress*77;
   return <main className="fly-page"><style>{FLY_CSS}</style><Canvas shadows dpr={[1,1.3]} camera={{position:[7.4,4.5,76],fov:43,near:.1,far:1200}} gl={{antialias:true,powerPreference:'high-performance',stencil:false}}><FlightWorld phase={phase} setPhase={setPhase} onTelemetry={setTelemetry}/></Canvas><div className="fly-vignette"/>
     <header className="fly-hud"><div className="flight-brand"><i/>MARSHOUT <b>FLIGHT</b></div>{['landed','stopped','exited'].includes(phase)?<div className="route-card route-card-arrived"><span><small>CURRENT LOCATION</small><b>{DESTINATION_NAME}</b></span></div>:<div className="route-card"><span><small>CURRENT LOCATION</small><b>{current}</b></span><em>→</em><span><small>DESTINATION</small><b>{DESTINATION_NAME}</b></span></div>}<SoundButton muted={muted} onClick={toggleSound}/></header>
-    <aside className="instruments"><div className="speed"><small>AIRSPEED</small><strong>{String(telemetry.speed).padStart(3,'0')}</strong><em> KM/H</em><i><b style={{width:`${Math.min(100,telemetry.speed/CRUISE_SPEED*100)}%`}}/></i></div><div className="stat"><small>ALTITUDE</small><b>{telemetry.altitude.toLocaleString()} FT</b></div><div className="stat"><small>AUTOPILOT</small><b>{phase==='parked'?'STANDBY':phase==='exited'?'COMPLETE':'ENGAGED'}</b></div></aside>
+    <aside className="instruments"><div className="speed"><small>AIRSPEED</small><strong>{String(telemetry.speed).padStart(3,'0')}</strong><em> KM/H</em><i><b style={{width:`${Math.min(100,telemetry.speed/CRUISE_SPEED*100)}%`}}/></i></div><div className="stat"><small>ALTITUDE</small><b>{telemetry.altitude.toLocaleString()} FT</b></div><div className="stat"><small>AUTOPILOT</small><b>{phase==='outside'||phase==='parked'?'STANDBY':phase==='exited'?'COMPLETE':'ENGAGED'}</b></div></aside>
     <aside className={`nav-map ${mapProgress > .72 ? 'is-approach' : ''}`}>
       <div className="map-title"><span>NAV / AUTOPILOT</span><b>{telemetry.distance} KM</b></div>
       <div className="map-sub"><span>VCY 024°</span><i>LIVE</i><span>LSX 204°</span></div>
@@ -825,7 +800,7 @@ export default function FlyPage(){
       <div className="map-data"><span><small>ALT</small><b>{telemetry.altitude.toLocaleString()} FT</b></span><span><small>SPD</small><b>{telemetry.speed} KM/H</b></span><span><small>ETA</small><b>{telemetry.distance===0?'ARRIVED':`${Math.max(1,Math.ceil(telemetry.distance/95))} MIN`}</b></span></div>
       <div className="map-progress"><i><b style={{width:`${Math.round(telemetry.progress*100)}%`}}/></i><span>{Math.round(telemetry.progress*100)}% ROUTE</span></div>
     </aside>
-    <section className="control-card"><div className="phase">{title}</div><h1>{phase==='exited'?'THANK YOU, DAWG':'FLIGHT CONTROL'}</h1><p>{desc}</p>{phase==='parked'&&<button className="primary" onClick={takeOff}><span><kbd>T</kbd> TAKE OFF</span><b>→</b></button>}{phase==='landed'&&<button className="primary" onClick={stop}><span><kbd>S</kbd> STOP PLANE</span><b>→</b></button>}{phase==='stopped'&&<button className="primary" onClick={exitPlane}><span><kbd>E</kbd> GET OUT</span><b>→</b></button>}{phase==='exited'&&<button className="primary" onClick={()=>go('/')}><span>HOME</span><b>→</b></button>}<div className="controls-visible"><span><kbd>T</kbd><b>TAKE OFF</b></span><span><kbd>S</kbd><b>STOP</b></span><span><kbd>E</kbd><b>GET OUT</b></span><span><kbd>M</kbd><b>SOUND</b></span><span className="mouse"><b>DRAG MOUSE</b><small>ROTATE CAMERA</small></span></div></section>
+    <section className="control-card"><div className="phase">{title}</div><h1>{phase==='exited'?'THANK YOU, DAWG':'FLIGHT CONTROL'}</h1><p>{desc}</p>{phase==='outside'&&<button className="primary" onClick={getIn}><span><kbd>G</kbd> GET IN</span><b>→</b></button>}{phase==='parked'&&<button className="primary" onClick={takeOff}><span><kbd>T</kbd> TAKE OFF</span><b>→</b></button>}{phase==='landed'&&<button className="primary" onClick={stop}><span><kbd>S</kbd> STOP PLANE</span><b>→</b></button>}{phase==='stopped'&&<button className="primary" onClick={exitPlane}><span><kbd>E</kbd> GET OUT</span><b>→</b></button>}{phase==='exited'&&<button className="primary" onClick={()=>go('/')}><span>HOME</span><b>→</b></button>}<div className="controls-visible"><span><kbd>G</kbd><b>GET IN</b></span><span><kbd>T</kbd><b>TAKE OFF</b></span><span><kbd>S</kbd><b>STOP</b></span><span><kbd>E</kbd><b>GET OUT</b></span><span><kbd>M</kbd><b>SOUND</b></span><span className="mouse"><b>DRAG MOUSE</b><small>ROTATE CAMERA</small></span></div></section>
     {!['parked','landed','stopped','exited'].includes(phase)&&<div className="autopilot-pill"><i/> AUTOPILOT · {DESTINATION_NAME}</div>}
     {rideNotice&&<div className="ride-notice-backdrop"><div className="ride-notice"><div className="ride-notice-icon"><span>✦</span></div><div className="ride-notice-copy"><small>MARSHOUT AUTOPILOT</small><h2>Enjoy your ride.</h2><p>The plane is self-driving.</p></div><button type="button" onClick={()=>setRideNotice(false)}>OK <b>→</b></button></div></div>}
   </main>;
