@@ -1545,9 +1545,9 @@ export default function FlyRocket() {
 
     if (countdown <= 0) return;
 
-    const timer = window\.setTimeout(() => setCountdown((value) => Math.max(0, value - 1)), 900);
+    const timer = window.setTimeout(() => setCountdown((value) => Math.max(0, value - 1)), 900);
 
-    return () => window\.clearTimeout(timer);
+    return () => window.clearTimeout(timer);
 
   }, [countdown]);
 
@@ -1615,9 +1615,9 @@ export default function FlyRocket() {
 
     };
 
-    window\.addEventListener('keydown', onKey);
+    window.addEventListener('keydown', onKey);
 
-    return () => window\.removeEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
 
   }, [phase, missionReady, rideNotice, countdown, initiating]);
 
