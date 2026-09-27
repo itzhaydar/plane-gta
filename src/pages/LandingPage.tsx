@@ -7,9 +7,9 @@ import { usePlaneStore } from '../store';
 
 type Destination = { title: string; short: string; path: string; x: number; color: string };
 const DESTINATIONS: Destination[] = [
-  { title: 'Get a travel flyer', short: 'THE FLYER STUDIO', path: '/homie', x: 0, color: '#f8ae75' },
-  { title: 'Take a trip to Port Gellhorn', short: 'PORT GELLHORN', path: '/hangar', x: 18, color: '#63e4e2' },
-  { title: 'Attend a Party on Mars', short: 'MARS AFTER DARK', path: '/rock-hangar', x: 36, color: '#ff779d' },
+  { title: 'Get a travel flyer', short: 'FLYER HOUSE', path: '/homie', x: 0, color: '#d3a34f' },
+  { title: 'Take a trip to Port Gellhorn', short: 'GELLHORN DEPARTURES', path: '/hangar', x: 18, color: '#f4f0e8' },
+  { title: 'Attend a Party on Mars', short: 'MARS / NIGHT FLIGHT', path: '/rock-hangar', x: 36, color: '#d3a34f' },
 ];
 const START = new THREE.Vector3(-4, 0, 0);
 
@@ -20,7 +20,7 @@ function Building({ destination, index, near }: { destination: Destination; inde
     <group position={[x, 0, -7]}>
       <mesh position={[0, height / 2, 0]} castShadow receiveShadow>
         <boxGeometry args={[11, height, 5.8]} />
-        <meshStandardMaterial color={['#29334f', '#284352', '#433046'][index]} roughness={0.72} />
+        <meshStandardMaterial color={['#f1eee7', '#102848', '#e7e3db'][index]} roughness={0.72} />
       </mesh>
       <mesh position={[0, height + 0.2, 0]} castShadow>
         <boxGeometry args={[11.6, 0.4, 6.3]} />
@@ -36,7 +36,7 @@ function Building({ destination, index, near }: { destination: Destination; inde
           {[3.2, 5.2, 7.2].filter((y) => y < height - 0.7).map((y) => (
             <mesh key={y} position={[offset + 0.85, y, 2.99]}>
               <boxGeometry args={[1.1, 1.25, 0.09]} />
-              <meshStandardMaterial color="#f9cda7" emissive="#e88f7f" emissiveIntensity={0.58} />
+              <meshStandardMaterial color="#f5f1e8" emissive="#d3a34f" emissiveIntensity={0.58} />
             </mesh>
           ))}
         </group>
@@ -64,58 +64,183 @@ function Building({ destination, index, near }: { destination: Destination; inde
         <div className={`city-door-label ${near ? 'is-near' : ''}`}>
           <small>0{index + 1} / DESTINATION</small>
           <strong>{destination.title}</strong>
-          {near && <span>PRESS ENTER TO GO INSIDE</span>}
+          {near && <span>ENTER / STEP THROUGH</span>}
         </div>
       </Html>
       <pointLight position={[0, 3, 3.8]} intensity={near ? 12 : 6} distance={8} color={color} />
-      {index === 2 && <mesh position={[0, height + 0.75, 0]}><sphereGeometry args={[0.55, 20, 12]} /><meshStandardMaterial color="#ff8b9d" emissive="#f34977" emissiveIntensity={1.2} /></mesh>}
+      {index === 2 && <mesh position={[0, height + 0.75, 0]}><sphereGeometry args={[0.55, 20, 12]} /><meshStandardMaterial color="#d3a34f" emissive="#d3a34f" emissiveIntensity={1.2} /></mesh>}
     </group>
   );
 }
 
 function Palm({ x, z }: { x: number; z: number }) {
   return <group position={[x, 0, z]}>
-    <mesh position={[0, 2.1, 0]} rotation={[0, 0, -0.09]} castShadow><cylinderGeometry args={[0.13, 0.22, 4.2, 8]} /><meshStandardMaterial color="#5f3e47" /></mesh>
-    {Array.from({ length: 7 }, (_, i) => <mesh key={i} position={[0, 4.2, 0]} rotation={[0.15, (i * Math.PI * 2) / 7, 0.64]}><coneGeometry args={[0.38, 3.5, 5]} /><meshStandardMaterial color="#23605c" side={THREE.DoubleSide} /></mesh>)}
+    <mesh position={[0, 2.25, 0]} rotation={[0, 0, -0.06]} castShadow>
+      <cylinderGeometry args={[0.12, 0.24, 4.5, 9]} />
+      <meshStandardMaterial color="#6d5944" roughness={0.9} />
+    </mesh>
+    {Array.from({ length: 8 }, (_, i) => (
+      <mesh key={i} position={[0, 4.45, 0]} rotation={[0.1, (i * Math.PI * 2) / 8, 0.72]}>
+        <coneGeometry args={[0.34, 3.3, 5]} />
+        <meshStandardMaterial color={i % 2 ? '#173b35' : '#244b40'} side={THREE.DoubleSide} />
+      </mesh>
+    ))}
   </group>;
 }
 
-function City({ position, near }: { position: MutableRefObject<THREE.Vector3>; near: number | null }) {
-  return <>
-    <color attach="background" args={['#231c3b']} />
-    <fog attach="fog" args={['#49304d', 28, 88]} />
-    <ambientLight intensity={1.25} color="#b9b1d9" />
-    <hemisphereLight intensity={1.1} color="#ffa17d" groundColor="#182439" />
-    <directionalLight position={[-12, 18, 10]} intensity={2.2} color="#ffbf97" castShadow shadow-mapSize={[1024, 1024]} />
-    <Stars radius={90} depth={30} count={450} factor={2} fade />
-    <mesh position={[18, -0.19, 0]} receiveShadow><boxGeometry args={[110, 0.3, 50]} /><meshStandardMaterial color="#192039" /></mesh>
-    <mesh position={[18, 0, 0]} receiveShadow><boxGeometry args={[110, 0.1, 6.8]} /><meshStandardMaterial color="#22283d" roughness={0.94} /></mesh>
-    <mesh position={[18, 0.12, -4.05]} receiveShadow><boxGeometry args={[110, 0.28, 2.35]} /><meshStandardMaterial color="#8a7889" /></mesh>
-    <mesh position={[18, 0.13, 4.05]} receiveShadow><boxGeometry args={[110, 0.28, 2.35]} /><meshStandardMaterial color="#817083" /></mesh>
-    {Array.from({ length: 18 }, (_, i) => <mesh key={i} position={[-7 + i * 3.2, 0.07, 0]}><boxGeometry args={[1.3, 0.015, 0.08]} /><meshBasicMaterial color="#dec4a7" /></mesh>)}
-    {DESTINATIONS.map((destination, index) => <Building key={destination.path} destination={destination} index={index} near={near === index} />)}
-    {[-8, 9, 27, 46].map((x) => <Palm key={x} x={x} z={-4.6} />)}
-    {[9, 27].map((x) => <group key={x} position={[x, 0, 4.2]}><mesh position={[0, 2.8, 0]}><cylinderGeometry args={[0.07, 0.1, 5.6]} /><meshStandardMaterial color="#17202d" /></mesh><mesh position={[0.5, 5.5, 0]}><boxGeometry args={[1.1, 0.14, 0.18]} /><meshStandardMaterial color="#17202d" /></mesh><pointLight position={[1, 5.2, 0]} intensity={5} distance={9} color="#ffbb88" /></group>)}
-    <Player position={position} />
-  </>;
+function StreetLight({ x, z = 4.2 }: { x: number; z?: number }) {
+  return <group position={[x, 0, z]}>
+    <mesh position={[0, 2.8, 0]}><cylinderGeometry args={[0.055, 0.09, 5.6, 8]} /><meshStandardMaterial color="#0a1930" metalness={0.7} /></mesh>
+    <mesh position={[0.45, 5.55, 0]}><boxGeometry args={[0.95, 0.12, 0.16]} /><meshStandardMaterial color="#0a1930" /></mesh>
+    <mesh position={[0.88, 5.42, 0]}><boxGeometry args={[0.28, 0.1, 0.25]} /><meshStandardMaterial color="#f4f0e8" emissive="#d3a34f" emissiveIntensity={2.4} /></mesh>
+    <pointLight position={[0.88, 5.25, 0]} intensity={4.5} distance={10} color="#f0c778" />
+  </group>;
+}
+
+type WalkerLook = { skin: string; top: string; bottom: string; hair: string; accent: string };
+
+function Pedestrian({ x, z, speed, direction, look, phase = 0 }: {
+  x: number; z: number; speed: number; direction: 1 | -1; look: WalkerLook; phase?: number;
+}) {
+  const ref = useRef<THREE.Group>(null);
+  const leftArm = useRef<THREE.Group>(null);
+  const rightArm = useRef<THREE.Group>(null);
+  const leftLeg = useRef<THREE.Group>(null);
+  const rightLeg = useRef<THREE.Group>(null);
+
+  useFrame(({ clock }, delta) => {
+    if (!ref.current) return;
+    ref.current.position.x += direction * speed * delta;
+    if (direction > 0 && ref.current.position.x > 50) ref.current.position.x = -10;
+    if (direction < 0 && ref.current.position.x < -10) ref.current.position.x = 50;
+    const t = clock.elapsedTime * 6.5 + phase;
+    const swing = Math.sin(t) * 0.5;
+    if (leftArm.current) leftArm.current.rotation.x = swing;
+    if (rightArm.current) rightArm.current.rotation.x = -swing;
+    if (leftLeg.current) leftLeg.current.rotation.x = -swing * 0.7;
+    if (rightLeg.current) rightLeg.current.rotation.x = swing * 0.7;
+    ref.current.rotation.y = direction > 0 ? Math.PI / 2 : -Math.PI / 2;
+  });
+
+  return <group ref={ref} position={[x, 0, z]} scale={0.88}>
+    <mesh position={[0, 1.42, 0]} castShadow><capsuleGeometry args={[0.27, 0.66, 7, 12]} /><meshStandardMaterial color={look.top} roughness={0.72} /></mesh>
+    <mesh position={[0, 2.02, 0]} castShadow><sphereGeometry args={[0.25, 18, 16]} /><meshStandardMaterial color={look.skin} roughness={0.85} /></mesh>
+    <mesh position={[0, 2.22, -0.02]} scale={[1, 0.55, 1]} castShadow><sphereGeometry args={[0.255, 16, 12]} /><meshStandardMaterial color={look.hair} roughness={0.95} /></mesh>
+    <mesh position={[0.27, 1.55, 0.02]}><boxGeometry args={[0.05, 0.38, 0.05]} /><meshStandardMaterial color={look.accent} metalness={0.6} /></mesh>
+    <group ref={leftArm} position={[-0.34, 1.62, 0]}><mesh position={[0, -0.35, 0]} castShadow><capsuleGeometry args={[0.085, 0.52, 5, 8]} /><meshStandardMaterial color={look.skin} /></mesh></group>
+    <group ref={rightArm} position={[0.34, 1.62, 0]}><mesh position={[0, -0.35, 0]} castShadow><capsuleGeometry args={[0.085, 0.52, 5, 8]} /><meshStandardMaterial color={look.skin} /></mesh></group>
+    <group ref={leftLeg} position={[-0.15, 1.05, 0]}><mesh position={[0, -0.48, 0]} castShadow><capsuleGeometry args={[0.11, 0.72, 5, 8]} /><meshStandardMaterial color={look.bottom} /></mesh><mesh position={[0, -0.91, 0.08]}><boxGeometry args={[0.23, 0.13, 0.42]} /><meshStandardMaterial color="#f4f0e8" /></mesh></group>
+    <group ref={rightLeg} position={[0.15, 1.05, 0]}><mesh position={[0, -0.48, 0]} castShadow><capsuleGeometry args={[0.11, 0.72, 5, 8]} /><meshStandardMaterial color={look.bottom} /></mesh><mesh position={[0, -0.91, 0.08]}><boxGeometry args={[0.23, 0.13, 0.42]} /><meshStandardMaterial color="#f4f0e8" /></mesh></group>
+  </group>;
+}
+
+function Car({ x, z, speed, direction, kind = 0 }: { x: number; z: number; speed: number; direction: 1 | -1; kind?: number }) {
+  const ref = useRef<THREE.Group>(null);
+  const body = ['#f2efe7', '#0b2344', '#c99a43', '#d9dce1'][kind % 4];
+  useFrame((_, delta) => {
+    if (!ref.current) return;
+    ref.current.position.x += direction * speed * delta;
+    if (direction > 0 && ref.current.position.x > 56) ref.current.position.x = -16;
+    if (direction < 0 && ref.current.position.x < -16) ref.current.position.x = 56;
+  });
+  return <group ref={ref} position={[x, 0.43, z]} rotation={[0, direction > 0 ? Math.PI / 2 : -Math.PI / 2, 0]}>
+    <mesh castShadow position={[0, 0.18, 0]}><boxGeometry args={[1.75, 0.46, 3.7]} /><meshStandardMaterial color={body} metalness={0.35} roughness={0.3} /></mesh>
+    <mesh castShadow position={[0, 0.66, -0.2]}><boxGeometry args={[1.48, 0.62, 1.95]} /><meshStandardMaterial color={body} metalness={0.3} roughness={0.28} /></mesh>
+    <mesh position={[0, 0.69, 0.82]} rotation={[Math.PI / 2, 0, 0]}><planeGeometry args={[1.25, 0.65]} /><meshStandardMaterial color="#071427" metalness={0.65} roughness={0.12} /></mesh>
+    <mesh position={[0, 0.69, -1.2]} rotation={[Math.PI / 2, 0, 0]}><planeGeometry args={[1.25, 0.55]} /><meshStandardMaterial color="#071427" metalness={0.65} roughness={0.12} /></mesh>
+    {[-0.83, 0.83].flatMap((wx) => [-1.15, 1.15].map((wz) => <mesh key={`${wx}-${wz}`} position={[wx, -0.12, wz]} rotation={[0, 0, Math.PI / 2]}><cylinderGeometry args={[0.29, 0.29, 0.18, 14]} /><meshStandardMaterial color="#080b11" roughness={0.85} /></mesh>))}
+    <mesh position={[-0.58, 0.18, 1.87]}><boxGeometry args={[0.35, 0.18, 0.05]} /><meshStandardMaterial color="#fff4d6" emissive="#f4d28a" emissiveIntensity={2} /></mesh>
+    <mesh position={[0.58, 0.18, 1.87]}><boxGeometry args={[0.35, 0.18, 0.05]} /><meshStandardMaterial color="#fff4d6" emissive="#f4d28a" emissiveIntensity={2} /></mesh>
+  </group>;
 }
 
 function Player({ position }: { position: MutableRefObject<THREE.Vector3> }) {
   const group = useRef<THREE.Group>(null);
+  const torso = useRef<THREE.Group>(null);
+  const leftArm = useRef<THREE.Group>(null);
+  const rightArm = useRef<THREE.Group>(null);
+  const leftLeg = useRef<THREE.Group>(null);
+  const rightLeg = useRef<THREE.Group>(null);
+  const last = useRef(START.clone());
+
   useFrame(({ clock }) => {
     if (!group.current) return;
+    const moving = last.current.distanceToSquared(position.current) > 0.00001;
+    const dx = position.current.x - last.current.x;
+    const dz = position.current.z - last.current.z;
     group.current.position.copy(position.current);
-    group.current.children[0].rotation.z = Math.sin(clock.elapsedTime * 8) * 0.035;
+    if (moving) group.current.rotation.y = Math.atan2(dx, dz);
+    const t = clock.elapsedTime * 9;
+    const swing = moving ? Math.sin(t) * 0.62 : 0;
+    const bob = moving ? Math.abs(Math.sin(t)) * 0.035 : Math.sin(clock.elapsedTime * 2) * 0.008;
+    if (torso.current) torso.current.position.y = bob;
+    if (leftArm.current) leftArm.current.rotation.x = swing;
+    if (rightArm.current) rightArm.current.rotation.x = -swing;
+    if (leftLeg.current) leftLeg.current.rotation.x = -swing * 0.72;
+    if (rightLeg.current) rightLeg.current.rotation.x = swing * 0.72;
+    last.current.copy(position.current);
   });
-  return <group ref={group} position={START.toArray()}>
-    <group>
-      <mesh position={[0, 1.12, 0]} castShadow><capsuleGeometry args={[0.34, 0.73, 5, 10]} /><meshStandardMaterial color="#eac4a8" /></mesh>
-      <mesh position={[0, 1.34, 0.03]} castShadow><boxGeometry args={[0.83, 0.95, 0.4]} /><meshStandardMaterial color="#111c34" /></mesh>
-      <mesh position={[0, 1.98, 0]} castShadow><sphereGeometry args={[0.28, 12, 12]} /><meshStandardMaterial color="#9b685a" /></mesh>
-      <mesh position={[0, 2.17, -0.04]} castShadow><sphereGeometry args={[0.29, 12, 12]} /><meshStandardMaterial color="#181c2b" /></mesh>
-      {[-0.25, 0.25].map((x) => <mesh key={x} position={[x, 0.4, 0]} castShadow><capsuleGeometry args={[0.12, 0.5, 4, 8]} /><meshStandardMaterial color="#202841" /></mesh>)}
+
+  return <group ref={group} position={START.toArray()} scale={1.04}>
+    <group ref={torso}>
+      {/* layered streetwear torso */}
+      <mesh position={[0, 1.45, 0]} castShadow><capsuleGeometry args={[0.32, 0.72, 8, 16]} /><meshStandardMaterial color="#f2eee5" roughness={0.68} /></mesh>
+      <mesh position={[0, 1.5, -0.19]} castShadow><boxGeometry args={[0.72, 0.78, 0.13]} /><meshStandardMaterial color="#0a2344" roughness={0.5} /></mesh>
+      <mesh position={[0, 1.46, 0.31]}><boxGeometry args={[0.17, 0.035, 0.03]} /><meshStandardMaterial color="#d3a34f" metalness={0.9} roughness={0.18} /></mesh>
+      {/* neck + head */}
+      <mesh position={[0, 1.91, 0]}><cylinderGeometry args={[0.12, 0.14, 0.2, 12]} /><meshStandardMaterial color="#9a6247" /></mesh>
+      <mesh position={[0, 2.18, 0]} castShadow><sphereGeometry args={[0.285, 24, 20]} /><meshStandardMaterial color="#9a6247" roughness={0.82} /></mesh>
+      {/* fade/hair + beard + gold detail */}
+      <mesh position={[0, 2.36, -0.025]} scale={[1.02, 0.52, 1.01]} castShadow><sphereGeometry args={[0.285, 20, 16]} /><meshStandardMaterial color="#101318" roughness={0.92} /></mesh>
+      <mesh position={[0, 2.09, 0.235]} scale={[0.82, 0.5, 0.3]}><sphereGeometry args={[0.24, 16, 12]} /><meshStandardMaterial color="#171515" roughness={1} /></mesh>
+      <mesh position={[0.13, 2.18, 0.272]}><sphereGeometry args={[0.022, 8, 8]} /><meshStandardMaterial color="#d3a34f" metalness={1} /></mesh>
+      {/* chain */}
+      <mesh position={[0, 1.83, 0.305]} rotation={[Math.PI / 2, 0, 0]}><torusGeometry args={[0.17, 0.018, 8, 22, Math.PI]} /><meshStandardMaterial color="#d3a34f" metalness={0.95} roughness={0.16} /></mesh>
     </group>
+    <group ref={leftArm} position={[-0.38, 1.7, 0]}><mesh position={[0, -0.36, 0]} castShadow><capsuleGeometry args={[0.105, 0.58, 6, 10]} /><meshStandardMaterial color="#9a6247" /></mesh><mesh position={[0, -0.12, 0]} scale={[1.15, 1.3, 1.15]}><capsuleGeometry args={[0.115, 0.25, 5, 8]} /><meshStandardMaterial color="#f2eee5" /></mesh></group>
+    <group ref={rightArm} position={[0.38, 1.7, 0]}><mesh position={[0, -0.36, 0]} castShadow><capsuleGeometry args={[0.105, 0.58, 6, 10]} /><meshStandardMaterial color="#9a6247" /></mesh><mesh position={[0, -0.12, 0]} scale={[1.15, 1.3, 1.15]}><capsuleGeometry args={[0.115, 0.25, 5, 8]} /><meshStandardMaterial color="#f2eee5" /></mesh></group>
+    <group ref={leftLeg} position={[-0.17, 1.05, 0]}><mesh position={[0, -0.49, 0]} castShadow><capsuleGeometry args={[0.125, 0.75, 6, 10]} /><meshStandardMaterial color="#0b2344" roughness={0.78} /></mesh><mesh position={[0, -0.93, 0.1]}><boxGeometry args={[0.27, 0.15, 0.48]} /><meshStandardMaterial color="#f4f0e8" roughness={0.65} /></mesh></group>
+    <group ref={rightLeg} position={[0.17, 1.05, 0]}><mesh position={[0, -0.49, 0]} castShadow><capsuleGeometry args={[0.125, 0.75, 6, 10]} /><meshStandardMaterial color="#0b2344" roughness={0.78} /></mesh><mesh position={[0, -0.93, 0.1]}><boxGeometry args={[0.27, 0.15, 0.48]} /><meshStandardMaterial color="#f4f0e8" roughness={0.65} /></mesh></group>
   </group>;
+}
+
+function City({ position, near }: { position: MutableRefObject<THREE.Vector3>; near: number | null }) {
+  const walkers: Array<{x:number;z:number;speed:number;direction:1|-1;look:WalkerLook;phase:number}> = [
+    { x: 5, z: -4.0, speed: 0.7, direction: 1, phase: 0, look: { skin:'#70472f', top:'#f0ede5', bottom:'#172844', hair:'#111317', accent:'#d3a34f' } },
+    { x: 14, z: 4.2, speed: 0.55, direction: -1, phase: 2, look: { skin:'#d5a17e', top:'#b78b3e', bottom:'#f1eee8', hair:'#38251d', accent:'#0b2344' } },
+    { x: 25, z: -4.0, speed: 0.8, direction: 1, phase: 4, look: { skin:'#8b5a42', top:'#17365f', bottom:'#151a25', hair:'#171311', accent:'#d3a34f' } },
+    { x: 40, z: 4.25, speed: 0.62, direction: -1, phase: 1, look: { skin:'#c88767', top:'#f5f1e9', bottom:'#a67b35', hair:'#201914', accent:'#0b2344' } },
+    { x: 33, z: -4.0, speed: 0.48, direction: -1, phase: 3, look: { skin:'#5f3d2c', top:'#d3a34f', bottom:'#0b2344', hair:'#0e1014', accent:'#f4f0e8' } },
+  ];
+
+  return <>
+    <color attach="background" args={['#07162b']} />
+    <fog attach="fog" args={['#0a1c35', 34, 95]} />
+    <ambientLight intensity={0.85} color="#dce4ef" />
+    <hemisphereLight intensity={1.05} color="#f6f1e7" groundColor="#071427" />
+    <directionalLight position={[-12, 18, 10]} intensity={2.3} color="#f0c778" castShadow shadow-mapSize={[1024, 1024]} />
+    <Stars radius={90} depth={30} count={260} factor={1.6} fade />
+
+    {/* boulevard, sidewalks and lane detail */}
+    <mesh position={[20, -0.2, 0]} receiveShadow><boxGeometry args={[125, 0.3, 52]} /><meshStandardMaterial color="#071427" /></mesh>
+    <mesh position={[20, 0, 0]} receiveShadow><boxGeometry args={[125, 0.1, 7.2]} /><meshStandardMaterial color="#111b2b" roughness={0.96} /></mesh>
+    <mesh position={[20, 0.12, -4.45]} receiveShadow><boxGeometry args={[125, 0.3, 2.5]} /><meshStandardMaterial color="#d9d5cc" roughness={0.9} /></mesh>
+    <mesh position={[20, 0.12, 4.45]} receiveShadow><boxGeometry args={[125, 0.3, 2.5]} /><meshStandardMaterial color="#d9d5cc" roughness={0.9} /></mesh>
+    {Array.from({ length: 23 }, (_, i) => <mesh key={i} position={[-10 + i * 3.2, 0.07, 0]}><boxGeometry args={[1.45, 0.018, 0.08]} /><meshBasicMaterial color="#d3a34f" /></mesh>)}
+
+    {DESTINATIONS.map((destination, index) => <Building key={destination.path} destination={destination} index={index} near={near === index} />)}
+    {[-8, 8, 26, 46].map((x) => <Palm key={x} x={x} z={-5.15} />)}
+    {[-1, 10, 21, 32, 43].map((x) => <StreetLight key={x} x={x} />)}
+
+    {/* moving city life */}
+    <Car x={-8} z={1.75} speed={3.5} direction={1} kind={0} />
+    <Car x={18} z={-1.75} speed={4.2} direction={-1} kind={1} />
+    <Car x={37} z={1.75} speed={2.9} direction={1} kind={2} />
+    <Car x={50} z={-1.75} speed={3.7} direction={-1} kind={3} />
+    {walkers.map((w, i) => <Pedestrian key={i} {...w} />)}
+
+    <Player position={position} />
+  </>;
 }
 
 function Movement({ position, keys, onMove }: { position: MutableRefObject<THREE.Vector3>; keys: MutableRefObject<Set<string>>; onMove: (x: number, z: number) => void }) {
@@ -190,12 +315,34 @@ export default function LandingPage() {
     <style>{CSS}</style>
     {phase !== 'intro' && <div className="tour-canvas"><Canvas shadows dpr={[1, 1.5]} camera={{ position: [-9, 5, 11], fov: 55 }} gl={{ antialias: false, powerPreference: 'high-performance' }}><Suspense fallback={null}><City position={position} near={active} /><Movement position={position} keys={keys} onMove={(x, z) => setLocation((old) => Math.abs(old.x - x) > 0.05 || Math.abs(old.z - z) > 0.05 ? { x, z } : old)} /></Suspense></Canvas></div>}
     <header className="tour-header"><div className="tour-brand"><i /> MARSHOUT <span>VICE CITY / WORLD 01</span></div><span className="tour-live">● &nbsp; ONLINE</span></header>
-    {phase === 'intro' && <main className="tour-intro"><div className="tour-intro-copy"><div className="tour-eyebrow">THE CITY IS YOUR DEPARTURE GATE <span>✦</span></div><h1>Take a <em>tour.</em></h1><p className="tour-lead">See which door gets you a travel flyer and which one gets you to a new destination.</p><div className="tour-rule" /><p className="tour-options">GET A FLYER <b>·</b> LEAVE EARTH <b>·</b> TRAVEL TO PORT GELLHORN</p><button className="tour-start" onClick={() => { setCount(3); setPhase('countdown'); }}>TAKE A TOUR <span>↗</span></button><p className="tour-hint">Three doors. Your next story starts with one.</p></div><div className="tour-hero" aria-hidden="true"><div className="tour-sun" /><div className="tour-skyline"><i /><i /><i /><i /><i /><i /><i /><i /></div><div className="tour-palm">✳</div><div className="tour-hero-caption">MARSHOUT <span>AFTER DARK</span></div></div></main>}
-    {phase !== 'intro' && <><div className="tour-topline"><span>VICE CITY <b>/</b> THE THREE DOORS</span><span>WALK THE STRIP · PICK YOUR DESTINATION</span></div>{phase === 'tour' && <><div className="tour-mission"><small>YOUR TOUR STARTS HERE</small><strong>Find your next door.</strong><p>Get a flyer, leave Earth, or travel to Port Gellhorn.</p></div><div className="tour-controls"><span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> MOVE</span><span><kbd>SHIFT</kbd> RUN</span><span><kbd>ENTER</kbd> OPEN DOOR</span></div>{active !== null && <button className="tour-enter" onClick={enter}>ENTER <strong>{DESTINATIONS[active].title}</strong><span>↗</span></button>}<div className="tour-touch" aria-label="Movement controls"><button aria-label="Move left" onPointerDown={() => move('a', true)} onPointerUp={() => move('a', false)} onPointerCancel={() => move('a', false)}>←</button><button aria-label="Move forward" onPointerDown={() => move('w', true)} onPointerUp={() => move('w', false)} onPointerCancel={() => move('w', false)}>↑</button><button aria-label="Move backward" onPointerDown={() => move('s', true)} onPointerUp={() => move('s', false)} onPointerCancel={() => move('s', false)}>↓</button><button aria-label="Move right" onPointerDown={() => move('d', true)} onPointerUp={() => move('d', false)} onPointerCancel={() => move('d', false)}>→</button></div></>}{phase === 'countdown' && <div className="tour-countdown"><p>THE CITY IS WAKING UP</p><strong key={count}>{count}</strong><span>YOUR TOUR BEGINS IN</span></div>}</>}
+    {phase === 'intro' && <main className="tour-intro"><div className="tour-intro-copy"><div className="tour-eyebrow">MARSHOUT / VICE CITY <span>✦</span></div><h1>Take a <em>tour.</em></h1><p className="tour-lead">See which door gets you a travel flyer and which one gets you to a new destination.</p><button className="tour-start" aria-label="Take a tour" onClick={() => { setCount(3); setPhase('countdown'); }}><span className="tour-play">▶</span><span>TAKE A TOUR</span></button><p className="tour-hint">Walk the boulevard. Three doors are waiting.</p></div><div className="tour-hero" aria-hidden="true"><div className="tour-sun" /><div className="tour-skyline"><i /><i /><i /><i /><i /><i /><i /><i /></div><div className="tour-palm">✳</div><div className="tour-hero-caption">VICE CITY <span>BOARDING LATE</span></div></div></main>}
+    {phase !== 'intro' && <><div className="tour-topline"><span>VICE CITY <b>/</b> MARSHOUT BOULEVARD</span><span>FOLLOW THE GOLD · CHOOSE A DOOR</span></div>{phase === 'tour' && <><div className="tour-mission"><small>YOU'RE ON THE BOULEVARD</small><strong>Where are you headed?</strong><p>Walk up to a marked entrance. The city will tell you when you're close.</p></div><div className="tour-controls"><span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> MOVE</span><span><kbd>SHIFT</kbd> RUN</span><span><kbd>ENTER</kbd> STEP INSIDE</span></div>{active !== null && <button className="tour-enter" onClick={enter}>ENTER <strong>{DESTINATIONS[active].title}</strong><span>↗</span></button>}<div className="tour-touch" aria-label="Movement controls"><button aria-label="Move left" onPointerDown={() => move('a', true)} onPointerUp={() => move('a', false)} onPointerCancel={() => move('a', false)}>←</button><button aria-label="Move forward" onPointerDown={() => move('w', true)} onPointerUp={() => move('w', false)} onPointerCancel={() => move('w', false)}>↑</button><button aria-label="Move backward" onPointerDown={() => move('s', true)} onPointerUp={() => move('s', false)} onPointerCancel={() => move('s', false)}>↓</button><button aria-label="Move right" onPointerDown={() => move('d', true)} onPointerUp={() => move('d', false)} onPointerCancel={() => move('d', false)}>→</button></div></>}{phase === 'countdown' && <div className="tour-countdown"><p>VICE CITY / LOADING THE BLOCK</p><strong key={count}>{count}</strong><span>STREETS OPEN IN</span></div>}</>}
     <footer className="tour-footer"><span>✦ &nbsp; A TRIP WORTH TAKING</span><span>MARSHOUT © 2026</span></footer>
   </div>;
 }
 
 const CSS = `
-*{box-sizing:border-box}html,body,#root{margin:0;min-height:100%;font-family:Inter,ui-sans-serif,system-ui,sans-serif}button{font:inherit}.tour-page{position:relative;min-height:100svh;overflow:hidden;background:#101b31;color:#fff}.tour-page:after{content:"";position:absolute;inset:0;pointer-events:none;z-index:2;background:linear-gradient(90deg,rgba(10,18,37,.4),transparent 38%),linear-gradient(0deg,rgba(7,15,31,.5),transparent 30%)}.tour-header,.tour-footer{position:absolute;left:0;right:0;z-index:8;display:flex;justify-content:space-between;align-items:center;padding:0 clamp(22px,5vw,78px)}.tour-header{top:0;height:76px;border-bottom:1px solid rgba(255,255,255,.15)}.tour-footer{bottom:0;height:48px;font-size:10px;letter-spacing:.18em;color:#e6c7b4}.tour-brand{font-weight:950;letter-spacing:.2em;font-size:15px;display:flex;align-items:center;gap:10px}.tour-brand i{width:9px;height:9px;border-radius:50%;background:#dba664;box-shadow:0 0 18px #e9a871}.tour-brand span{font-size:9px;color:#d6abc1;font-weight:650;border-left:1px solid #986879;padding-left:17px;margin-left:8px}.tour-live{font-size:10px;letter-spacing:.2em;color:#f1cb9f}.tour-intro{min-height:100svh;display:grid;grid-template-columns:1fr 1fr;background:radial-gradient(circle at 75% 50%,#794b76 0%,#342747 40%,#101b31 82%)}.tour-intro-copy{position:relative;z-index:4;align-self:center;padding:100px 0 80px clamp(28px,8vw,130px);max-width:720px}.tour-eyebrow{font-size:11px;font-weight:850;letter-spacing:.25em;color:#ffbe9b;display:flex;gap:18px}.tour-eyebrow span{color:#e9a5bd}.tour-intro h1{font-size:clamp(76px,10.5vw,172px);letter-spacing:-.085em;line-height:.88;margin:30px 0;color:#fff;text-shadow:0 12px 40px #1c1525}.tour-intro h1 em{display:block;font-style:italic;font-family:Georgia,serif;font-weight:400;color:#f4ae9e;letter-spacing:-.07em}.tour-lead{font-size:clamp(19px,2vw,29px);font-weight:650;line-height:1.35;max-width:600px;color:#fff;margin:30px 0;text-wrap:balance}.tour-rule{height:1px;width:min(100%,550px);background:linear-gradient(90deg,#e5b692,transparent);margin:26px 0 19px}.tour-options{font-size:10px;letter-spacing:.18em;font-weight:850;color:#f3cbb1;line-height:2}.tour-options b{padding:0 10px;color:#e795ac}.tour-start{margin-top:32px;border:0;background:#e9aa78;color:#17213b;padding:20px 24px 20px 28px;min-width:260px;display:flex;justify-content:space-between;font-weight:950;font-size:12px;letter-spacing:.18em;cursor:pointer;box-shadow:9px 9px 0 #4e3457;transition:transform .2s}.tour-start:hover{transform:translate(4px,-4px)}.tour-start span{font-size:23px;line-height:10px}.tour-hint{font-size:11px;letter-spacing:.1em;color:#caa6b6;margin-top:25px}.tour-hero{position:relative;overflow:hidden;min-height:100svh;background:linear-gradient(#433461 4%,#af6483 50%,#e8a081 71%,#252743 72%)}.tour-sun{position:absolute;width:30vw;height:30vw;min-width:280px;min-height:280px;border-radius:50%;left:16%;top:21%;background:linear-gradient(#ffd5ab,#fd8b8c);box-shadow:0 0 100px #ffb49399}.tour-skyline{position:absolute;bottom:13%;left:-4%;width:110%;height:49%;display:flex;align-items:end;gap:1.5%;filter:drop-shadow(0 0 18px #dc669677)}.tour-skyline i{display:block;background:repeating-linear-gradient(0deg,transparent 0 16px,#ed9b9b55 17px 21px,transparent 22px 29px),#24243e;width:14%;height:65%;box-shadow:inset 5px 0 #764d75}.tour-skyline i:nth-child(2){height:90%}.tour-skyline i:nth-child(3){height:50%}.tour-skyline i:nth-child(4){height:100%}.tour-skyline i:nth-child(5){height:75%}.tour-skyline i:nth-child(6){height:95%}.tour-skyline i:nth-child(7){height:58%}.tour-skyline i:nth-child(8){height:77%}.tour-palm{position:absolute;right:8%;top:8%;font-size:clamp(180px,29vw,420px);color:#172940;transform:rotate(-15deg);text-shadow:12px 16px #1b3044}.tour-hero-caption{position:absolute;bottom:17%;right:10%;font-size:clamp(35px,5vw,80px);font-weight:950;line-height:.86;letter-spacing:-.08em;text-align:right;text-shadow:0 7px 22px #1d1e34}.tour-hero-caption span{display:block;color:#ffc1aa}.tour-canvas{position:absolute;inset:0}.tour-topline{position:absolute;z-index:5;top:94px;left:clamp(22px,5vw,78px);right:clamp(22px,5vw,78px);display:flex;justify-content:space-between;font-size:10px;font-weight:850;letter-spacing:.19em;color:#ffdfc3}.tour-topline b{color:#fa8fa8;padding:0 8px}.tour-mission{position:absolute;z-index:5;top:135px;left:clamp(22px,5vw,78px);padding:20px 24px;background:#101a32df;border-left:3px solid #f5ac8e;box-shadow:0 10px 40px #0a0c1c66;max-width:350px}.tour-mission small{font-size:9px;color:#faad96;font-weight:900;letter-spacing:.21em}.tour-mission strong{display:block;font-size:26px;margin:8px 0 2px;letter-spacing:-.04em}.tour-mission p{color:#f4d4cd;font-size:12px;line-height:1.5;margin:0}.tour-controls{position:absolute;z-index:5;right:clamp(22px,5vw,78px);bottom:68px;display:flex;gap:16px;color:#fff;font-size:10px;font-weight:750;letter-spacing:.1em;background:#111a2dca;padding:15px}.tour-controls span{white-space:nowrap}kbd{font:inherit;border:1px solid #ffffff70;border-radius:3px;padding:4px 6px;margin-right:3px;color:#ffd8b2}.tour-enter{position:absolute;z-index:6;left:50%;transform:translateX(-50%);bottom:100px;padding:13px 18px;background:#f0af80;border:0;color:#101a32;cursor:pointer;font-size:11px;font-weight:950;letter-spacing:.15em;box-shadow:0 0 30px #f3a475aa;white-space:nowrap}.tour-enter strong{margin:0 18px;font-size:13px;letter-spacing:0}.tour-enter span{font-size:20px}.city-sign{font-family:Inter,system-ui,sans-serif;font-size:23px;font-weight:1000;letter-spacing:.12em;text-align:center;white-space:nowrap;text-shadow:0 0 15px currentColor,2px 3px #111}.city-door-label{font-family:Inter,system-ui,sans-serif;min-width:250px;max-width:350px;padding:14px 17px;color:#fff;text-align:center;background:#141c35e8;border:1px solid #f9cfb977;box-shadow:0 8px 30px #1118;transition:transform .2s}.city-door-label.is-near{transform:scale(1.15);border-color:#ffcf9b}.city-door-label small,.city-door-label span{display:block;font-size:9px;color:#ffbe9e;font-weight:900;letter-spacing:.16em}.city-door-label strong{display:block;font-size:17px;line-height:1.25;margin:6px 0}.tour-countdown{position:absolute;z-index:10;inset:0;background:#10182de6;display:flex;align-items:center;justify-content:center;flex-direction:column}.tour-countdown p,.tour-countdown span{font-size:11px;font-weight:900;letter-spacing:.28em;color:#eeb598}.tour-countdown strong{font-size:clamp(150px,28vw,330px);line-height:1;color:#ffd0ad;font-weight:950;text-shadow:0 0 70px #fa799e;animation:count .8s ease-out}.tour-countdown span{color:white}@keyframes count{from{transform:scale(1.6);opacity:0}to{transform:scale(1);opacity:1}}.tour-touch{display:none}@media(max-width:900px){.tour-intro{grid-template-columns:1fr}.tour-intro-copy{padding:130px 28px 70px}.tour-hero{position:absolute;inset:0;opacity:.3}.tour-intro h1{font-size:clamp(74px,17vw,130px)}.tour-controls{display:none}.tour-touch{position:absolute;z-index:8;bottom:85px;right:20px;display:grid;grid-template-columns:repeat(2,55px);gap:6px;touch-action:none}.tour-touch button{height:52px;border:1px solid #ffffff80;background:#14203fce;color:#fff;font-size:24px}.tour-topline span:last-child{display:none}.tour-brand span{display:none}.tour-mission{top:125px;max-width:260px}.tour-enter{bottom:160px;max-width:90vw;white-space:normal}.tour-footer{font-size:8px}}
+*{box-sizing:border-box}html,body,#root{margin:0;min-height:100%;font-family:Inter,ui-sans-serif,system-ui,sans-serif}button{font:inherit}
+:root{--navy:#071a38;--navy2:#0b274b;--white:#f5f2eb;--gold:#d3a34f;--ink:#06162d}
+.tour-page{position:relative;min-height:100svh;overflow:hidden;background:var(--navy);color:var(--white)}
+.tour-page:after{content:"";position:absolute;inset:0;pointer-events:none;z-index:2;background:linear-gradient(90deg,rgba(4,15,31,.42),transparent 35%),linear-gradient(0deg,rgba(4,14,29,.48),transparent 32%)}
+.tour-header,.tour-footer{position:absolute;left:0;right:0;z-index:8;display:flex;justify-content:space-between;align-items:center;padding:0 clamp(22px,5vw,78px)}
+.tour-header{top:0;height:72px;border-bottom:1px solid rgba(255,255,255,.13);background:linear-gradient(180deg,rgba(5,19,40,.68),transparent)}
+.tour-footer{bottom:0;height:46px;font-size:9px;letter-spacing:.19em;color:rgba(245,242,235,.58)}
+.tour-brand{font-weight:950;letter-spacing:.2em;font-size:14px;display:flex;align-items:center;gap:10px}.tour-brand i{width:8px;height:8px;border-radius:50%;background:var(--gold);box-shadow:0 0 0 4px rgba(211,163,79,.13),0 0 20px rgba(211,163,79,.45)}.tour-brand span{font-size:8px;color:rgba(245,242,235,.45);font-weight:750;border-left:1px solid rgba(255,255,255,.16);padding-left:16px;margin-left:7px}.tour-live{font-size:9px;letter-spacing:.2em;color:var(--gold)}
+.tour-intro{min-height:100svh;display:grid;grid-template-columns:.92fr 1.08fr;background:linear-gradient(118deg,#fbfaf7 0 47%,#071a38 47% 100%);color:var(--navy)}
+.tour-intro-copy{position:relative;z-index:4;align-self:center;padding:105px 6vw 80px clamp(28px,8vw,130px);max-width:760px}
+.tour-eyebrow{font-size:9px;font-weight:950;letter-spacing:.26em;color:rgba(7,26,56,.48);display:flex;gap:16px;align-items:center}.tour-eyebrow span{color:var(--gold)}
+.tour-intro h1{font-size:clamp(76px,9vw,154px);letter-spacing:-.085em;line-height:.82;margin:26px 0 28px;color:var(--navy);text-transform:uppercase}.tour-intro h1 em{display:block;font-style:italic;font-family:Georgia,serif;font-weight:400;color:var(--gold);letter-spacing:-.07em;text-transform:none}
+.tour-lead{font-size:clamp(18px,1.7vw,25px);font-weight:720;line-height:1.38;max-width:560px;color:#17385e;margin:0;text-wrap:balance}
+.tour-start{margin-top:36px;border:0;background:var(--navy);color:white;padding:0 27px 0 8px;height:62px;display:inline-flex;align-items:center;gap:18px;font-weight:950;font-size:11px;letter-spacing:.2em;cursor:pointer;box-shadow:0 16px 35px rgba(7,26,56,.16);transition:transform .2s,box-shadow .2s}.tour-start:hover{transform:translateY(-3px);box-shadow:0 22px 44px rgba(7,26,56,.22)}.tour-play{width:46px;height:46px;border-radius:50%;display:grid;place-items:center;background:var(--gold);color:var(--navy);font-size:13px;padding-left:2px}.tour-hint{font-size:9px;letter-spacing:.14em;color:rgba(7,26,56,.38);margin-top:22px;font-weight:800;text-transform:uppercase}
+.tour-hero{position:relative;overflow:hidden;min-height:100svh;background:linear-gradient(#0b274b 0%,#12365f 45%,#d3a34f 72%,#071a38 72%)}.tour-sun{position:absolute;width:25vw;height:25vw;min-width:260px;min-height:260px;border-radius:50%;left:17%;top:20%;background:#f7f3e9;box-shadow:0 0 100px rgba(245,239,222,.3)}.tour-skyline{position:absolute;bottom:12%;left:-4%;width:110%;height:51%;display:flex;align-items:end;gap:1.3%;filter:drop-shadow(0 0 18px rgba(4,15,31,.4))}.tour-skyline i{display:block;background:repeating-linear-gradient(0deg,transparent 0 16px,rgba(211,163,79,.32) 17px 21px,transparent 22px 29px),#081a35;width:14%;height:65%;box-shadow:inset 4px 0 #15365d}.tour-skyline i:nth-child(2){height:90%}.tour-skyline i:nth-child(3){height:50%}.tour-skyline i:nth-child(4){height:100%}.tour-skyline i:nth-child(5){height:75%}.tour-skyline i:nth-child(6){height:95%}.tour-skyline i:nth-child(7){height:58%}.tour-skyline i:nth-child(8){height:77%}.tour-palm{position:absolute;right:6%;top:7%;font-size:clamp(180px,29vw,420px);color:#06162d;transform:rotate(-15deg);opacity:.88}.tour-hero-caption{position:absolute;bottom:16%;right:9%;font-size:clamp(32px,4.8vw,76px);font-weight:950;line-height:.86;letter-spacing:-.075em;text-align:right;color:white;text-shadow:0 8px 28px #031024}.tour-hero-caption span{display:block;color:#e1b966;font-size:.54em;letter-spacing:.02em;margin-top:10px}
+.tour-canvas{position:absolute;inset:0}.tour-topline{position:absolute;z-index:5;top:92px;left:clamp(22px,5vw,78px);right:clamp(22px,5vw,78px);display:flex;justify-content:space-between;font-size:9px;font-weight:900;letter-spacing:.2em;color:#f5f2eb}.tour-topline b{color:var(--gold);padding:0 8px}
+.tour-mission{position:absolute;z-index:5;top:132px;left:clamp(22px,5vw,78px);padding:18px 21px;background:rgba(7,26,56,.91);border-left:3px solid var(--gold);box-shadow:0 16px 45px rgba(0,0,0,.24);max-width:360px;backdrop-filter:blur(12px)}.tour-mission small{font-size:8px;color:var(--gold);font-weight:950;letter-spacing:.22em}.tour-mission strong{display:block;font-size:27px;margin:7px 0 3px;letter-spacing:-.04em}.tour-mission p{color:rgba(245,242,235,.65);font-size:11px;line-height:1.55;margin:0}
+.tour-controls{position:absolute;z-index:5;right:clamp(22px,5vw,78px);bottom:68px;display:flex;gap:15px;color:white;font-size:9px;font-weight:800;letter-spacing:.1em;background:rgba(7,26,56,.9);padding:14px 16px;border:1px solid rgba(211,163,79,.25);backdrop-filter:blur(10px)}.tour-controls span{white-space:nowrap}kbd{font:inherit;border:1px solid rgba(255,255,255,.34);border-radius:2px;padding:4px 6px;margin-right:3px;color:var(--gold)}
+.tour-enter{position:absolute;z-index:6;left:50%;transform:translateX(-50%);bottom:100px;padding:14px 18px;background:var(--gold);border:0;color:var(--navy);cursor:pointer;font-size:10px;font-weight:950;letter-spacing:.16em;box-shadow:0 0 34px rgba(211,163,79,.36);white-space:nowrap}.tour-enter strong{margin:0 18px;font-size:12px;letter-spacing:0}.tour-enter span{font-size:18px}
+.city-sign{font-family:Inter,system-ui,sans-serif;font-size:21px;font-weight:1000;letter-spacing:.11em;text-align:center;white-space:nowrap;text-shadow:0 2px 14px #06162d}.city-door-label{font-family:Inter,system-ui,sans-serif;min-width:245px;max-width:350px;padding:13px 16px;color:white;text-align:center;background:rgba(7,26,56,.93);border:1px solid rgba(211,163,79,.42);box-shadow:0 12px 32px rgba(0,0,0,.28);transition:transform .2s,border-color .2s;backdrop-filter:blur(8px)}.city-door-label.is-near{transform:scale(1.13);border-color:var(--gold)}.city-door-label small,.city-door-label span{display:block;font-size:8px;color:var(--gold);font-weight:950;letter-spacing:.17em}.city-door-label strong{display:block;font-size:16px;line-height:1.25;margin:6px 0}
+.tour-countdown{position:absolute;z-index:10;inset:0;background:rgba(7,26,56,.96);display:flex;align-items:center;justify-content:center;flex-direction:column}.tour-countdown:before{content:"";position:absolute;width:min(62vw,760px);height:min(62vw,760px);border:1px solid rgba(211,163,79,.18);border-radius:50%}.tour-countdown p,.tour-countdown span{position:relative;font-size:10px;font-weight:950;letter-spacing:.29em;color:var(--gold)}.tour-countdown strong{position:relative;font-size:clamp(150px,28vw,330px);line-height:.9;color:#f7f4ed;font-weight:950;text-shadow:0 0 70px rgba(211,163,79,.3);animation:count .8s cubic-bezier(.2,.8,.2,1)}.tour-countdown span{color:white}@keyframes count{from{transform:scale(1.45);opacity:0}to{transform:scale(1);opacity:1}}
+.tour-touch{display:none}
+@media(max-width:900px){.tour-intro{grid-template-columns:1fr;background:#fbfaf7}.tour-intro-copy{padding:130px 28px 70px}.tour-hero{position:absolute;inset:0;opacity:.1}.tour-intro h1{font-size:clamp(74px,17vw,130px)}.tour-controls{display:none}.tour-touch{position:absolute;z-index:8;bottom:85px;right:20px;display:grid;grid-template-columns:repeat(2,55px);gap:6px;touch-action:none}.tour-touch button{height:52px;border:1px solid rgba(211,163,79,.55);background:rgba(7,26,56,.92);color:white;font-size:24px}.tour-topline span:last-child{display:none}.tour-brand span{display:none}.tour-mission{top:122px;max-width:275px}.tour-enter{bottom:160px;max-width:90vw;white-space:normal}.tour-footer{font-size:8px}}
 `;
