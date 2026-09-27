@@ -815,7 +815,7 @@ function MarsAstronaut({ visible, animated = false }: { visible: boolean; animat
     const action = Object.values(actions)[0];
     if (!action) return;
     if (visible && animated) action.reset().fadeIn(0.2).play(); else action.stop();
-    return () => action.stop();
+    return () => { action.stop(); };
   }, [actions, visible, animated]);
   if (!visible) return null;
   return <group position={[1.9, 0, 1.15]} rotation={[0, -Math.PI / 2, 0]}><primitive object={astronaut} /></group>;
@@ -852,7 +852,7 @@ function Homie({ visible, playable = false }: { visible: boolean; playable?: boo
     const action = Object.values(actions)[0];
     if (!action) return;
     if (visible) action.reset().fadeIn(0.2).play(); else action.stop();
-    return () => action.stop();
+    return () => { action.stop(); };
   }, [actions, visible]);
 
   useEffect(() => {
