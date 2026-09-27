@@ -2458,7 +2458,9 @@ export default function FlyRocket() {
 
   const [crewIn, setCrewIn] = useState(false);
 
-  const [initiating, setInitiating] = useState(false);
+
+
+  const [initiating, setInitiating] = useState(false);
 
 
 
@@ -2616,13 +2618,21 @@ export default function FlyRocket() {
 
     setInitiating(true);
 
-    window\.setTimeout(() => {
 
-      setInitiating(false);
 
-      setPhase('launch');
+    window.setTimeout(() => {
 
-    }, 900);
+
+
+      setInitiating(false);
+
+
+
+      setPhase('launch');
+
+
+
+    }, 900);
 
 
 
@@ -2674,7 +2684,7 @@ export default function FlyRocket() {
 
 
 
-      if (key === 't' && phase === 'parked' && !rideNotice && crewIn && !initiating) takeOff();
+      if (key === 't' && phase === 'parked' && !rideNotice && crewIn) takeOff();
 
 
 
@@ -2698,7 +2708,7 @@ export default function FlyRocket() {
 
 
 
-  }, [phase, missionReady, rideNotice, crewIn, countdown, initiating]);
+  }, [phase, missionReady, rideNotice, crewIn, countdown]);
 
 
 
@@ -3106,7 +3116,7 @@ export default function FlyRocket() {
 
           \<button className="primary" onClick={takeOff} disabled={rideNotice || countdown > 0 || initiating}>
 
-            \<span>\<kbd>T\</kbd> {initiating ? 'INITIATING ROCKET…' : 'TAKE OFF'}\</span>\<b>{initiating ? '•••' : '→'}\</b>
+            \<span>\<kbd>T\</kbd> {initiating ? 'INITIATING ROCKET…' : 'TAKE OFF'}\</span>\<b>→\</b>
 
           \</button>
 
@@ -3212,19 +3222,41 @@ export default function FlyRocket() {
 
       {initiating && (
 
-        \<div className="rocket-initiating">
 
-          \<i />
 
-          \<span>\<small>FLIGHT SYSTEM\</small>\<b>INITIATING ROCKET…\</b>\</span>
-
-        \</div>
-
-      )}
+      \<div style={{ position: 'absolute', inset: 0, zIndex: 29, display: 'grid', placeItems: 'center', background: 'rgba(2,12,25,.58)', backdropFilter: 'blur(5px)', pointerEvents: 'none' }}>
 
 
 
-      {countdown > 0 && (
+        \<div style={{ padding: '18px 24px', border: '1px solid rgba(255,255,255,.24)', borderRadius: 10, background: 'rgba(5,25,48,.96)', boxShadow: '0 24px 70px rgba(0,0,0,.45)', textAlign: 'center' }}>
+
+
+
+          \<small style={{ display: 'block', marginBottom: 7, color: '#d69b43', fontSize: 7, fontWeight: 950, letterSpacing: '.2em' }}>FLIGHT SYSTEM\</small>
+
+
+
+          \<b style={{ color: '#fff', fontSize: 15, letterSpacing: '.12em' }}>INITIATING ROCKET…\</b>
+
+
+
+        \</div>
+
+
+
+      \</div>
+
+
+
+    )}
+
+
+
+
+
+
+
+    {countdown > 0 && (
 
 
 
@@ -3336,7 +3368,4 @@ const FLY_ROCKET_CSS = \`
 
 
 
-\
-
-.rocket-initiating{position:absolute;z-index:18;left:50%;bottom:36px;transform:translateX(-50%);display:flex;align-items:center;gap:11px;padding:11px 16px;border:1px solid #ffffff30;border-radius:9px;background:#041529f2;box-shadow:0 18px 45px #00102066;backdrop-filter:blur(14px);pointer-events:none}.rocket-initiating>i{width:9px;height:9px;border-radius:50%;background:#d69b43;animation:rocketInitPulse .7s infinite}.rocket-initiating span{display:flex;flex-direction:column;gap:2px}.rocket-initiating small{font-size:6px;font-weight:950;letter-spacing:.16em;color:#ffffff66}.rocket-initiating b{font-size:9px;font-weight:950;letter-spacing:.12em;color:#fff}@keyframes rocketInitPulse{0%{box-shadow:0 0 0 0 #d69b4377}70%{box-shadow:0 0 0 8px #d69b4300}100%{box-shadow:0 0 0 0 #d69b4300}}
-`;
+\`;
