@@ -392,7 +392,7 @@ function SpaceScene() {
         </mesh>
       ))}
 
-      <EarthGlobe position={[10, -3, 10]} scale={1.12} />
+      <EarthGlobe position={[0, -24, 0]} scale={2.2} />
 
       <group position={[-19, 11, -28]}>
         <mesh>
@@ -448,7 +448,7 @@ function MarsGround() {
   );
 
   return (
-    <group>
+    <group position={[0, 0, -138]}>
       <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <planeGeometry args={[120, 120, 28, 28]} />
         <meshStandardMaterial color="#9d4b30" roughness={1} />
@@ -579,14 +579,14 @@ function MarsCrew({ visible }: { visible: boolean }) {
       <AnimatedCrewMember
         src="/astro.glb"
         visible={visible}
-        position={[1.9, 0, 1.15]}
+        position={[1.9, 0, -136.85]}
         rotation={[0, -Math.PI / 2, 0]}
         animate={false}
       />
       <AnimatedCrewMember
         src="/homie2.glb"
         visible={visible}
-        position={[-1.45, 0, 1.0]}
+        position={[-1.45, 0, -137.0]}
         rotation={[0, Math.PI / 2, 0]}
         animate
       />
@@ -649,41 +649,62 @@ function RocketWorld({
     const earthMode = p < 0.24;
     const marsMode = p >= 0.86;
 
+    // One continuous world-space path. No teleporting at Earth/space or space/Mars boundaries.
     if (rocketRef.current) {
-      if (earthMode) {
-        rocketRef.current.position.set(0, Math.min(8, p * 34), 0);
+      if (p < 0.24) {
+        const ascentT = THREE.MathUtils.smoothstep(p, 0, 0.24);
+        rocketRef.current.position.set(0, THREE.MathUtils.lerp(0.08, 8, ascentT), 0);
         rocketRef.current.rotation.set(0, 0, 0);
-      } else if (marsMode) {
-        const landingT = THREE.MathUtils.clamp((p - 0.86) / 0.14, 0, 1);
-        rocketRef.current.position.set(0, THREE.MathUtils.lerp(8, 0.08, landingT), 0);
-        rocketRef.current.rotation.set(0, 0, 0);
+      } else if (p < 0.72) {
+        const cruiseT = THREE.MathUtils.smoothstep(p, 0.24, 0.72);
+        const pitchT = THREE.MathUtils.smoothstep(p, 0.24, 0.31);
+        rocketRef.current.position.set(0, 8 + Math.sin(cruiseT * Math.PI) * 2.1, THREE.MathUtils.lerp(0, -108, cruiseT));
+        rocketRef.current.rotation.set(THREE.MathUtils.lerp(0, -Math.PI / 2, pitchT), 0, -0.025 * pitchT);
+      } else if (p < 0.86) {
+        const approachT = THREE.MathUtils.smoothstep(p, 0.72, 0.86);
+        const levelT = THREE.MathUtils.smoothstep(p, 0.76, 0.86);
+        rocketRef.current.position.set(0, THREE.MathUtils.lerp(8, 8, approachT), THREE.MathUtils.lerp(-108, -138, approachT));
+        rocketRef.current.rotation.set(THREE.MathUtils.lerp(-Math.PI / 2, 0, levelT), 0, THREE.MathUtils.lerp(-0.025, 0, levelT));
       } else {
-        // Deep-space transfer: the rocket itself travels forward through the scene.
-        // Mars remains fixed far ahead instead of sliding toward the rocket.
-        const transferT = THREE.MathUtils.clamp((p - 0.24) / 0.62, 0, 1);
-        const travelZ = THREE.MathUtils.lerp(4, -116, transferT);
-        const travelY = 1.4 + Math.sin(transferT * Math.PI) * 2.2;
-        rocketRef.current.position.set(0, travelY, travelZ);
-        rocketRef.current.rotation.set(-Math.PI / 2, 0, -0.025);
+        const landingT = THREE.MathUtils.smoothstep(p, 0.86, 1);
+        rocketRef.current.position.set(0, THREE.MathUtils.lerp(8, 0.08, landingT), -138);
+        rocketRef.current.rotation.set(0, 0, 0);
       }
     }
 
     const targetY = rocketRef.current?.position.y ?? 1.5;
     const targetZ = rocketRef.current?.position.z ?? 0;
-    const desired = earthMode
-      ? new THREE.Vector3(7.5, targetY + 3.3, targetZ + 9.5)
-      : marsMode
-        ? new THREE.Vector3(7.4, targetY + 3.4, 9.2)
-        : new THREE.Vector3(8.8, targetY + 4.0, targetZ + 13.5);
+    const cameraBlend = THREE.MathUtils.smoothstep(p, 0.18, 0.32);
+    const marsBlend = THREE.MathUtils.smoothstep(p, 0.78, 0.92);
+    const earthCam = new THREE.Vector3(7.5, targetY + 3.3, targetZ + 9.5);
+    const spaceCam = new THREE.Vector3(8.8, targetY + 4.0, targetZ + 13.5);
+    const marsCam = new THREE.Vector3(7.4, targetY + 3.4, targetZ + 9.2);
+    const desired = earthCam.clone().lerp(spaceCam, cameraBlend).lerp(marsCam, marsBlend);
 
-    if (!orbit.current?.__dragging) camera.position.lerp(desired, 1 - Math.pow(0.004, d));
+    if (!orbit.current?.__dragging) camera.position.lerp(desired, 1 - Math.pow(0.01, d));
     if (orbit.current) {
-      orbit.current.target.lerp(new THREE.Vector3(0, targetY + 1.2, targetZ - (earthMode || marsMode ? 0 : 4.5)), 1 - Math.pow(0.003, d));
+      const lookAhead = THREE.MathUtils.lerp(0, -4.5, cameraBlend) * (1 - marsBlend);
+      orbit.current.target.lerp(new THREE.Vector3(0, targetY + THREE.MathUtils.lerp(1.2, 0.7, cameraBlend), targetZ + lookAhead), 1 - Math.pow(0.01, d));
       orbit.current.update();
     }
 
-    scene.background = new THREE.Color(earthMode ? '#8fc5df' : marsMode ? '#c9784f' : '#020711');
-    scene.fog = earthMode ? new THREE.Fog('#a9d5e5', 28, 115) : marsMode ? new THREE.Fog('#c9784f', 30, 105) : null;
+    // Blend sky -> space -> Mars instead of switching background colours in one frame.
+    const sky = new THREE.Color('#8fc5df');
+    const space = new THREE.Color('#020711');
+    const marsSky = new THREE.Color('#c9784f');
+    const bg = sky.clone().lerp(space, THREE.MathUtils.smoothstep(p, 0.17, 0.30));
+    bg.lerp(marsSky, THREE.MathUtils.smoothstep(p, 0.80, 0.94));
+    scene.background = bg;
+
+    if (p < 0.30) {
+      const fogFade = 1 - THREE.MathUtils.smoothstep(p, 0.18, 0.30);
+      scene.fog = new THREE.Fog(bg, 28 + (1 - fogFade) * 90, 115 + (1 - fogFade) * 260);
+    } else if (p > 0.80) {
+      const fogIn = THREE.MathUtils.smoothstep(p, 0.80, 0.94);
+      scene.fog = new THREE.Fog(bg, THREE.MathUtils.lerp(150, 30, fogIn), THREE.MathUtils.lerp(400, 105, fogIn));
+    } else {
+      scene.fog = null;
+    }
 
     if (state.clock.elapsedTime - lastHud.current > 0.08) {
       onTelemetry({
@@ -697,7 +718,7 @@ function RocketWorld({
   });
 
   const p = progress.current;
-  const earthMode = phase === 'outside' || phase === 'parked' || phase === 'launch' || phase === 'clouds';
+  const earthMode = phase === 'outside' || phase === 'outside' || phase === 'parked' || phase === 'launch' || phase === 'clouds';
   const marsMode = phase === 'landing' || phase === 'landed' || phase === 'exited';
   const enginesOn = !['outside', 'parked', 'landed', 'exited'].includes(phase);
 
@@ -705,11 +726,11 @@ function RocketWorld({
     <>
       <ambientLight intensity={earthMode ? 0.82 : marsMode ? 0.72 : 0.38} />
       <directionalLight position={[8, 13, 7]} intensity={earthMode ? 1.8 : 1.2} castShadow />
-      {earthMode && <EarthLaunchSite lift={phase === 'outside' || phase === 'parked' ? 0 : p * 30} />}
-      {(phase === 'launch' || phase === 'clouds') && <AtmosphereLayers progress={p} />}
-      {(phase === 'launch' || phase === 'clouds') && <CloudLayer offset={p * 30} />}
-      {!earthMode && !marsMode && <SpaceScene />}
-      {marsMode && <MarsGround />}
+      {p < 0.31 && <EarthLaunchSite lift={phase === 'outside' || phase === 'parked' ? 0 : p * 30} />}
+      {p > 0 && p < 0.34 && <AtmosphereLayers progress={p} />}
+      {p > 0.02 && p < 0.29 && <CloudLayer offset={p * 30} />}
+      {p >= 0.18 && p < 0.90 && <SpaceScene />}
+      {p >= 0.78 && <MarsGround />}
 
       <group ref={rocketRef} position={[0, 0.08, 0]}>
         <Rocket liveries={liveries} enginesOn={enginesOn} />
