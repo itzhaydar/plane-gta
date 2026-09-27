@@ -1,6 +1,6 @@
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 
-import { Html, OrbitControls, RoundedBox, useGLTF, useTexture } from '@react-three/drei';
+import { Html, OrbitControls, RoundedBox, useAnimations, useGLTF, useTexture } from '@react-three/drei';
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
@@ -35,6 +35,8 @@ type RocketPhase =
   | 'space'
 
   | 'mars-approach'
+
+  | 'mars-entry'
 
   | 'landing'
 
@@ -708,6 +710,19 @@ function SpaceScene() {
 
 
 
+function MarsEntryLayer({ offset }: { offset: number }) {
+  const wisps = useMemo(() => Array.from({ length: 30 }, (_, i) => ({
+    x: ((i * 19) % 34) - 17, y: 2.5 + ((i * 11) % 16) * 0.55 - offset,
+    z: ((i * 23) % 32) - 16, s: 0.7 + (i % 5) * 0.2,
+  })), [offset]);
+  return <group>{wisps.map((w, i) => (
+    <mesh key={i} position={[w.x,w.y,w.z]} scale={[w.s*2.8,w.s*0.42,w.s*1.5]}>
+      <sphereGeometry args={[1,10,7]} />
+      <meshStandardMaterial color={i%3===0?'#d7b29a':'#b86d4d'} transparent opacity={i%3===0?0.12:0.18} roughness={1} depthWrite={false} />
+    </mesh>
+  ))}</group>;
+}
+
 function MarsGround() {
 
   const rocks = useMemo(
@@ -780,70 +795,34 @@ function MarsGround() {
 
 
 
-function MarsAstronaut({ visible }: { visible: boolean }) {
-
-  const { scene } = useGLTF('/astro.glb');
-
+function MarsAstronaut({ visible, animated = false }: { visible: boolean; animated?: boolean }) {
+  const { scene, animations } = useGLTF('/astro.glb');
   const astronaut = useMemo(() => {
-
     const c = SkeletonUtils.clone(scene);
-
-    c.traverse((o) => {
-
-      if (o instanceof THREE.Mesh) {
-
-        o.castShadow = true;
-
-        o.receiveShadow = true;
-
-      }
-
-    });
-
+    c.traverse((o) => { if (o instanceof THREE.Mesh) { o.castShadow = true; o.receiveShadow = true; } });
     c.updateMatrixWorld(true);
-
     const box = new THREE.Box3().setFromObject(c);
-
     const size = box.getSize(new THREE.Vector3());
-
     c.scale.multiplyScalar(1.55 / Math.max(size.y, 1e-6));
-
     c.updateMatrixWorld(true);
-
     const fitted = new THREE.Box3().setFromObject(c);
-
     const center = fitted.getCenter(new THREE.Vector3());
-
-    c.position.x -= center.x;
-
-    c.position.z -= center.z;
-
-    c.position.y -= fitted.min.y;
-
+    c.position.x -= center.x; c.position.z -= center.z; c.position.y -= fitted.min.y;
     return c;
-
   }, [scene]);
-
-
-
+  const { actions } = useAnimations(animations, astronaut);
+  useEffect(() => {
+    const action = Object.values(actions)[0];
+    if (!action) return;
+    if (visible && animated) action.reset().fadeIn(0.2).play(); else action.stop();
+    return () => action.stop();
+  }, [actions, visible, animated]);
   if (!visible) return null;
-
-  return (
-
-    <group position={[1.9, 0, 1.15]} rotation={[0, -Math.PI / 2, 0]}>
-
-      <primitive object={astronaut} />
-
-    </group>
-
-  );
-
+  return <group position={[1.9, 0, 1.15]} rotation={[0, -Math.PI / 2, 0]}><primitive object={astronaut} /></group>;
 }
 
-
-
 function Homie({ visible, playable = false }: { visible: boolean; playable?: boolean }) {
-  const { scene } = useGLTF('/homie2.glb');
+  const { scene, animations } = useGLTF('/homie2.glb');
   const group = useRef<THREE.Group>(null);
   const keys = useRef<Record<string, boolean>>({});
 
@@ -867,6 +846,14 @@ function Homie({ visible, playable = false }: { visible: boolean; playable?: boo
     c.position.y -= fitted.min.y;
     return c;
   }, [scene]);
+
+  const { actions } = useAnimations(animations, homie);
+  useEffect(() => {
+    const action = Object.values(actions)[0];
+    if (!action) return;
+    if (visible) action.reset().fadeIn(0.2).play(); else action.stop();
+    return () => action.stop();
+  }, [actions, visible]);
 
   useEffect(() => {
     if (!playable) return;
@@ -979,15 +966,23 @@ function RocketWorld({
 
       speed.current = THREE.MathUtils.lerp(speed.current, 7200, d * 0.7);
 
-      progress.current += 0.013 * d;
+      progress.current += 0.010 * d;
 
-      if (progress.current >= 0.86) setPhase('landing');
+      if (progress.current >= 0.82) setPhase('mars-entry');
+
+    } else if (phase === 'mars-entry') {
+
+      speed.current = THREE.MathUtils.lerp(speed.current, 3900, d * 0.9);
+
+      progress.current += 0.008 * d;
+
+      if (progress.current >= 0.90) setPhase('landing');
 
     } else if (phase === 'landing') {
 
       speed.current = Math.max(0, speed.current - 4100 * d);
 
-      progress.current = Math.min(1, progress.current + 0.016 * d);
+      progress.current = Math.min(1, progress.current + 0.012 * d);
 
       if (progress.current >= 1 && speed.current <= 25) {
 
@@ -1011,7 +1006,7 @@ function RocketWorld({
 
     const earthMode = p < 0.24;
 
-    const marsMode = p >= 0.86;
+    const marsMode = p >= 0.82;
 
 
 
@@ -1025,7 +1020,7 @@ function RocketWorld({
 
       } else if (marsMode) {
 
-        const landingT = THREE.MathUtils.clamp((p - 0.86) / 0.14, 0, 1);
+        const landingT = THREE.MathUtils.clamp((p - 0.82) / 0.18, 0, 1);
 
         rocketRef.current.position.set(0, THREE.MathUtils.lerp(8, 0.08, landingT), 0);
 
@@ -1093,7 +1088,7 @@ function RocketWorld({
 
         speed: Math.round(speed.current),
 
-        altitude: marsMode ? Math.round(Math.max(0, (1 - (p - 0.86) / 0.14) * 48000)) : Math.round(p * 410000),
+        altitude: marsMode ? Math.round(Math.max(0, (1 - (p - 0.82) / 0.18) * 48000)) : Math.round(p * 410000),
 
         progress: p,
 
@@ -1113,7 +1108,7 @@ function RocketWorld({
 
   const earthMode = phase === 'parked' || phase === 'launch' || phase === 'clouds';
 
-  const marsMode = phase === 'landing' || phase === 'landed' || phase === 'exited';
+  const marsMode = phase === 'mars-entry' || phase === 'mars-entry' || phase === 'landing' || phase === 'landed' || phase === 'exited';
 
   const enginesOn = !['parked', 'landed', 'exited'].includes(phase);
 
@@ -1134,6 +1129,7 @@ function RocketWorld({
       {!earthMode && !marsMode && <SpaceScene />}
 
       {marsMode && <MarsGround />}
+      {phase === 'mars-entry' && <MarsEntryLayer offset={(p - 0.82) * 75} />}
 
 
 
@@ -1145,7 +1141,7 @@ function RocketWorld({
 
 
 
-      <MarsAstronaut visible={(phase === 'parked' && !crewIn) || phase === 'exited'} />
+      <MarsAstronaut visible={(phase === 'parked' && !crewIn) || phase === 'exited'} animated={phase === 'parked' && !crewIn} />
 
       <Homie
         visible={(phase === 'parked' && !crewIn) || phase === 'exited'}
@@ -1410,6 +1406,7 @@ export default function FlyRocket() {
     space: ['MARS TRANSFER', 'Earth is behind us. Autopilot is cruising through deep space.'],
 
     'mars-approach': ['MARS APPROACH', 'Autopilot is reducing speed and lining up for entry.'],
+    'mars-entry': ['MARS ATMOSPHERIC ENTRY', 'Crossing the thin Martian atmosphere through dust, haze and sparse cloud layers.'],
 
     landing: ['MARS DESCENT', 'Final descent is automatic. Engines are controlling the landing.'],
 
