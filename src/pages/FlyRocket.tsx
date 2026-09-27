@@ -646,7 +646,6 @@ function RocketWorld({
     }
 
     const p = progress.current;
-    const earthMode = p < 0.24;
     const marsMode = p >= 0.86;
 
     // One continuous world-space path. No teleporting at Earth/space or space/Mars boundaries.
@@ -718,7 +717,7 @@ function RocketWorld({
   });
 
   const p = progress.current;
-  const earthMode = phase === 'outside' || phase === 'outside' || phase === 'parked' || phase === 'launch' || phase === 'clouds';
+  const earthMode = phase === 'outside' || phase === 'parked' || phase === 'launch' || phase === 'clouds';
   const marsMode = phase === 'landing' || phase === 'landed' || phase === 'exited';
   const enginesOn = !['outside', 'parked', 'landed', 'exited'].includes(phase);
 
