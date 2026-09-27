@@ -1108,7 +1108,7 @@ function RocketWorld({
 
   const earthMode = phase === 'parked' || phase === 'launch' || phase === 'clouds';
 
-  const marsMode = phase === 'mars-entry' || phase === 'mars-entry' || phase === 'landing' || phase === 'landed' || phase === 'exited';
+  const marsMode = phase === 'mars-entry' || phase === 'landing' || phase === 'landed' || phase === 'exited';
 
   const enginesOn = !['parked', 'landed', 'exited'].includes(phase);
 
