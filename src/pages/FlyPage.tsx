@@ -34,6 +34,55 @@ function FlagSkin({
 }
 
 
+function Seat({
+  position,
+}: {
+  position: [number, number, number];
+}) {
+  return (
+    <group position={position}>
+      <RoundedBox
+        args={[0.30, 0.08, 0.27]}
+        radius={0.035}
+        smoothness={3}
+        position={[0, -0.04, 0]}
+        castShadow
+      >
+        <meshStandardMaterial
+          color="#20252a"
+          roughness={0.82}
+        />
+      </RoundedBox>
+
+      <RoundedBox
+        args={[0.13, 0.36, 0.27]}
+        radius={0.035}
+        smoothness={3}
+        position={[-0.08, 0.14, 0]}
+        castShadow
+      >
+        <meshStandardMaterial
+          color="#252a30"
+          roughness={0.82}
+        />
+      </RoundedBox>
+
+      <RoundedBox
+        args={[0.12, 0.09, 0.22]}
+        radius={0.03}
+        smoothness={3}
+        position={[-0.09, 0.36, 0]}
+        castShadow
+      >
+        <meshStandardMaterial
+          color="#292e35"
+          roughness={0.8}
+        />
+      </RoundedBox>
+    </group>
+  );
+}
+
 // ============================================================
 // COCKPIT / CANOPY
 // ============================================================
