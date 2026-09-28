@@ -1,6 +1,6 @@
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Html, RoundedBox, useTexture, OrbitControls } from '@react-three/drei';
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type MutableRefObject } from 'react';
 import * as THREE from 'three';
 import { useNavigate } from 'react-router-dom';
 import { usePlaneStore, type Face } from '../store';
@@ -626,6 +626,8 @@ function Plane({
 const CRUISE_SPEED = 235;
 const ROUTE_END_Z = -720;
 const DESTINATION_NAME = 'PORT GELLHORN';
+const CHARACTER_START = new THREE.Vector3(0, 0, 0);
+
 const START_NAME = 'VICE CITY';
 
 type FlightPhase =
@@ -863,7 +865,7 @@ function FlyMalePlayer({ position }: { position: MutableRefObject<THREE.Vector3>
   const rightArm = useRef<THREE.Group>(null);
   const leftLeg = useRef<THREE.Group>(null);
   const rightLeg = useRef<THREE.Group>(null);
-  const last = useRef(START.clone());
+  const last = useRef(CHARACTER_START.clone());
 
   useFrame(({ clock }) => {
     if (!group.current) return;
@@ -898,7 +900,7 @@ function FlyMalePlayer({ position }: { position: MutableRefObject<THREE.Vector3>
   const shoes = '#10151d';
 
   return (
-    <group ref={group} position={START.toArray()} scale={1.04}>
+    <group ref={group} position={CHARACTER_START.toArray()} scale={1.04}>
       <group ref={torso}>
         {/* Smooth blocky torso: pale vest under an open olive sleeveless shirt */}
         <mesh position={[0, 1.48, 0]} castShadow>
@@ -991,7 +993,7 @@ function FlyFemalePlayer({ position }: { position: MutableRefObject<THREE.Vector
   const rightArm = useRef<THREE.Group>(null);
   const leftLeg = useRef<THREE.Group>(null);
   const rightLeg = useRef<THREE.Group>(null);
-  const last = useRef(START.clone());
+  const last = useRef(CHARACTER_START.clone());
 
   useFrame(({ clock }) => {
     if (!group.current) return;
@@ -1027,7 +1029,7 @@ function FlyFemalePlayer({ position }: { position: MutableRefObject<THREE.Vector
   const shoes = '#10151d';
 
   return (
-    <group ref={group} position={START.toArray()} scale={1.01}>
+    <group ref={group} position={CHARACTER_START.toArray()} scale={1.01}>
       <group ref={torso}>
         {/* Female main character: same polished blocky world, clearly different silhouette. */}
         <mesh position={[0, 1.48, 0]} castShadow>
