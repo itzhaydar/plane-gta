@@ -64,7 +64,7 @@ function Building({ destination, index, near }: { destination: Destination; inde
         <div className={`city-door-label ${near ? 'is-near' : ''}`}>
           <small>0{index + 1} / DESTINATION</small>
           <strong>{destination.title}</strong>
-          {near && <span className="door-enter-key"><b>ENTER</b> STEP INSIDE</span>}
+          {near && <span className="door-enter-key"><b>E</b> STEP INSIDE</span>}
         </div>
       </Html>
       <pointLight position={[0, 3, 3.8]} intensity={near ? 12 : 6} distance={8} color={color} />
@@ -156,7 +156,7 @@ function Car({ x, z, speed, direction, kind = 0 }: { x: number; z: number; speed
 
 function Player({ position }: { position: MutableRefObject<THREE.Vector3> }) {
   const group = useRef<THREE.Group>(null);
-  const body = useRef<THREE.Group>(null);
+  const torso = useRef<THREE.Group>(null);
   const leftArm = useRef<THREE.Group>(null);
   const rightArm = useRef<THREE.Group>(null);
   const leftLeg = useRef<THREE.Group>(null);
@@ -165,6 +165,7 @@ function Player({ position }: { position: MutableRefObject<THREE.Vector3> }) {
 
   useFrame(({ clock }) => {
     if (!group.current) return;
+
     const moved = last.current.distanceToSquared(position.current) > 0.000008;
     const dx = position.current.x - last.current.x;
     const dz = position.current.z - last.current.z;
@@ -172,135 +173,124 @@ function Player({ position }: { position: MutableRefObject<THREE.Vector3> }) {
     group.current.position.copy(position.current);
     if (moved) group.current.rotation.y = Math.atan2(dx, dz);
 
-    const t = clock.elapsedTime * 8.5;
-    const swing = moved ? Math.sin(t) * 0.58 : 0;
-    const idle = moved ? Math.abs(Math.sin(t)) * 0.028 : Math.sin(clock.elapsedTime * 1.7) * 0.008;
+    const t = clock.elapsedTime * 8.2;
+    const swing = moved ? Math.sin(t) * 0.52 : 0;
+    const bob = moved ? Math.abs(Math.sin(t)) * 0.025 : Math.sin(clock.elapsedTime * 1.8) * 0.006;
 
-    if (body.current) body.current.position.y = idle;
+    if (torso.current) torso.current.position.y = bob;
     if (leftArm.current) leftArm.current.rotation.x = swing;
     if (rightArm.current) rightArm.current.rotation.x = -swing;
-    if (leftLeg.current) leftLeg.current.rotation.x = -swing * 0.76;
-    if (rightLeg.current) rightLeg.current.rotation.x = swing * 0.76;
+    if (leftLeg.current) leftLeg.current.rotation.x = -swing * 0.72;
+    if (rightLeg.current) rightLeg.current.rotation.x = swing * 0.72;
 
     last.current.copy(position.current);
   });
 
-  const skin = '#8c583d';
-  const hair = '#15171b';
-  const shirt = '#eeeae1';
-  const pants = '#10233f';
-  const gold = '#d3a34f';
+  const skin = '#b47a52';
+  const hair = '#241b16';
+  const stubble = '#8a5f42';
+  const olive = '#40503c';
+  const vest = '#d9cfb6';
+  const gold = '#d9b65e';
+  const denim = '#222a37';
+  const shoes = '#141319';
+  const backpack = '#3a2f24';
 
   return (
     <group ref={group} position={START.toArray()} scale={1.04}>
-      <group ref={body}>
-        {/* Casual fitted T-shirt torso */}
-        <mesh position={[0, 1.52, 0]} scale={[1.08, 1, 0.72]} castShadow>
-          <capsuleGeometry args={[0.31, 0.68, 10, 18]} />
-          <meshStandardMaterial color={shirt} roughness={0.78} />
+      <group ref={torso}>
+        {/* Smooth blocky torso: pale vest under an open olive sleeveless shirt */}
+        <mesh position={[0, 1.48, 0]} castShadow>
+          <boxGeometry args={[0.76, 0.92, 0.40]} />
+          <meshStandardMaterial color={vest} roughness={0.8} />
         </mesh>
 
-        {/* subtle collar */}
-        <mesh position={[0, 1.88, 0.245]} rotation={[Math.PI / 2, 0, 0]}>
-          <torusGeometry args={[0.115, 0.018, 8, 20, Math.PI]} />
-          <meshStandardMaterial color="#d9d5cd" roughness={0.8} />
+        {/* open olive shirt panels */}
+        <mesh position={[-0.265, 1.49, 0.222]} castShadow>
+          <boxGeometry args={[0.23, 0.90, 0.055]} />
+          <meshStandardMaterial color={olive} roughness={0.84} />
+        </mesh>
+        <mesh position={[0.265, 1.49, 0.222]} castShadow>
+          <boxGeometry args={[0.23, 0.90, 0.055]} />
+          <meshStandardMaterial color={olive} roughness={0.84} />
+        </mesh>
+        <mesh position={[-0.33, 1.52, -0.02]} rotation={[0,0,-0.05]} castShadow>
+          <boxGeometry args={[0.17, 0.88, 0.43]} />
+          <meshStandardMaterial color={olive} roughness={0.84} />
+        </mesh>
+        <mesh position={[0.33, 1.52, -0.02]} rotation={[0,0,0.05]} castShadow>
+          <boxGeometry args={[0.17, 0.88, 0.43]} />
+          <meshStandardMaterial color={olive} roughness={0.84} />
         </mesh>
 
-        {/* neck */}
-        <mesh position={[0, 1.98, 0]}>
-          <cylinderGeometry args={[0.115, 0.135, 0.22, 16]} />
-          <meshStandardMaterial color={skin} roughness={0.88} />
+        {/* small brown backpack */}
+        <mesh position={[0, 1.52, -0.29]} castShadow>
+          <boxGeometry args={[0.54, 0.65, 0.22]} />
+          <meshStandardMaterial color={backpack} roughness={0.92} />
+        </mesh>
+        <mesh position={[-0.30, 1.60, -0.17]} rotation={[0,0,-0.08]}>
+          <boxGeometry args={[0.07, 0.70, 0.08]} />
+          <meshStandardMaterial color={backpack} roughness={0.92} />
+        </mesh>
+        <mesh position={[0.30, 1.60, -0.17]} rotation={[0,0,0.08]}>
+          <boxGeometry args={[0.07, 0.70, 0.08]} />
+          <meshStandardMaterial color={backpack} roughness={0.92} />
         </mesh>
 
-        {/* human head, slightly elongated */}
-        <mesh position={[0, 2.25, 0]} scale={[0.92, 1.08, 0.9]} castShadow>
-          <sphereGeometry args={[0.285, 28, 22]} />
+        {/* blocky neck + rounded/blocky head */}
+        <mesh position={[0, 2.00, 0]} castShadow>
+          <boxGeometry args={[0.22, 0.22, 0.22]} />
+          <meshStandardMaterial color={skin} roughness={0.9} />
+        </mesh>
+        <mesh position={[0, 2.28, 0]} castShadow>
+          <boxGeometry args={[0.50, 0.48, 0.44]} />
           <meshStandardMaterial color={skin} roughness={0.9} />
         </mesh>
 
-        {/* ears */}
-        {[-1, 1].map((side) => (
-          <mesh key={side} position={[side * 0.267, 2.25, 0]}>
-            <sphereGeometry args={[0.052, 12, 10]} />
-            <meshStandardMaterial color={skin} roughness={0.9} />
-          </mesh>
-        ))}
-
-        {/* textured-looking short curls / fade silhouette */}
-        <mesh position={[0, 2.455, -0.018]} scale={[0.95, 0.47, 0.92]} castShadow>
-          <sphereGeometry args={[0.29, 20, 16]} />
+        {/* cropped dark hair, clean silhouette */}
+        <mesh position={[0, 2.55, -0.01]} castShadow>
+          <boxGeometry args={[0.51, 0.13, 0.43]} />
           <meshStandardMaterial color={hair} roughness={1} />
         </mesh>
-        {[-0.16,-0.08,0,0.08,0.16].map((x, i) => (
-          <mesh key={x} position={[x, 2.55 + (i % 2) * 0.018, 0.015]}>
-            <sphereGeometry args={[0.065, 9, 8]} />
+        {[-0.18,-0.06,0.06,0.18].map((x, i) => (
+          <mesh key={x} position={[x, 2.62 + (i % 2) * .015, 0.02]}>
+            <boxGeometry args={[0.10, 0.08, 0.10]} />
             <meshStandardMaterial color={hair} roughness={1} />
           </mesh>
         ))}
 
-        {/* brows */}
-        {[-0.09,0.09].map((x) => (
-          <mesh key={x} position={[x, 2.315, 0.252]} scale={[1.5,.35,.35]}>
-            <sphereGeometry args={[0.036, 8, 6]} />
-            <meshStandardMaterial color={hair} />
-          </mesh>
-        ))}
+        {/* simple face: brows, eyes, nose, stubble; no glasses */}
+        {[-0.105,0.105].map((x) => <mesh key={`b${x}`} position={[x,2.36,0.229]}><boxGeometry args={[0.105,.025,.018]} /><meshStandardMaterial color={hair} /></mesh>)}
+        {[-0.105,0.105].map((x) => <mesh key={`e${x}`} position={[x,2.32,0.233]}><boxGeometry args={[0.045,.025,.018]} /><meshStandardMaterial color="#171719" /></mesh>)}
+        <mesh position={[0,2.25,0.245]}><boxGeometry args={[0.07,.10,.06]} /><meshStandardMaterial color={skin} /></mesh>
+        <mesh position={[0,2.13,0.229]}><boxGeometry args={[0.31,.11,.022]} /><meshStandardMaterial color={stubble} roughness={1} /></mesh>
+        <mesh position={[0,2.20,0.237]}><boxGeometry args={[0.18,.035,.018]} /><meshStandardMaterial color="#633f32" /></mesh>
 
-        {/* simple eyes - no glasses */}
-        {[-0.09,0.09].map((x) => (
-          <mesh key={x} position={[x, 2.292, 0.269]}>
-            <sphereGeometry args={[0.022, 10, 8]} />
-            <meshStandardMaterial color="#17191c" roughness={0.5} />
-          </mesh>
-        ))}
-
-        {/* nose */}
-        <mesh position={[0, 2.235, 0.286]} scale={[0.6,1.2,0.72]}>
-          <sphereGeometry args={[0.055, 12, 10]} />
-          <meshStandardMaterial color={skin} roughness={0.9} />
-        </mesh>
-
-        {/* neat beard */}
-        <mesh position={[0, 2.135, 0.17]} scale={[0.88,.54,.65]}>
-          <sphereGeometry args={[0.245, 18, 12]} />
-          <meshStandardMaterial color={hair} roughness={1} />
-        </mesh>
-        <mesh position={[0, 2.18, 0.292]} scale={[1.4,.28,.28]}>
-          <sphereGeometry args={[0.075, 12, 8]} />
-          <meshStandardMaterial color="#6e3f31" roughness={0.9} />
-        </mesh>
-
-        {/* restrained gold chain */}
-        <mesh position={[0, 1.88, 0.286]} rotation={[Math.PI / 2, 0, 0]}>
-          <torusGeometry args={[0.16, 0.014, 8, 28, Math.PI]} />
-          <meshStandardMaterial color={gold} metalness={0.95} roughness={0.18} />
+        {/* thin gold chain */}
+        <mesh position={[0,1.91,0.226]} rotation={[Math.PI/2,0,0]}>
+          <torusGeometry args={[0.15,0.012,6,22,Math.PI]} />
+          <meshStandardMaterial color={gold} metalness={0.9} roughness={0.22} />
         </mesh>
       </group>
 
-      {/* arms */}
-      <group ref={leftArm} position={[-0.37, 1.72, 0]}>
-        <mesh position={[0, -0.31, 0]} castShadow><capsuleGeometry args={[0.10, 0.54, 7, 12]} /><meshStandardMaterial color={skin} roughness={0.88} /></mesh>
-        <mesh position={[0, 0.01, 0]} scale={[1.2,.75,1.2]}><capsuleGeometry args={[0.112, 0.23, 6, 10]} /><meshStandardMaterial color={shirt} roughness={0.78} /></mesh>
-        <mesh position={[0, -0.68, 0.02]}><sphereGeometry args={[0.115, 14, 12]} /><meshStandardMaterial color={skin} /></mesh>
+      {/* bare arms from cut-off sleeves */}
+      <group ref={leftArm} position={[-0.47,1.73,0]}>
+        <mesh position={[0,-0.31,0]} castShadow><capsuleGeometry args={[0.105,0.55,6,10]} /><meshStandardMaterial color={skin} roughness={0.9} /></mesh>
+        <mesh position={[0,-0.66,0.02]}><boxGeometry args={[0.18,.20,.18]} /><meshStandardMaterial color={skin} /></mesh>
       </group>
-      <group ref={rightArm} position={[0.37, 1.72, 0]}>
-        <mesh position={[0, -0.31, 0]} castShadow><capsuleGeometry args={[0.10, 0.54, 7, 12]} /><meshStandardMaterial color={skin} roughness={0.88} /></mesh>
-        <mesh position={[0, 0.01, 0]} scale={[1.2,.75,1.2]}><capsuleGeometry args={[0.112, 0.23, 6, 10]} /><meshStandardMaterial color={shirt} roughness={0.78} /></mesh>
-        <mesh position={[0, -0.68, 0.02]}><sphereGeometry args={[0.115, 14, 12]} /><meshStandardMaterial color={skin} /></mesh>
+      <group ref={rightArm} position={[0.47,1.73,0]}>
+        <mesh position={[0,-0.31,0]} castShadow><capsuleGeometry args={[0.105,0.55,6,10]} /><meshStandardMaterial color={skin} roughness={0.9} /></mesh>
+        <mesh position={[0,-0.66,0.02]}><boxGeometry args={[0.18,.20,.18]} /><meshStandardMaterial color={skin} /></mesh>
       </group>
 
-      {/* relaxed cargo-style pants + sneakers */}
-      <group ref={leftLeg} position={[-0.16, 1.08, 0]}>
-        <mesh position={[0, -0.46, 0]} scale={[1.08,1,1]} castShadow><capsuleGeometry args={[0.125, 0.70, 7, 12]} /><meshStandardMaterial color={pants} roughness={0.84} /></mesh>
-        <mesh position={[-0.105,-0.42,0.04]}><boxGeometry args={[0.08,.25,.22]} /><meshStandardMaterial color="#162d4e" /></mesh>
-        <mesh position={[0, -0.91, 0.11]}><boxGeometry args={[0.28, 0.16, 0.5]} /><meshStandardMaterial color="#f3f0e8" roughness={0.66} /></mesh>
-        <mesh position={[0,-0.96,0.15]}><boxGeometry args={[0.29,.045,.52]} /><meshStandardMaterial color="#d8d5ce" /></mesh>
+      {/* dark denim + black shoes */}
+      <group ref={leftLeg} position={[-0.18,1.06,0]}>
+        <mesh position={[0,-0.47,0]} castShadow><capsuleGeometry args={[0.13,0.72,6,10]} /><meshStandardMaterial color={denim} roughness={0.9} /></mesh>
+        <mesh position={[0,-0.93,0.10]}><boxGeometry args={[0.28,.17,.48]} /><meshStandardMaterial color={shoes} roughness={0.88} /></mesh>
       </group>
-      <group ref={rightLeg} position={[0.16, 1.08, 0]}>
-        <mesh position={[0, -0.46, 0]} scale={[1.08,1,1]} castShadow><capsuleGeometry args={[0.125, 0.70, 7, 12]} /><meshStandardMaterial color={pants} roughness={0.84} /></mesh>
-        <mesh position={[0.105,-0.42,0.04]}><boxGeometry args={[0.08,.25,.22]} /><meshStandardMaterial color="#162d4e" /></mesh>
-        <mesh position={[0, -0.91, 0.11]}><boxGeometry args={[0.28, 0.16, 0.5]} /><meshStandardMaterial color="#f3f0e8" roughness={0.66} /></mesh>
-        <mesh position={[0,-0.96,0.15]}><boxGeometry args={[0.29,.045,.52]} /><meshStandardMaterial color="#d8d5ce" /></mesh>
+      <group ref={rightLeg} position={[0.18,1.06,0]}>
+        <mesh position={[0,-0.47,0]} castShadow><capsuleGeometry args={[0.13,0.72,6,10]} /><meshStandardMaterial color={denim} roughness={0.9} /></mesh>
+        <mesh position={[0,-0.93,0.10]}><boxGeometry args={[0.28,.17,.48]} /><meshStandardMaterial color={shoes} roughness={0.88} /></mesh>
       </group>
     </group>
   );
@@ -371,6 +361,8 @@ export default function LandingPage() {
   const [phase, setPhase] = useState<'intro' | 'countdown' | 'tour'>('intro');
   const [count, setCount] = useState(3);
   const [location, setLocation] = useState({ x: -4, z: 0 });
+  const [soundOn, setSoundOn] = useState(true);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const position = useRef(START.clone());
   const keys = useRef(new Set<string>());
   const near = DESTINATIONS.findIndex(({ x }) => Math.abs(location.x - x) < 2.1 && location.z < -1.1);
@@ -385,11 +377,36 @@ export default function LandingPage() {
   }, [phase, count]);
 
   useEffect(() => {
+    if (phase === 'intro') return;
+
+    if (!audioRef.current) {
+      const audio = new Audio('/boot.mp3');
+      audio.loop = true;
+      audio.volume = 0.42;
+      audioRef.current = audio;
+    }
+
+    const audio = audioRef.current;
+    audio.muted = !soundOn;
+
+    if (soundOn) {
+      audio.play().catch(() => {});
+    } else {
+      audio.pause();
+    }
+
+    return () => {
+      if (phase === 'tour') return;
+      audio.pause();
+    };
+  }, [phase, soundOn]);
+
+  useEffect(() => {
     if (phase !== 'tour') return;
     const down = (event: KeyboardEvent) => {
       const key = event.key.toLowerCase();
       if (['arrowleft', 'arrowright', 'arrowup', 'arrowdown', ' '].includes(key)) event.preventDefault();
-      if (key === 'enter') {
+      if (key === 'e' || key === 'enter') {
         if (activeRef.current !== null) {
           const door = DESTINATIONS[activeRef.current];
           setRole(door.path === '/homie' ? 'homie' : 'pilot');
@@ -416,9 +433,14 @@ export default function LandingPage() {
   return <div className="tour-page">
     <style>{CSS}</style>
     {phase !== 'intro' && <div className="tour-canvas"><Canvas shadows dpr={[1, 1.5]} camera={{ position: [-9, 5, 11], fov: 55 }} gl={{ antialias: false, powerPreference: 'high-performance' }}><Suspense fallback={null}><City position={position} near={active} /><Movement position={position} keys={keys} onMove={(x, z) => setLocation((old) => Math.abs(old.x - x) > 0.05 || Math.abs(old.z - z) > 0.05 ? { x, z } : old)} /></Suspense></Canvas></div>}
-    <header className="tour-header"><div className="tour-brand"><i /> MARSHOUT <span>VICE CITY / WORLD 01</span></div><span className="tour-live">● &nbsp; ONLINE</span></header>
+    <header className="tour-header"><div className="tour-brand"><i /> MARSHOUT <span>VICE CITY / WORLD 01</span></div><div className="tour-header-actions"><span className="tour-live">● &nbsp; ONLINE</span><button type="button" className={`sound-toggle ${soundOn ? 'is-on' : ''}`} aria-label={soundOn ? 'Mute sound' : 'Play sound'} onClick={() => setSoundOn((value) => !value)}><span>{soundOn ? '♪' : '×'}</span><i>{soundOn ? 'SOUND ON' : 'SOUND OFF'}</i></button></div></header>
     {phase === 'intro' && <main className="tour-intro"><div className="tour-intro-copy"><div className="tour-eyebrow">MARSHOUT / VICE CITY <span>✦</span></div><h1>Take a <em>tour.</em></h1><p className="tour-lead">See which door gets you a travel flyer and which one gets you to a new destination.</p><button className="tour-start" aria-label="Take a tour" onClick={() => { setCount(3); setPhase('countdown'); }}><span className="tour-play">▶</span><span>TAKE A TOUR</span></button><p className="tour-hint">Walk the boulevard. Three doors are waiting.</p></div><div className="tour-hero" aria-hidden="true"><div className="tour-sun" /><div className="tour-skyline"><i /><i /><i /><i /><i /><i /><i /><i /></div><div className="tour-palm">✳</div><div className="tour-hero-caption">VICE CITY <span>BOARDING LATE</span></div></div></main>}
-    {phase !== 'intro' && <><div className="tour-topline"><span>VICE CITY <b>/</b> MARSHOUT BOULEVARD</span><span>FOLLOW THE GOLD · CHOOSE A DOOR</span></div>{phase === 'tour' && <><div className="tour-mission"><small>YOU'RE ON THE BOULEVARD</small><strong>Where are you headed?</strong><p>Walk up to a marked entrance. The city will tell you when you're close.</p></div><div className="tour-controls"><span className="key-group"><kbd>←</kbd><kbd>↑</kbd><kbd>↓</kbd><kbd>→</kbd><b>MOVE</b></span><span><kbd>SHIFT</kbd> RUN</span><span><kbd>ENTER</kbd> ENTER</span></div>{active !== null && <button className="tour-enter" onClick={enter}>ENTER <strong>{DESTINATIONS[active].title}</strong><span>↗</span></button>}<div className="tour-touch" aria-label="Movement controls"><button aria-label="Move left" onPointerDown={() => move('arrowleft', true)} onPointerUp={() => move('arrowleft', false)} onPointerCancel={() => move('arrowleft', false)}>←</button><button aria-label="Move forward" onPointerDown={() => move('arrowup', true)} onPointerUp={() => move('arrowup', false)} onPointerCancel={() => move('arrowup', false)}>↑</button><button aria-label="Move backward" onPointerDown={() => move('arrowdown', true)} onPointerUp={() => move('arrowdown', false)} onPointerCancel={() => move('arrowdown', false)}>↓</button><button aria-label="Move right" onPointerDown={() => move('arrowright', true)} onPointerUp={() => move('arrowright', false)} onPointerCancel={() => move('arrowright', false)}>→</button></div></>}{phase === 'countdown' && <div className="tour-countdown"><p>VICE CITY / LOADING THE BLOCK</p><strong key={count}>{count}</strong><span>STREETS OPEN IN</span></div>}</>}
+    {phase !== 'intro' && <><div className="tour-topline"><span>VICE CITY <b>/</b> MARSHOUT BOULEVARD</span><span>FOLLOW THE GOLD · CHOOSE A DOOR</span></div>{phase === 'tour' && <><div className="tour-mission"><small>YOU'RE ON THE BOULEVARD</small><strong>Where are you headed?</strong><p>Walk up to a marked entrance. The city will tell you when you're close.</p></div><div className="tour-controls">
+      <span className="control-block"><b className="control-label">MOVE</b><span className="arrow-pad"><kbd className="key up">↑</kbd><kbd className="key left">←</kbd><kbd className="key down">↓</kbd><kbd className="key right">→</kbd></span></span>
+      <span className="control-block"><kbd className="key wide">SHIFT</kbd><b className="control-label">RUN</b></span>
+      <span className="control-block"><kbd className="key">E</kbd><b className="control-label">ENTER</b></span>
+      <span className="control-block"><kbd className="key wide">ENTER</kbd><b className="control-label">ENTER</b></span>
+    </div>{active !== null && <button className="tour-enter" onClick={enter}>ENTER <strong>{DESTINATIONS[active].title}</strong><span>↗</span></button>}<div className="tour-touch" aria-label="Movement controls"><button aria-label="Move left" onPointerDown={() => move('arrowleft', true)} onPointerUp={() => move('arrowleft', false)} onPointerCancel={() => move('arrowleft', false)}>←</button><button aria-label="Move forward" onPointerDown={() => move('arrowup', true)} onPointerUp={() => move('arrowup', false)} onPointerCancel={() => move('arrowup', false)}>↑</button><button aria-label="Move backward" onPointerDown={() => move('arrowdown', true)} onPointerUp={() => move('arrowdown', false)} onPointerCancel={() => move('arrowdown', false)}>↓</button><button aria-label="Move right" onPointerDown={() => move('arrowright', true)} onPointerUp={() => move('arrowright', false)} onPointerCancel={() => move('arrowright', false)}>→</button></div></>}{phase === 'countdown' && <div className="tour-countdown"><p>VICE CITY / LOADING THE BLOCK</p><strong key={count}>{count}</strong><span>STREETS OPEN IN</span></div>}</>}
     <footer className="tour-footer"><span>✦ &nbsp; A TRIP WORTH TAKING</span><span>MARSHOUT © 2026</span></footer>
   </div>;
 }
@@ -445,6 +467,6 @@ const CSS = `
 .tour-enter{position:absolute;z-index:6;left:50%;transform:translateX(-50%);bottom:100px;padding:14px 18px;background:var(--gold);border:0;color:var(--navy);cursor:pointer;font-size:10px;font-weight:950;letter-spacing:.16em;box-shadow:0 0 34px rgba(211,163,79,.36);white-space:nowrap}.tour-enter strong{margin:0 18px;font-size:12px;letter-spacing:0}.tour-enter span{font-size:18px}
 .city-sign{font-family:Inter,system-ui,sans-serif;font-size:21px;font-weight:1000;letter-spacing:.11em;text-align:center;white-space:nowrap;text-shadow:0 2px 14px #06162d}.city-door-label{font-family:Inter,system-ui,sans-serif;min-width:245px;max-width:350px;padding:13px 16px;color:white;text-align:center;background:rgba(7,26,56,.93);border:1px solid rgba(211,163,79,.42);box-shadow:0 12px 32px rgba(0,0,0,.28);transition:transform .2s,border-color .2s;backdrop-filter:blur(8px)}.city-door-label.is-near{transform:scale(1.13);border-color:var(--gold)}.city-door-label small,.city-door-label span{display:block;font-size:8px;color:var(--gold);font-weight:950;letter-spacing:.17em}.city-door-label strong{display:block;font-size:16px;line-height:1.25;margin:6px 0}
 .tour-countdown{position:absolute;z-index:10;inset:0;background:rgba(7,26,56,.96);display:flex;align-items:center;justify-content:center;flex-direction:column}.tour-countdown:before{content:"";position:absolute;width:min(62vw,760px);height:min(62vw,760px);border:1px solid rgba(211,163,79,.18);border-radius:50%}.tour-countdown p,.tour-countdown span{position:relative;font-size:10px;font-weight:950;letter-spacing:.29em;color:var(--gold)}.tour-countdown strong{position:relative;font-size:clamp(150px,28vw,330px);line-height:.9;color:#f7f4ed;font-weight:950;text-shadow:0 0 70px rgba(211,163,79,.3);animation:count .8s cubic-bezier(.2,.8,.2,1)}.tour-countdown span{color:white}@keyframes count{from{transform:scale(1.45);opacity:0}to{transform:scale(1);opacity:1}}
-.key-group{display:flex!important;align-items:center;gap:3px}.key-group b{margin-left:6px;font-size:9px;letter-spacing:.12em}.door-enter-key{margin-top:8px!important}.door-enter-key b{display:inline-grid;place-items:center;margin-right:7px;padding:4px 7px;border:1px solid rgba(255,255,255,.55);border-bottom-width:2px;border-radius:3px;background:#f5f2eb;color:#071a38;font-size:8px;letter-spacing:.08em}.tour-touch{display:none}
+.tour-header-actions{display:flex;align-items:center;gap:16px}.sound-toggle{height:34px;padding:0 11px;border:1px solid rgba(211,163,79,.35);background:rgba(7,26,56,.65);color:#f5f2eb;display:flex;align-items:center;gap:8px;cursor:pointer;backdrop-filter:blur(8px)}.sound-toggle span{width:17px;height:17px;border-radius:50%;display:grid;place-items:center;background:#d3a34f;color:#071a38;font-size:10px;font-weight:1000}.sound-toggle i{font-style:normal;font-size:7px;font-weight:950;letter-spacing:.14em}.sound-toggle:not(.is-on){opacity:.58}.control-block{display:flex;align-items:center;gap:7px}.control-label{font-size:8px;letter-spacing:.13em;color:#f5f2eb}.key{min-width:29px;height:28px;padding:0 7px!important;display:inline-grid;place-items:center;border:1px solid rgba(255,255,255,.55)!important;border-bottom:3px solid rgba(211,163,79,.75)!important;border-radius:4px!important;background:linear-gradient(#f7f5ef,#dcd8cf)!important;color:#071a38!important;box-shadow:0 3px 8px rgba(0,0,0,.24);font-size:10px!important;font-weight:950!important;margin:0!important}.key.wide{min-width:54px}.arrow-pad{width:89px;height:58px;display:grid;grid-template-columns:repeat(3,29px);grid-template-rows:repeat(2,28px);gap:2px}.arrow-pad .up{grid-column:2;grid-row:1}.arrow-pad .left{grid-column:1;grid-row:2}.arrow-pad .down{grid-column:2;grid-row:2}.arrow-pad .right{grid-column:3;grid-row:2}.key-group{display:flex!important;align-items:center;gap:3px}.key-group b{margin-left:6px;font-size:9px;letter-spacing:.12em}.door-enter-key{margin-top:8px!important}.door-enter-key b{display:inline-grid;place-items:center;margin-right:7px;padding:4px 7px;border:1px solid rgba(255,255,255,.55);border-bottom-width:2px;border-radius:3px;background:#f5f2eb;color:#071a38;font-size:8px;letter-spacing:.08em}.tour-touch{display:none}
 @media(max-width:900px){.tour-intro{grid-template-columns:1fr;background:#fbfaf7}.tour-intro-copy{padding:130px 28px 70px}.tour-hero{position:absolute;inset:0;opacity:.1}.tour-intro h1{font-size:clamp(74px,17vw,130px)}.tour-controls{display:none}.tour-touch{position:absolute;z-index:8;bottom:85px;right:20px;display:grid;grid-template-columns:repeat(2,55px);gap:6px;touch-action:none}.tour-touch button{height:52px;border:1px solid rgba(211,163,79,.55);background:rgba(7,26,56,.92);color:white;font-size:24px}.tour-topline span:last-child{display:none}.tour-brand span{display:none}.tour-mission{top:122px;max-width:275px}.tour-enter{bottom:160px;max-width:90vw;white-space:normal}.tour-footer{font-size:8px}}
 `;
