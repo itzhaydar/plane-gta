@@ -1103,7 +1103,6 @@ function RocketWorld({
 
   onTelemetry,
 
-  crewIn,
   gender,
 
 }: {
@@ -1114,7 +1113,6 @@ function RocketWorld({
 
   onTelemetry: (t: Telemetry) => void;
 
-  crewIn: boolean;
   gender: Gender;
 
 }) {
@@ -1658,7 +1656,7 @@ export default function FlyRocket() {
 
       >
 
-        <RocketWorld phase={phase} setPhase={setPhase} onTelemetry={setTelemetry} crewIn={crewIn} gender={gender} />
+        <RocketWorld phase={phase} setPhase={setPhase} onTelemetry={setTelemetry} gender={gender} />
 
       </Canvas>
 
