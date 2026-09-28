@@ -808,6 +808,7 @@ export default function RockHangar() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [muted, setMuted] = useState(true);
   const [introOpen, setIntroOpen] = useState(true);
+  const [markHelpOpen, setMarkHelpOpen] = useState(false);
 
   const {
     activeFace,
@@ -880,11 +881,40 @@ export default function RockHangar() {
   }, [rocketLiveries.insu, rocketLiveries.insl]);
 
   const paintScore = Math.round((paintScores.insu + paintScores.insl) / 2);
-  const painted = paintScore >= TAKEOFF_SCORE;
+  const painted =
+    paintScores.insu >= TAKEOFF_SCORE &&
+    paintScores.insl >= TAKEOFF_SCORE;
 
   return (
     <main className="rocket-bay">
       <style>{ROCKET_BAY_CSS}</style>
+
+      {markHelpOpen && (
+        <div
+          className="mark-help-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-label="How to mark"
+        >
+          <div className="mark-help-card">
+            <button
+              type="button"
+              className="mark-help-close"
+              onClick={() => setMarkHelpOpen(false)}
+              aria-label="Close how to mark"
+            >
+              ×
+            </button>
+
+            <span className="mark-help-kicker">HOW TO MARK</span>
+            <h2>Mark it faster. ✏️</h2>
+            <p>
+              Tap <strong>Draw ✏️</strong>, and increase the size of the draw paint
+              so you can mark the insignia faster.
+            </p>
+          </div>
+        </div>
+      )}
 
       {introOpen && (
         <div className="mars-mission-intro">
@@ -923,6 +953,14 @@ export default function RockHangar() {
           </div>
         </div>
       )}
+
+      <button
+        type="button"
+        className="mark-help-top"
+        onClick={() => setMarkHelpOpen(true)}
+      >
+        HOW TO MARK <span>✏️</span>
+      </button>
 
       <header className="rocket-hangar-topbar">
         <button
@@ -970,10 +1008,11 @@ export default function RockHangar() {
                   onClick={() => setActiveFace(face)}
                   className={`rocket-bay-face ${
                     rocketActiveFace === face ? 'is-active' : ''
-                  } ${rocketLiveries[face] ? 'is-done' : ''}`}
+                  } ${paintScores[face] >= TAKEOFF_SCORE ? 'is-done' : ''}`}
                 >
                   <span>{faceLabel(face)}</span>
-                  {rocketLiveries[face] && (
+                  <b>{paintScores[face]}%</b>
+                  {paintScores[face] >= TAKEOFF_SCORE && (
                     <span className="rocket-bay-check">✓</span>
                   )}
                 </button>
@@ -1000,6 +1039,12 @@ export default function RockHangar() {
 
             <div className="rocket-bay-score" aria-label={`Paint coverage ${paintScore}%`}>
               <span style={{ width: `${paintScore}%` }} />
+            </div>
+
+            <div className="rocket-insignia-scores" aria-label="Individual insignia coverage">
+              <span>UPPER <b>{paintScores.insu}%</b></span>
+              <i />
+              <span>LOWER <b>{paintScores.insl}%</b></span>
             </div>
 
             <button
@@ -1797,4 +1842,139 @@ const ROCKET_BAY_CSS = `
       transition: none;
     }
   }
+
+  .rocket-bay-face b {
+    color: #c58b3c;
+    font-size: 10px;
+  }
+
+  .rocket-insignia-scores {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 0 9px;
+    height: 30px;
+    border: 1px solid rgba(7, 26, 56, 0.09);
+    border-radius: 6px;
+    background: rgba(255,255,255,.58);
+    color: rgba(7,26,56,.48);
+    font-size: 7px;
+    font-weight: 950;
+    letter-spacing: .08em;
+    white-space: nowrap;
+  }
+
+  .rocket-insignia-scores b {
+    color: #c58b3c;
+  }
+
+  .rocket-insignia-scores i {
+    width: 1px;
+    height: 13px;
+    background: rgba(7,26,56,.12);
+  }
+
+  .mark-help-top {
+    position: fixed;
+    top: 10px;
+    left: 50%;
+    z-index: 95;
+    transform: translateX(-50%);
+    height: 34px;
+    padding: 0 14px;
+    border: 1px solid rgba(211,162,82,.65);
+    border-radius: 999px;
+    background: #071a38;
+    color: #fff;
+    box-shadow: 0 9px 24px rgba(7,26,56,.18);
+    cursor: pointer;
+    font-size: 8px;
+    font-weight: 950;
+    letter-spacing: .12em;
+    white-space: nowrap;
+  }
+
+  .mark-help-top span {
+    margin-left: 5px;
+  }
+
+  .mark-help-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 140;
+    padding: 20px;
+    display: grid;
+    place-items: center;
+    background: rgba(5,12,22,.78);
+    backdrop-filter: blur(9px);
+  }
+
+  .mark-help-card {
+    position: relative;
+    width: min(430px, 100%);
+    padding: 30px 30px 28px;
+    border: 1px solid rgba(211,162,82,.5);
+    border-radius: 10px;
+    background: #f3eee4;
+    color: #071a38;
+    box-shadow: 0 32px 85px rgba(0,0,0,.34);
+  }
+
+  .mark-help-close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 34px;
+    height: 34px;
+    border: 1px solid rgba(7,26,56,.12);
+    border-radius: 50%;
+    background: #fff;
+    color: #071a38;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    font-size: 22px;
+    line-height: 1;
+  }
+
+  .mark-help-kicker {
+    color: #b77e38;
+    font-size: 7px;
+    font-weight: 950;
+    letter-spacing: .18em;
+  }
+
+  .mark-help-card h2 {
+    margin: 10px 42px 10px 0;
+    font-size: clamp(28px, 5vw, 42px);
+    line-height: .95;
+    letter-spacing: -.05em;
+    text-transform: uppercase;
+  }
+
+  .mark-help-card p {
+    margin: 0;
+    max-width: 350px;
+    color: rgba(7,26,56,.7);
+    font-size: 13px;
+    line-height: 1.6;
+  }
+
+  .mark-help-card strong {
+    color: #b77e38;
+  }
+
+  @media (max-width: 900px) {
+    .rocket-insignia-scores {
+      display: none;
+    }
+
+    .mark-help-top {
+      top: 7px;
+      height: 30px;
+      font-size: 7px;
+    }
+  }
+
 `;
