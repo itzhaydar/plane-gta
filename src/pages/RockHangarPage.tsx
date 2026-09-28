@@ -20,23 +20,20 @@ import * as THREE from 'three';
 import { SkeletonUtils } from 'three-stdlib';
 
 import LiveryEditor from '../components/LiveryEditor';
-import { usePlaneStore, type Face } from '../store';
+import { usePlaneStore, type RocketFace } from '../store';
 
 // ============================================================
-// ROCKET LIVERY
-// NOTE:
-// This intentionally keeps the existing Face keys so your current
-// store + LiveryEditor work without requiring another file change.
-// Rocket mission panels reuse the existing plane SVG artwork internally.
-// They stay visibly white until the user paints them.
+// ROCKET LIVERY — completely separate from the plane artwork.
+// insu.svg = upper insignia
+// insl.svg = lower insignia
 // ============================================================
 
-const FACES: Face[] = ['flag-left', 'flag-right'];
+const FACES: RocketFace[] = ['insu', 'insl'];
 
-const LEFT_PANEL_FALLBACK = '/templates/flag-left.svg';
-const RIGHT_PANEL_FALLBACK = '/templates/flag-right.svg';
+const UPPER_PANEL_FALLBACK = '/templates/insu.svg';
+const LOWER_PANEL_FALLBACK = '/templates/insl.svg';
 
-useGLTF.preload('/astro.glb');
+useGLTF.preload('/pilot-out.glb');
 
 // ============================================================
 // EDITABLE MISSION PANEL MATERIAL
@@ -80,7 +77,7 @@ function HangarMan({
   position = [1.7, 0, 0.55] as [number, number, number],
 }) {
   const invalidate = useThree((state) => state.invalidate);
-  const { scene, animations } = useGLTF('/astro.glb');
+  const { scene, animations } = useGLTF('/pilot-out.glb');
 
   const man = useMemo(() => {
     const clone = SkeletonUtils.clone(scene);
@@ -161,7 +158,7 @@ function GroundRing({
     <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.012, 0]}>
       <ringGeometry args={[radius - width, radius, 96]} />
       <meshBasicMaterial
-        color="#54718e"
+        color="#b78445"
         transparent
         opacity={opacity}
         side={THREE.DoubleSide}
@@ -204,7 +201,7 @@ function FloodLight({
 
       <mesh position={[0, 0.94, -0.065]}>
         <planeGeometry args={[0.19, 0.09]} />
-        <meshBasicMaterial color="#d9efff" toneMapped={false} />
+        <meshBasicMaterial color="#fff0d8" toneMapped={false} />
       </mesh>
     </group>
   );
@@ -267,7 +264,7 @@ function ScienceConsole({
 
       <mesh position={[0, 0.31, -0.186]}>
         <planeGeometry args={[0.47, 0.19]} />
-        <meshBasicMaterial color="#8fd6e9" toneMapped={false} />
+        <meshBasicMaterial color="#ffd6a0" toneMapped={false} />
       </mesh>
 
       {[-0.2, 0, 0.2].map((x, index) => (
@@ -294,7 +291,7 @@ function LaunchBayEnvironment() {
       >
         <circleGeometry args={[6.8, 96]} />
         <meshStandardMaterial
-          color="#cbd3d9"
+          color="#aeb7bd"
           roughness={0.88}
           metalness={0.05}
         />
@@ -308,7 +305,7 @@ function LaunchBayEnvironment() {
       >
         <cylinderGeometry args={[1.35, 1.42, 0.07, 64]} />
         <meshStandardMaterial
-          color="#68747d"
+          color="#505b65"
           roughness={0.72}
           metalness={0.25}
         />
@@ -578,7 +575,7 @@ function MissionPanel({
 function Rocket({
   liveries,
 }: {
-  liveries: Record<Face, string | null>;
+  liveries: Record<RocketFace, string | null>;
 }) {
   return (
     <group position={[0, 0.08, 0]} scale={1.12}>
@@ -659,17 +656,15 @@ function Rocket({
       <Porthole y={2.10} />
       <Porthole y={1.77} />
 
-      {/* Two compact white mission insignia wrappers on the visible hull.
-          Existing flag-left/right keys + SVG files are intentionally reused so
-          the current store and LiveryEditor continue working unchanged. */}
+      {/* Rocket-only insignias. These never share the plane's livery keys. */}
       <MissionPanel
-        livery={liveries['flag-left']}
-        fallback={LEFT_PANEL_FALLBACK}
+        livery={liveries.insu}
+        fallback={UPPER_PANEL_FALLBACK}
         position={[0, 2.56, 0.435]}
       />
       <MissionPanel
-        livery={liveries['flag-right']}
-        fallback={RIGHT_PANEL_FALLBACK}
+        livery={liveries.insl}
+        fallback={LOWER_PANEL_FALLBACK}
         position={[0, 1.28, 0.495]}
       />
 
@@ -738,10 +733,70 @@ function SoundToggle({
 // LABEL HELPERS
 // ============================================================
 
-function faceLabel(face: Face) {
-  if (face === 'flag-left') return 'UPPER INSIGNIA';
-  if (face === 'flag-right') return 'LOWER INSIGNIA';
+function faceLabel(face: RocketFace) {
+  if (face === 'insu') return 'UPPER INSIGNIA';
+  if (face === 'insl') return 'LOWER INSIGNIA';
   return String(face).toUpperCase();
+}
+
+
+const TAKEOFF_SCORE = 80;
+
+function loadCoverageImage(src: string) {
+  return new Promise<HTMLImageElement>((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error(`Could not load paint image: ${src}`));
+    image.src = src;
+  });
+}
+
+async function getPaintCoverage(
+  editedUrl: string | null,
+  fallbackUrl: string,
+): Promise<number> {
+  if (!editedUrl) return 0;
+
+  const [edited, original] = await Promise.all([
+    loadCoverageImage(editedUrl),
+    loadCoverageImage(fallbackUrl),
+  ]);
+
+  const size = 256;
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  if (!ctx) return 0;
+
+  ctx.clearRect(0, 0, size, size);
+  ctx.drawImage(original, 0, 0, size, size);
+  const base = ctx.getImageData(0, 0, size, size).data;
+
+  ctx.clearRect(0, 0, size, size);
+  ctx.drawImage(edited, 0, 0, size, size);
+  const changed = ctx.getImageData(0, 0, size, size).data;
+
+  let paintable = 0;
+  let painted = 0;
+
+  for (let i = 0; i < base.length; i += 4) {
+    // Only score pixels that belong to the original SVG artwork/panel.
+    if (base[i + 3] < 12) continue;
+    paintable += 1;
+
+    const delta =
+      Math.abs(base[i] - changed[i]) +
+      Math.abs(base[i + 1] - changed[i + 1]) +
+      Math.abs(base[i + 2] - changed[i + 2]) +
+      Math.abs(base[i + 3] - changed[i + 3]);
+
+    // Small antialiasing/export differences do not count as paint.
+    if (delta > 54) painted += 1;
+  }
+
+  if (!paintable) return 0;
+  return Math.max(0, Math.min(100, Math.round((painted / paintable) * 100)));
 }
 
 // ============================================================
@@ -758,6 +813,25 @@ export default function RockHangar() {
     setActiveFace,
     liveries,
   } = usePlaneStore();
+
+  const rocketLiveries: Record<RocketFace, string | null> = {
+    insu: liveries.insu,
+    insl: liveries.insl,
+  };
+
+  const rocketActiveFace: RocketFace =
+    activeFace === 'insu' || activeFace === 'insl' ? activeFace : 'insu';
+
+  const [paintScores, setPaintScores] = useState<Record<RocketFace, number>>({
+    insu: 0,
+    insl: 0,
+  });
+
+  useEffect(() => {
+    if (activeFace !== 'insu' && activeFace !== 'insl') {
+      setActiveFace('insu');
+    }
+  }, [activeFace, setActiveFace]);
 
   useEffect(() => {
     const audio = new Audio('/boot.mp3');
@@ -785,7 +859,27 @@ export default function RockHangar() {
     }
   };
 
-  const painted = FACES.every((face) => Boolean(liveries[face]));
+  useEffect(() => {
+    let cancelled = false;
+
+    Promise.all([
+      getPaintCoverage(rocketLiveries.insu, UPPER_PANEL_FALLBACK),
+      getPaintCoverage(rocketLiveries.insl, LOWER_PANEL_FALLBACK),
+    ])
+      .then(([upper, lower]) => {
+        if (!cancelled) setPaintScores({ insu: upper, insl: lower });
+      })
+      .catch(() => {
+        if (!cancelled) setPaintScores({ insu: 0, insl: 0 });
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [rocketLiveries.insu, rocketLiveries.insl]);
+
+  const paintScore = Math.round((paintScores.insu + paintScores.insl) / 2);
+  const painted = paintScore >= TAKEOFF_SCORE;
 
   return (
     <main className="rocket-bay">
@@ -805,11 +899,11 @@ export default function RockHangar() {
                   type="button"
                   onClick={() => setActiveFace(face)}
                   className={`rocket-bay-face ${
-                    activeFace === face ? 'is-active' : ''
-                  } ${liveries[face] ? 'is-done' : ''}`}
+                    rocketActiveFace === face ? 'is-active' : ''
+                  } ${rocketLiveries[face] ? 'is-done' : ''}`}
                 >
                   <span>{faceLabel(face)}</span>
-                  {liveries[face] && (
+                  {rocketLiveries[face] && (
                     <span className="rocket-bay-check">✓</span>
                   )}
                 </button>
@@ -831,8 +925,20 @@ export default function RockHangar() {
             />
 
             <span className="rocket-bay-status">
-              {painted ? 'MARS VEHICLE READY' : 'MISSION PREP'}
+              {painted ? 'MARS VEHICLE READY' : `PAINT COVERAGE ${paintScore}% / ${TAKEOFF_SCORE}%`}
             </span>
+
+            <div className="rocket-bay-score" aria-label={`Paint coverage ${paintScore}%`}>
+              <span style={{ width: `${paintScore}%` }} />
+            </div>
+
+            <button
+              type="button"
+              className="rocket-bay-door-button"
+              onClick={() => go('/')}
+            >
+              OPEN ANOTHER DOOR
+            </button>
 
             <SoundToggle
               muted={muted}
@@ -851,7 +957,7 @@ export default function RockHangar() {
                 painted ? 'is-ready' : ''
               }`}
             >
-              <span>LAUNCH TO MARS</span>
+              <span>{painted ? 'LAUNCH TO MARS' : `PAINT TO ${TAKEOFF_SCORE}% · ${paintScore}%`}</span>
               <span className="rocket-bay-arrow">→</span>
             </button>
           </div>
@@ -881,17 +987,17 @@ camera={{
             >
               <color
                 attach="background"
-                args={['#e9eef2']}
+                args={['#d8c7b4']}
               />
 
-              <fog attach="fog" args={['#e9eef2', 10, 22]} />
+              <fog attach="fog" args={['#d8c7b4', 9, 22]} />
 
               <ambientLight intensity={0.72} />
 
               <hemisphereLight
                 intensity={0.65}
-                color="#eaf5ff"
-                groundColor="#75808a"
+                color="#ffe8c7"
+                groundColor="#48515a"
               />
 
               <directionalLight
@@ -907,8 +1013,23 @@ camera={{
                 intensity={0.72}
               />
 
+              <pointLight
+                position={[-3.4, 2.2, 2.8]}
+                color="#ffb866"
+                intensity={12}
+                distance={8}
+                decay={2}
+              />
+              <pointLight
+                position={[3.5, 2.4, -2.4]}
+                color="#8fb8df"
+                intensity={8}
+                distance={8}
+                decay={2}
+              />
+
               <LaunchBayEnvironment />
-              <Rocket liveries={liveries} />
+              <Rocket liveries={rocketLiveries} />
 
               <Suspense
                 fallback={
@@ -923,7 +1044,7 @@ camera={{
                       whiteSpace: 'nowrap',
                     }}
                   >
-                    prepping the launch vehicle…
+                    pilot preparing the launch vehicle…
                   </Html>
                 }
               >
@@ -1135,6 +1256,46 @@ const ROCKET_BAY_CSS = `
     letter-spacing: 0.14em;
   }
 
+
+  .rocket-bay-score {
+    width: 88px;
+    height: 5px;
+    flex: 0 0 auto;
+    overflow: hidden;
+    border-radius: 999px;
+    background: rgba(7, 26, 56, 0.10);
+  }
+
+  .rocket-bay-score span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: #c58b3c;
+    transition: width 220ms ease;
+  }
+
+  .rocket-bay-door-button {
+    height: 46px;
+    padding: 0 14px;
+    flex: 0 0 auto;
+    border: 1px solid rgba(7, 26, 56, 0.12);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.72);
+    color: #071a38;
+    cursor: pointer;
+    font-size: 8px;
+    font-weight: 950;
+    letter-spacing: 0.12em;
+    white-space: nowrap;
+    transition: transform 150ms ease, border-color 150ms ease, background 150ms ease;
+  }
+
+  .rocket-bay-door-button:hover {
+    transform: translateY(-2px);
+    border-color: rgba(197, 139, 60, 0.48);
+    background: #ffffff;
+  }
+
   .rocket-bay-sound-toggle {
     width: 46px;
     height: 46px;
@@ -1283,6 +1444,14 @@ const ROCKET_BAY_CSS = `
 
     .rocket-bay-status {
       width: calc(100% - 20px);
+    }
+
+    .rocket-bay-score {
+      width: 72px;
+    }
+
+    .rocket-bay-door-button {
+      order: 3;
     }
 
     .rocket-bay-launch-button {
