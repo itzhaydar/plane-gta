@@ -685,8 +685,8 @@ function ViceHouse({
   rot?: number;
   variant?: number;
 }) {
-  const walls = ['#e7c9ae', '#d8ddd5', '#c6d7d9', '#e6d8bc'][variant % 4];
-  const accent = ['#d67d65', '#5b8190', '#c69b55', '#8c6e82'][variant % 4];
+  const walls = ['#f0c1a5','#a9ccca','#f0dfb1','#d7b4c8','#b9c8e0','#e9b69e'][variant % 6];
+  const accent = ['#d56f5d','#317585','#c28b43','#75567d','#3e638b','#a75b4d'][variant % 6];
 
   return (
     <group position={[x, 0, z]} rotation={[0, rot, 0]}>
@@ -721,6 +721,26 @@ function ViceHouse({
       <mesh position={[2.7, 0.6, 1.9]}>
         <boxGeometry args={[0.65, 1.2, 0.65]} />
         <meshStandardMaterial color="#4e8658" roughness={0.9} />
+      </mesh>
+      <mesh position={[0, 2.28, 1.82]} castShadow>
+        <boxGeometry args={[5.0, 0.16, 0.34]} />
+        <meshStandardMaterial color={accent} roughness={0.72} />
+      </mesh>
+      {[-0.35, 1.05].map((wx) => (
+        <group key={wx}>
+          <mesh position={[wx, 1.18, 1.80]}>
+            <boxGeometry args={[1.02, 1.12, 0.10]} />
+            <meshStandardMaterial color="#f6ead8" roughness={0.7} />
+          </mesh>
+          <mesh position={[wx, 1.18, 1.87]}>
+            <boxGeometry args={[0.82, 0.92, 0.05]} />
+            <meshStandardMaterial color="#78aebc" metalness={0.12} roughness={0.2} />
+          </mesh>
+        </group>
+      ))}
+      <mesh position={[-1.35, 2.12, 2.04]} castShadow>
+        <boxGeometry args={[1.5, 0.12, 0.72]} />
+        <meshStandardMaterial color={accent} roughness={0.7} />
       </mesh>
     </group>
   );
@@ -760,7 +780,7 @@ function Neighborhood({ destination = false }: { destination?: boolean }) {
   const baseZ = destination ? ROUTE_END_Z : 52;
   const houses = useMemo(
     () =>
-      Array.from({ length: 16 }, (_, i) => ({
+      Array.from({ length: 22 }, (_, i) => ({
         x: (i % 2 ? 1 : -1) * (10 + (i % 4) * 4.4),
         z: baseZ + 52 - Math.floor(i / 2) * 13,
         rot: i % 2 ? -Math.PI / 2 : Math.PI / 2,
@@ -836,107 +856,300 @@ function HighClouds() {
   );
 }
 
-function GameCharacter({
-  gender,
-  position,
-  heading,
-  walking,
-}: {
-  gender: Gender;
-  position: THREE.Vector3;
-  heading: number;
-  walking: boolean;
-}) {
-  const t = useRef(0);
+function FlyMalePlayer({ position }: { position: MutableRefObject<THREE.Vector3> }) {
+  const group = useRef<THREE.Group>(null);
+  const torso = useRef<THREE.Group>(null);
   const leftArm = useRef<THREE.Group>(null);
   const rightArm = useRef<THREE.Group>(null);
   const leftLeg = useRef<THREE.Group>(null);
   const rightLeg = useRef<THREE.Group>(null);
+  const last = useRef(START.clone());
 
-  useFrame((_, dt) => {
-    t.current += dt * (walking ? 9 : 2);
-    const swing = walking ? Math.sin(t.current) * 0.55 : Math.sin(t.current) * 0.035;
+  useFrame(({ clock }) => {
+    if (!group.current) return;
+
+    const moved = last.current.distanceToSquared(position.current) > 0.000008;
+    const dx = position.current.x - last.current.x;
+    const dz = position.current.z - last.current.z;
+
+    group.current.position.copy(position.current);
+    if (moved) group.current.rotation.y = Math.atan2(dx, dz);
+
+    const t = clock.elapsedTime * 8.2;
+    const swing = moved ? Math.sin(t) * 0.52 : 0;
+    const bob = moved ? Math.abs(Math.sin(t)) * 0.025 : Math.sin(clock.elapsedTime * 1.8) * 0.006;
+
+    if (torso.current) torso.current.position.y = bob;
     if (leftArm.current) leftArm.current.rotation.x = swing;
     if (rightArm.current) rightArm.current.rotation.x = -swing;
-    if (leftLeg.current) leftLeg.current.rotation.x = -swing * 0.7;
-    if (rightLeg.current) rightLeg.current.rotation.x = swing * 0.7;
+    if (leftLeg.current) leftLeg.current.rotation.x = -swing * 0.72;
+    if (rightLeg.current) rightLeg.current.rotation.x = swing * 0.72;
+
+    last.current.copy(position.current);
   });
 
-  const female = gender === 'woman';
+  const skin = '#b47a52';
+  const hair = '#241b16';
+  const stubble = '#8a5f42';
+  const olive = '#0b274b';
+  const vest = '#f5f2eb';
+  const gold = '#d3a34f';
+  const denim = '#071a38';
+  const shoes = '#10151d';
 
   return (
-    <group position={position} rotation={[0, heading, 0]} scale={0.88}>
-      <mesh position={[0, 1.72, 0]} castShadow>
-        <sphereGeometry args={[0.22, 18, 14]} />
-        <meshStandardMaterial color={female ? '#ad7458' : '#81563e'} roughness={0.8} />
-      </mesh>
-
-      {female ? (
-        <>
-          <mesh position={[0, 1.78, 0.06]} castShadow>
-            <sphereGeometry args={[0.235, 16, 12]} />
-            <meshStandardMaterial color="#211713" roughness={0.92} />
-          </mesh>
-          <mesh position={[0, 1.53, 0.11]} castShadow>
-            <boxGeometry args={[0.4, 0.48, 0.16]} />
-            <meshStandardMaterial color="#211713" roughness={0.92} />
-          </mesh>
-        </>
-      ) : (
-        <mesh position={[0, 1.88, 0]} castShadow>
-          <sphereGeometry args={[0.225, 16, 10, 0, Math.PI * 2, 0, Math.PI / 2]} />
-          <meshStandardMaterial color="#151312" roughness={0.95} />
+    <group ref={group} position={START.toArray()} scale={1.04}>
+      <group ref={torso}>
+        {/* Smooth blocky torso: pale vest under an open olive sleeveless shirt */}
+        <mesh position={[0, 1.48, 0]} castShadow>
+          <boxGeometry args={[0.76, 0.92, 0.40]} />
+          <meshStandardMaterial color={vest} roughness={0.8} />
         </mesh>
-      )}
 
-      <RoundedBox
-        args={[female ? 0.48 : 0.58, 0.68, 0.28]}
-        radius={0.08}
-        smoothness={3}
-        position={[0, 1.18, 0]}
-        castShadow
-      >
-        <meshStandardMaterial color={female ? '#d5b36d' : '#f1eee5'} roughness={0.82} />
-      </RoundedBox>
-
-      {female && (
-        <mesh position={[0, 1.2, 0.155]}>
-          <boxGeometry args={[0.54, 0.34, 0.06]} />
-          <meshStandardMaterial color="#142d4b" roughness={0.75} />
+        {/* open olive shirt panels */}
+        <mesh position={[-0.265, 1.49, 0.222]} castShadow>
+          <boxGeometry args={[0.23, 0.90, 0.055]} />
+          <meshStandardMaterial color={olive} roughness={0.84} />
         </mesh>
-      )}
+        <mesh position={[0.265, 1.49, 0.222]} castShadow>
+          <boxGeometry args={[0.23, 0.90, 0.055]} />
+          <meshStandardMaterial color={olive} roughness={0.84} />
+        </mesh>
+        <mesh position={[-0.33, 1.52, -0.02]} rotation={[0,0,-0.05]} castShadow>
+          <boxGeometry args={[0.17, 0.88, 0.43]} />
+          <meshStandardMaterial color={olive} roughness={0.84} />
+        </mesh>
+        <mesh position={[0.33, 1.52, -0.02]} rotation={[0,0,0.05]} castShadow>
+          <boxGeometry args={[0.17, 0.88, 0.43]} />
+          <meshStandardMaterial color={olive} roughness={0.84} />
+        </mesh>
 
-      {[-1, 1].map((side) => (
-        <group
-          key={`arm-${side}`}
-          ref={side === -1 ? leftArm : rightArm}
-          position={[side * (female ? 0.31 : 0.36), 1.35, 0]}
-        >
-          <mesh position={[0, -0.28, 0]} castShadow>
-            <capsuleGeometry args={[0.075, 0.46, 5, 8]} />
-            <meshStandardMaterial color={female ? '#ad7458' : '#81563e'} roughness={0.8} />
-          </mesh>
-        </group>
-      ))}
+        {/* blocky neck + rounded/blocky head */}
+        <mesh position={[0, 2.00, 0]} castShadow>
+          <boxGeometry args={[0.22, 0.22, 0.22]} />
+          <meshStandardMaterial color={skin} roughness={0.9} />
+        </mesh>
+        <mesh position={[0, 2.28, 0]} castShadow>
+          <boxGeometry args={[0.50, 0.48, 0.44]} />
+          <meshStandardMaterial color={skin} roughness={0.9} />
+        </mesh>
 
-      {[-1, 1].map((side) => (
-        <group
-          key={`leg-${side}`}
-          ref={side === -1 ? leftLeg : rightLeg}
-          position={[side * 0.14, 0.78, 0]}
-        >
-          <mesh position={[0, -0.34, 0]} castShadow>
-            <capsuleGeometry args={[0.1, 0.52, 5, 8]} />
-            <meshStandardMaterial color={female ? '#1e2530' : '#315273'} roughness={0.9} />
+        {/* cropped dark hair, clean silhouette */}
+        <mesh position={[0, 2.55, -0.01]} castShadow>
+          <boxGeometry args={[0.51, 0.13, 0.43]} />
+          <meshStandardMaterial color={hair} roughness={1} />
+        </mesh>
+        {[-0.18,-0.06,0.06,0.18].map((x, i) => (
+          <mesh key={x} position={[x, 2.62 + (i % 2) * .015, 0.02]}>
+            <boxGeometry args={[0.10, 0.08, 0.10]} />
+            <meshStandardMaterial color={hair} roughness={1} />
           </mesh>
-          <mesh position={[0, -0.69, 0.08]} castShadow>
-            <boxGeometry args={[0.22, 0.12, 0.38]} />
-            <meshStandardMaterial color="#151719" roughness={0.95} />
-          </mesh>
-        </group>
-      ))}
+        ))}
+
+        {/* simple face: brows, eyes, nose, stubble; no glasses */}
+        {[-0.105,0.105].map((x) => <mesh key={`b${x}`} position={[x,2.36,0.229]}><boxGeometry args={[0.105,.025,.018]} /><meshStandardMaterial color={hair} /></mesh>)}
+        {[-0.105,0.105].map((x) => <mesh key={`e${x}`} position={[x,2.32,0.233]}><boxGeometry args={[0.045,.025,.018]} /><meshStandardMaterial color="#171719" /></mesh>)}
+        <mesh position={[0,2.25,0.245]}><boxGeometry args={[0.07,.10,.06]} /><meshStandardMaterial color={skin} /></mesh>
+        <mesh position={[0,2.13,0.229]}><boxGeometry args={[0.31,.11,.022]} /><meshStandardMaterial color={stubble} roughness={1} /></mesh>
+        <mesh position={[0,2.20,0.237]}><boxGeometry args={[0.18,.035,.018]} /><meshStandardMaterial color="#633f32" /></mesh>
+
+        {/* thin gold chain */}
+        <mesh position={[0,1.91,0.226]} rotation={[Math.PI/2,0,0]}>
+          <torusGeometry args={[0.15,0.012,6,22,Math.PI]} />
+          <meshStandardMaterial color={gold} metalness={0.9} roughness={0.22} />
+        </mesh>
+      </group>
+
+      {/* bare arms from cut-off sleeves */}
+      <group ref={leftArm} position={[-0.47,1.73,0]}>
+        <mesh position={[0,-0.31,0]} castShadow><capsuleGeometry args={[0.105,0.55,6,10]} /><meshStandardMaterial color={skin} roughness={0.9} /></mesh>
+        <mesh position={[0,-0.66,0.02]}><boxGeometry args={[0.18,.20,.18]} /><meshStandardMaterial color={skin} /></mesh>
+      </group>
+      <group ref={rightArm} position={[0.47,1.73,0]}>
+        <mesh position={[0,-0.31,0]} castShadow><capsuleGeometry args={[0.105,0.55,6,10]} /><meshStandardMaterial color={skin} roughness={0.9} /></mesh>
+        <mesh position={[0,-0.66,0.02]}><boxGeometry args={[0.18,.20,.18]} /><meshStandardMaterial color={skin} /></mesh>
+      </group>
+
+      {/* dark denim + black shoes */}
+      <group ref={leftLeg} position={[-0.18,1.06,0]}>
+        <mesh position={[0,-0.47,0]} castShadow><capsuleGeometry args={[0.13,0.72,6,10]} /><meshStandardMaterial color={denim} roughness={0.9} /></mesh>
+        <mesh position={[0,-0.93,0.10]}><boxGeometry args={[0.28,.17,.48]} /><meshStandardMaterial color={shoes} roughness={0.88} /></mesh>
+      </group>
+      <group ref={rightLeg} position={[0.18,1.06,0]}>
+        <mesh position={[0,-0.47,0]} castShadow><capsuleGeometry args={[0.13,0.72,6,10]} /><meshStandardMaterial color={denim} roughness={0.9} /></mesh>
+        <mesh position={[0,-0.93,0.10]}><boxGeometry args={[0.28,.17,.48]} /><meshStandardMaterial color={shoes} roughness={0.88} /></mesh>
+      </group>
     </group>
   );
+}
+
+
+function FlyFemalePlayer({ position }: { position: MutableRefObject<THREE.Vector3> }) {
+  const group = useRef<THREE.Group>(null);
+  const torso = useRef<THREE.Group>(null);
+  const leftArm = useRef<THREE.Group>(null);
+  const rightArm = useRef<THREE.Group>(null);
+  const leftLeg = useRef<THREE.Group>(null);
+  const rightLeg = useRef<THREE.Group>(null);
+  const last = useRef(START.clone());
+
+  useFrame(({ clock }) => {
+    if (!group.current) return;
+
+    const moved = last.current.distanceToSquared(position.current) > 0.000008;
+    const dx = position.current.x - last.current.x;
+    const dz = position.current.z - last.current.z;
+
+    group.current.position.copy(position.current);
+    if (moved) group.current.rotation.y = Math.atan2(dx, dz);
+
+    const t = clock.elapsedTime * 8.2;
+    const swing = moved ? Math.sin(t) * 0.46 : 0;
+    const bob = moved
+      ? Math.abs(Math.sin(t)) * 0.023
+      : Math.sin(clock.elapsedTime * 1.8) * 0.006;
+
+    if (torso.current) torso.current.position.y = bob;
+    if (leftArm.current) leftArm.current.rotation.x = swing;
+    if (rightArm.current) rightArm.current.rotation.x = -swing;
+    if (leftLeg.current) leftLeg.current.rotation.x = -swing * 0.74;
+    if (rightLeg.current) rightLeg.current.rotation.x = swing * 0.74;
+
+    last.current.copy(position.current);
+  });
+
+  const skin = '#a96f52';
+  const hair = '#241914';
+  const navy = '#0b274b';
+  const cream = '#f5f2eb';
+  const gold = '#d3a34f';
+  const denim = '#17223a';
+  const shoes = '#10151d';
+
+  return (
+    <group ref={group} position={START.toArray()} scale={1.01}>
+      <group ref={torso}>
+        {/* Female main character: same polished blocky world, clearly different silhouette. */}
+        <mesh position={[0, 1.48, 0]} castShadow>
+          <boxGeometry args={[0.64, 0.88, 0.36]} />
+          <meshStandardMaterial color={cream} roughness={0.8} />
+        </mesh>
+
+        {/* Cropped navy jacket panels */}
+        <mesh position={[-0.225, 1.55, 0.205]} castShadow>
+          <boxGeometry args={[0.19, 0.67, 0.05]} />
+          <meshStandardMaterial color={navy} roughness={0.82} />
+        </mesh>
+        <mesh position={[0.225, 1.55, 0.205]} castShadow>
+          <boxGeometry args={[0.19, 0.67, 0.05]} />
+          <meshStandardMaterial color={navy} roughness={0.82} />
+        </mesh>
+
+        <mesh position={[0, 1.99, 0]} castShadow>
+          <boxGeometry args={[0.19, 0.20, 0.19]} />
+          <meshStandardMaterial color={skin} roughness={0.9} />
+        </mesh>
+
+        <mesh position={[0, 2.28, 0]} castShadow>
+          <boxGeometry args={[0.46, 0.47, 0.41]} />
+          <meshStandardMaterial color={skin} roughness={0.9} />
+        </mesh>
+
+        {/* Long dark hair: side sections + back section, no glasses. */}
+        <mesh position={[0, 2.54, -0.025]} castShadow>
+          <boxGeometry args={[0.50, 0.14, 0.42]} />
+          <meshStandardMaterial color={hair} roughness={1} />
+        </mesh>
+        <mesh position={[-0.205, 2.28, -0.07]} castShadow>
+          <boxGeometry args={[0.11, 0.52, 0.22]} />
+          <meshStandardMaterial color={hair} roughness={1} />
+        </mesh>
+        <mesh position={[0.205, 2.28, -0.07]} castShadow>
+          <boxGeometry args={[0.11, 0.52, 0.22]} />
+          <meshStandardMaterial color={hair} roughness={1} />
+        </mesh>
+        <mesh position={[0, 2.18, -0.205]} castShadow>
+          <boxGeometry args={[0.35, 0.46, 0.11]} />
+          <meshStandardMaterial color={hair} roughness={1} />
+        </mesh>
+
+        {/* Face */}
+        {[-0.10, 0.10].map((x) => (
+          <mesh key={`fe${x}`} position={[x, 2.32, 0.216]}>
+            <boxGeometry args={[0.042, 0.024, 0.016]} />
+            <meshStandardMaterial color="#171719" />
+          </mesh>
+        ))}
+        <mesh position={[0, 2.25, 0.226]}>
+          <boxGeometry args={[0.062, 0.09, 0.048]} />
+          <meshStandardMaterial color={skin} />
+        </mesh>
+        <mesh position={[0, 2.18, 0.216]}>
+          <boxGeometry args={[0.15, 0.028, 0.016]} />
+          <meshStandardMaterial color="#704238" />
+        </mesh>
+
+        {/* MARSHOUT gold chain */}
+        <mesh position={[0, 1.91, 0.205]} rotation={[Math.PI / 2, 0, 0]}>
+          <torusGeometry args={[0.13, 0.011, 6, 22, Math.PI]} />
+          <meshStandardMaterial color={gold} metalness={0.9} roughness={0.22} />
+        </mesh>
+      </group>
+
+      <group ref={leftArm} position={[-0.40, 1.70, 0]}>
+        <mesh position={[0, -0.30, 0]} castShadow>
+          <capsuleGeometry args={[0.09, 0.52, 6, 10]} />
+          <meshStandardMaterial color={skin} roughness={0.9} />
+        </mesh>
+        <mesh position={[0, -0.64, 0.02]}>
+          <boxGeometry args={[0.16, 0.18, 0.16]} />
+          <meshStandardMaterial color={skin} />
+        </mesh>
+      </group>
+
+      <group ref={rightArm} position={[0.40, 1.70, 0]}>
+        <mesh position={[0, -0.30, 0]} castShadow>
+          <capsuleGeometry args={[0.09, 0.52, 6, 10]} />
+          <meshStandardMaterial color={skin} roughness={0.9} />
+        </mesh>
+        <mesh position={[0, -0.64, 0.02]}>
+          <boxGeometry args={[0.16, 0.18, 0.16]} />
+          <meshStandardMaterial color={skin} />
+        </mesh>
+      </group>
+
+      {/* Slimmer dark trousers and low-profile shoes */}
+      <group ref={leftLeg} position={[-0.145, 1.05, 0]}>
+        <mesh position={[0, -0.46, 0]} castShadow>
+          <capsuleGeometry args={[0.115, 0.71, 6, 10]} />
+          <meshStandardMaterial color={denim} roughness={0.9} />
+        </mesh>
+        <mesh position={[0, -0.91, 0.10]}>
+          <boxGeometry args={[0.25, 0.16, 0.43]} />
+          <meshStandardMaterial color={shoes} roughness={0.88} />
+        </mesh>
+      </group>
+
+      <group ref={rightLeg} position={[0.145, 1.05, 0]}>
+        <mesh position={[0, -0.46, 0]} castShadow>
+          <capsuleGeometry args={[0.115, 0.71, 6, 10]} />
+          <meshStandardMaterial color={denim} roughness={0.9} />
+        </mesh>
+        <mesh position={[0, -0.91, 0.10]}>
+          <boxGeometry args={[0.25, 0.16, 0.43]} />
+          <meshStandardMaterial color={shoes} roughness={0.88} />
+        </mesh>
+      </group>
+    </group>
+  );
+}
+
+function GameCharacter({ gender, position }: { gender: Gender; position: THREE.Vector3 }) {
+  const staticPosition = useRef(position);
+  staticPosition.current.copy(position);
+  return gender === 'woman'
+    ? <FlyFemalePlayer position={staticPosition} />
+    : <FlyMalePlayer position={staticPosition} />;
 }
 
 function Homie({
@@ -1016,88 +1229,20 @@ function FlightWorld({
   setPhase,
   onTelemetry,
   gender,
-  playerPosition,
-  setPlayerPosition,
-  nearPlane,
-  setNearPlane,
 }: {
   phase: FlightPhase;
   setPhase: (p: FlightPhase) => void;
   onTelemetry: (t: Telemetry) => void;
   gender: Gender;
-  playerPosition: THREE.Vector3;
-  setPlayerPosition: (v: THREE.Vector3) => void;
-  nearPlane: boolean;
-  setNearPlane: (v: boolean) => void;
 }) {
   const { liveries } = usePlaneStore();
   const aircraft = useRef<THREE.Group>(null);
   const orbit = useRef<any>(null);
   const { camera } = useThree();
-  const keys = useRef<Record<string, boolean>>({});
-  const player = useRef(playerPosition.clone());
-  const heading = useRef(Math.PI);
-  const walking = useRef(false);
-  const speed = useRef(0);
-  const z = useRef(65);
-  const altitude = useRef(0.72);
-  const pitch = useRef(0);
-  const lastHud = useRef(0);
-
-  useEffect(() => {
-    player.current.copy(playerPosition);
-  }, [playerPosition]);
-
-  useEffect(() => {
-    const down = (e: KeyboardEvent) => {
-      keys.current[e.key.toLowerCase()] = true;
-    };
-    const up = (e: KeyboardEvent) => {
-      keys.current[e.key.toLowerCase()] = false;
-    };
-    window.addEventListener('keydown', down);
-    window.addEventListener('keyup', up);
-    return () => {
-      window.removeEventListener('keydown', down);
-      window.removeEventListener('keyup', up);
-    };
-  }, []);
-
   useFrame((state, dt) => {
     const d = Math.min(dt, 0.045);
     const dist = Math.max(0, z.current - ROUTE_END_Z);
 
-    const canWalk = phase === 'outside' || phase === 'exited';
-    if (canWalk) {
-      const dx =
-        (keys.current['arrowright'] || keys.current['d'] ? 1 : 0) -
-        (keys.current['arrowleft'] || keys.current['a'] ? 1 : 0);
-      const dz =
-        (keys.current['arrowdown'] || keys.current['s'] ? 1 : 0) -
-        (keys.current['arrowup'] || keys.current['w'] ? 1 : 0);
-
-      walking.current = dx !== 0 || dz !== 0;
-
-      if (walking.current) {
-        const len = Math.hypot(dx, dz) || 1;
-        const moveSpeed = 3.25;
-        player.current.x += (dx / len) * moveSpeed * d;
-        player.current.z += (dz / len) * moveSpeed * d;
-        heading.current = Math.atan2(dx, dz);
-
-        const centerZ = phase === 'exited' ? ROUTE_END_Z + 42 : 65;
-        player.current.x = THREE.MathUtils.clamp(player.current.x, -8.2, 8.2);
-        player.current.z = THREE.MathUtils.clamp(player.current.z, centerZ - 10, centerZ + 11);
-        setPlayerPosition(player.current.clone());
-      }
-
-      const planeZ = phase === 'exited' ? ROUTE_END_Z + 42 : 65;
-      const proximity = Math.hypot(player.current.x - 2.4, player.current.z - (planeZ + 1.6)) < 2.7;
-      if (proximity !== nearPlane) setNearPlane(proximity);
-    } else {
-      walking.current = false;
-      if (nearPlane) setNearPlane(false);
-    }
 
     if (phase === 'takeoff') {
       speed.current = Math.min(150, speed.current + 30 * d);
@@ -1158,27 +1303,21 @@ function FlightWorld({
       aircraft.current.rotation.set(pitch.current, 0, 0);
     }
 
-    const onFoot = phase === 'outside' || phase === 'exited';
-    const arrivalView = ['landed', 'stopped'].includes(phase);
+    const onGround = phase === 'outside' || phase === 'exited';
+    const arrivalView = ['landed', 'stopped', 'exited'].includes(phase);
+    const groundZ = phase === 'exited' ? ROUTE_END_Z + 42 : 65;
 
-    let chase: THREE.Vector3;
-    let target: THREE.Vector3;
+    const chase = onGround
+      ? new THREE.Vector3(6.9, 3.7, groundZ + 8.8)
+      : new THREE.Vector3(
+          arrivalView ? 6.8 : 5.8,
+          arrivalView ? 3.15 : 3.45,
+          z.current + (arrivalView ? 7.6 : 9.2),
+        );
 
-    if (onFoot) {
-      chase = new THREE.Vector3(
-        player.current.x + 5.8,
-        3.6,
-        player.current.z + 7.4,
-      );
-      target = new THREE.Vector3(player.current.x, 1.1, player.current.z - 1.2);
-    } else {
-      chase = new THREE.Vector3(
-        arrivalView ? 6.8 : 5.8,
-        arrivalView ? 3.15 : 3.45,
-        z.current + (arrivalView ? 7.6 : 9.2),
-      );
-      target = new THREE.Vector3(0, altitude.current + 0.5, z.current - (arrivalView ? 2.4 : 5));
-    }
+    const target = onGround
+      ? new THREE.Vector3(0.8, 1.05, groundZ - 0.8)
+      : new THREE.Vector3(0, altitude.current + 0.5, z.current - (arrivalView ? 2.4 : 5));
 
     if (!orbit.current?.__dragging) {
       camera.position.lerp(chase, 1 - Math.pow(0.003, d));
@@ -1191,7 +1330,7 @@ function FlightWorld({
 
     if (camera instanceof THREE.PerspectiveCamera) {
       const speedRatio = THREE.MathUtils.clamp(speed.current / CRUISE_SPEED, 0, 1);
-      const targetFov = onFoot ? 46 : 40 + speedRatio * 5;
+      const targetFov = onGround ? 44 : 40 + speedRatio * 5;
       camera.fov = THREE.MathUtils.lerp(camera.fov, targetFov, 1 - Math.pow(0.025, d));
       camera.updateProjectionMatrix();
     }
@@ -1225,13 +1364,11 @@ function FlightWorld({
       {(phase === 'outside' || phase === 'parked' || phase === 'takeoff') && <GroundCrew />}
       {['landed', 'stopped', 'exited'].includes(phase) && <GroundCrew arrival />}
 
-      {(phase === 'outside' || phase === 'exited') && (
-        <GameCharacter
-          gender={gender}
-          position={player.current}
-          heading={heading.current}
-          walking={walking.current}
-        />
+      {phase === 'outside' && (
+        <GameCharacter gender={gender} position={new THREE.Vector3(3.2, 0, 68.4)} />
+      )}
+      {phase === 'exited' && (
+        <GameCharacter gender={gender} position={new THREE.Vector3(3.2, 0, ROUTE_END_Z + 45.4)} />
       )}
 
       {!['outside', 'parked', 'takeoff'].includes(phase) && (
@@ -1275,10 +1412,6 @@ export default function FlyPage() {
   const [muted, setMuted] = useState(true);
   const [rideNotice, setRideNotice] = useState(true);
   const [countdown, setCountdown] = useState(3);
-  const [nearPlane, setNearPlane] = useState(false);
-  const [playerPosition, setPlayerPosition] = useState(
-    () => new THREE.Vector3(4.9, 0, 71.5),
-  );
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [telemetry, setTelemetry] = useState<Telemetry>({
     speed: 0,
@@ -1317,7 +1450,7 @@ export default function FlyPage() {
   };
 
   const getIn = () => {
-    if (phase === 'outside' && nearPlane) setPhase('parked');
+    if (phase === 'outside') setPhase('parked');
   };
 
   const takeOff = () => {
@@ -1328,7 +1461,6 @@ export default function FlyPage() {
 
   const exitPlane = () => {
     if (phase !== 'stopped') return;
-    setPlayerPosition(new THREE.Vector3(4.8, 0, ROUTE_END_Z + 48));
     setPhase('exited');
   };
 
@@ -1337,7 +1469,7 @@ export default function FlyPage() {
       if (e.repeat || countdown > 0 || rideNotice) return;
       const k = e.key.toLowerCase();
 
-      if (k === 'g' && phase === 'outside' && nearPlane) getIn();
+      if (k === 'g' && phase === 'outside') getIn();
       if (k === 't' && phase === 'parked') takeOff();
       if (k === 'e' && phase === 'stopped') exitPlane();
       if (k === 'm') toggleSound();
@@ -1345,7 +1477,7 @@ export default function FlyPage() {
 
     window.addEventListener('keydown', key);
     return () => window.removeEventListener('keydown', key);
-  }, [phase, flagsReady, countdown, rideNotice, nearPlane]);
+  }, [phase, flagsReady, countdown, rideNotice]);
 
   if (!flagsReady) {
     return (
@@ -1369,12 +1501,7 @@ export default function FlyPage() {
       : START_NAME;
 
   const status: Record<FlightPhase, [string, string]> = {
-    outside: [
-      nearPlane ? 'PLANE IN RANGE' : 'WALK TO THE PLANE',
-      nearPlane
-        ? 'You’re close enough. Tap G and get in.'
-        : 'Move around the strip, check the crew, then walk up to your plane.',
-    ],
+    outside: ['YOUR RIDE IS READY', 'That’s your character by the plane. Tap G and get in.'],
     parked: ['READY AT VICE CITY', 'You’re in. Hit T when you want the city behind you.'],
     takeoff: ['TAKEOFF ROLL', 'Rolling out of Vice City.'],
     climb: ['CLIMBING', 'Clearing the neighborhood and heading for the clouds.'],
@@ -1383,7 +1510,7 @@ export default function FlyPage() {
     landing: ['FINAL APPROACH', 'Runway captured. Landing automatically.'],
     landed: ['TOUCHDOWN', 'Easy. Automatic braking is bringing us to a stop.'],
     stopped: ['PARKED', 'We made it. Tap E and step back outside.'],
-    exited: ['WELCOME TO PORT GELLHORN', 'Your homies are outside. Walk around and check the place out.'],
+    exited: ['WELCOME TO PORT GELLHORN', 'Touchdown. Your homies are outside and the next door is waiting.'],
   };
 
   const [title, desc] = status[phase];
@@ -1447,7 +1574,7 @@ export default function FlyPage() {
         <SoundButton muted={muted} onClick={toggleSound} />
       </header>
 
-      {phase === 'exited' && (
+      {(
         <button className="open-another-door" onClick={() => go('/')}>
           <span className="door-house">⌂</span>
           <span>
@@ -1544,7 +1671,7 @@ export default function FlyPage() {
         <h1>{phase === 'exited' ? 'TOUCH DOWN. STEP OUT.' : phase === 'outside' ? 'YOUR RIDE’S RIGHT THERE.' : 'FLIGHT CONTROL'}</h1>
         <p>{desc}</p>
 
-        {phase === 'outside' && nearPlane && (
+        {phase === 'outside' && (
           <button className="primary" onClick={getIn}>
             <span><kbd>G</kbd> GET IN</span><b>→</b>
           </button>
@@ -1562,15 +1689,6 @@ export default function FlyPage() {
           </button>
         )}
 
-        {(phase === 'outside' || phase === 'exited') && (
-          <div className="walk-controls">
-            <span><kbd>WASD</kbd><b>MOVE</b></span>
-            <span><kbd>↑↓←→</kbd><b>MOVE</b></span>
-            {phase === 'outside' && <span className={nearPlane ? 'hot' : ''}><kbd>G</kbd><b>GET IN</b></span>}
-            <span><kbd>M</kbd><b>SOUND</b></span>
-          </div>
-        )}
-
         {!['outside', 'exited'].includes(phase) && (
           <div className="controls-visible">
             <span><kbd>T</kbd><b>TAKE OFF</b></span>
@@ -1579,9 +1697,16 @@ export default function FlyPage() {
             <span className="mouse"><b>DRAG MOUSE</b><small>ROTATE CAMERA</small></span>
           </div>
         )}
+        {phase === 'outside' && (
+          <div className="controls-visible">
+            <span><kbd>G</kbd><b>GET IN</b></span>
+            <span><kbd>M</kbd><b>SOUND</b></span>
+            <span className="mouse"><b>DRAG MOUSE</b><small>ROTATE CAMERA</small></span>
+          </div>
+        )}
       </section>
 
-      {phase === 'outside' && nearPlane && countdown === 0 && !rideNotice && (
+      {phase === 'outside' && countdown === 0 && !rideNotice && (
         <div className="proximity-prompt">
           <kbd>G</kbd>
           <span><small>PLANE IN RANGE</small><b>GET IN</b></span>
@@ -1612,7 +1737,7 @@ export default function FlyPage() {
             <div className="ride-notice-copy">
               <small>MARSHOUT / VICE CITY</small>
               <h2>Your ride’s outside.</h2>
-              <p>Walk over to the plane. When you’re close, tap G and hop in.</p>
+              <p>That’s you by the plane, homie. Tap G, hop in, and we out.</p>
             </div>
             <button type="button" onClick={() => setRideNotice(false)}>
               LET’S MOVE <b>→</b>
@@ -1663,13 +1788,13 @@ const FLY_CSS = `
 .controls-visible,.walk-controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.controls-visible>span,.walk-controls>span{min-width:76px;height:42px;padding:6px 8px;border:1px solid #ffffff20;border-radius:6px;background:#ffffff0b;display:flex;align-items:center;gap:7px}
 .controls-visible kbd,.walk-controls kbd{min-width:27px;height:27px;padding:0 6px;display:grid;place-items:center;background:#ffffff15;border:1px solid #ffffff35;border-radius:4px;color:#fff;font:950 9px Inter}.controls-visible b,.walk-controls b{font-size:7px;letter-spacing:.09em}.walk-controls .hot{border-color:#d69b43;background:#d69b4320}
 .proximity-prompt{position:absolute;z-index:8;left:50%;bottom:34px;transform:translateX(-50%);display:flex;align-items:center;gap:11px;padding:9px 14px 9px 9px;background:#06182eee;border:1px solid #d69b4366;border-radius:9px;box-shadow:0 15px 40px #00102066}.proximity-prompt kbd{width:40px;height:40px;display:grid;place-items:center;border-radius:6px;background:#f5f6f7;color:#071a38;font-weight:950}.proximity-prompt small,.proximity-prompt b{display:block}.proximity-prompt small{font-size:6px;color:#d69b43;letter-spacing:.13em}.proximity-prompt b{font-size:10px;letter-spacing:.1em}
-.open-another-door{position:absolute;z-index:9;left:24px;top:82px;display:flex;align-items:center;gap:10px;padding:8px 12px 8px 8px;border:1px solid #d69b4355;border-radius:8px;background:#071a38df;color:#fff;backdrop-filter:blur(12px);cursor:pointer;box-shadow:0 14px 35px #00102045;text-align:left}.door-house{width:38px;height:38px;display:grid;place-items:center;border-radius:6px;background:#d69b43;color:#071a38;font-size:22px}.open-another-door small,.open-another-door b{display:block}.open-another-door small{font-size:5px;color:#ffffff70;letter-spacing:.12em}.open-another-door b{margin-top:2px;font-size:8px;letter-spacing:.11em}.open-another-door strong{color:#d69b43;font-size:16px;margin-left:4px}
+.open-another-door{transform:scale(.84);transform-origin:top left;position:absolute;z-index:9;left:24px;top:82px;display:flex;align-items:center;gap:10px;padding:8px 12px 8px 8px;border:1px solid #d69b4355;border-radius:8px;background:#071a38df;color:#fff;backdrop-filter:blur(12px);cursor:pointer;box-shadow:0 14px 35px #00102045;text-align:left}.door-house{width:38px;height:38px;display:grid;place-items:center;border-radius:6px;background:#d69b43;color:#071a38;font-size:22px}.open-another-door small,.open-another-door b{display:block}.open-another-door small{font-size:5px;color:#ffffff70;letter-spacing:.12em}.open-another-door b{margin-top:2px;font-size:8px;letter-spacing:.11em}.open-another-door strong{color:#d69b43;font-size:16px;margin-left:4px}
 .autopilot-pill{position:absolute;z-index:5;left:50%;top:104px;transform:translateX(-50%);padding:9px 13px;border:1px solid #ffffff2c;border-radius:999px;background:#06182ec9;font-size:8px;font-weight:950;letter-spacing:.14em}.autopilot-pill i{display:inline-block;width:6px;height:6px;border-radius:50%;background:#7dd8a4;margin-right:7px}
 .destination-beacon{display:flex;flex-direction:column;align-items:center;min-width:120px;padding:8px 12px;background:#071a38dd;border:1px solid #ffffff35;border-radius:5px;color:#fff;font-family:Inter}.destination-beacon b{font-size:9px;letter-spacing:.15em}.destination-beacon small{font-size:7px;color:#d69b43}
 .fly-gate{display:grid;place-items:center;background:radial-gradient(circle at 50% 35%,#17385d,#06182e 62%)}.gate-card{width:min(560px,calc(100vw - 40px));padding:36px;border:1px solid #ffffff22;border-radius:12px;background:#071a38e8}.gate-card>span{font-size:8px;font-weight:950;letter-spacing:.2em;color:#d69b43}.gate-card h1{font-size:30px;margin:10px 0}.gate-card p{font-size:12px;color:#ffffff9b}.gate-card button{width:100%;height:50px;border:0;border-radius:7px;background:#fff;color:#071a38;padding:0 17px;display:flex;align-items:center;justify-content:space-between;font-weight:950}
 .route-card-arrived{justify-content:center;min-width:260px}.route-card-arrived span{min-width:0;text-align:center!important}
 .flight-countdown{position:absolute;inset:0;z-index:30;display:grid;place-items:center;background:radial-gradient(circle at 50% 44%,rgba(14,51,84,.9),rgba(2,12,25,.97) 58%);backdrop-filter:blur(8px)}.countdown-core{width:min(430px,calc(100vw - 40px));text-align:center}.countdown-core small{display:block;color:#d69b43;font-size:8px;font-weight:950;letter-spacing:.24em}.countdown-core strong{display:block;margin:12px 0 8px;font-size:108px}.countdown-core span{font-size:9px;letter-spacing:.15em}.countdown-core>i{display:block;width:180px;height:3px;margin:20px auto;background:#ffffff14}.countdown-core>i b{display:block;height:100%;background:#d69b43}
 .ride-notice-backdrop{position:absolute;inset:0;z-index:20;display:grid;place-items:center;padding:24px;background:rgba(2,12,25,.34);backdrop-filter:blur(5px)}.ride-notice{width:min(440px,calc(100vw - 40px));display:grid;grid-template-columns:auto 1fr;gap:18px;padding:24px;border:1px solid #ffffff3d;border-radius:12px;background:linear-gradient(145deg,#051930fa,#082646f5);box-shadow:0 30px 90px #0008}.ride-notice-icon{width:48px;height:48px;display:grid;place-items:center;border:1px solid #d69b4366;border-radius:10px;background:#d69b4318;color:#d69b43;font-size:20px}.ride-notice-copy small{display:block;color:#d69b43;font-size:7px;font-weight:950;letter-spacing:.2em}.ride-notice-copy h2{margin:6px 0 0;font-size:25px}.ride-notice-copy p{margin:7px 0 0;color:#ffffffa6;font-size:12px}.ride-notice button{grid-column:1/-1;height:48px;border:0;border-radius:7px;background:#f5f6f7;color:#071a38;padding:0 16px;display:flex;align-items:center;justify-content:space-between;font-weight:950;letter-spacing:.12em}
-@media(max-width:850px){.fly-hud{padding:12px}.flight-brand{display:none}.route-card{grid-column:1/3}.instruments{right:12px;top:78px;transform:scale(.86);transform-origin:top right}.nav-map{right:12px;bottom:12px;width:230px;transform:scale(.84);transform-origin:bottom right}.control-card{left:12px;bottom:12px;width:calc(100vw - 225px);padding:16px}.control-card.on-foot{width:min(390px,calc(100vw - 24px))}.open-another-door{left:12px;top:74px}}
-@media(max-width:620px){.route-card{transform:scale(.82);transform-origin:top center}.instruments{display:none}.nav-map{display:none}.control-card,.control-card.on-foot{width:calc(100vw - 24px)}.control-card h1{font-size:20px}.open-another-door{top:70px}.proximity-prompt{bottom:205px}}
+@media(max-width:850px){.fly-hud{padding:12px}.flight-brand{display:none}.route-card{grid-column:1/3}.instruments{right:12px;top:78px;transform:scale(.86);transform-origin:top right}.nav-map{right:12px;bottom:12px;width:230px;transform:scale(.84);transform-origin:bottom right}.control-card{left:12px;bottom:12px;width:calc(100vw - 225px);padding:16px}.control-card.on-foot{width:min(390px,calc(100vw - 24px))}.open-another-door{transform:scale(.84);transform-origin:top left;left:12px;top:74px}}
+@media(max-width:620px){.route-card{transform:scale(.82);transform-origin:top center}.instruments{display:none}.nav-map{display:none}.control-card,.control-card.on-foot{width:calc(100vw - 24px)}.control-card h1{font-size:20px}.open-another-door{transform:scale(.84);transform-origin:top left;top:70px}.proximity-prompt{bottom:205px}}
 `;
