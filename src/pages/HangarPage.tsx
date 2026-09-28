@@ -15,6 +15,7 @@ import {
   useState,
   useRef,
   useMemo,
+  useCallback,
 } from 'react';
 import * as THREE from 'three';
 import { SkeletonUtils } from 'three-stdlib';
@@ -121,100 +122,81 @@ function Tree({
 // ============================================================
 
 function Road() {
-  const zs = [
-    -6,
-    -3.5,
-    -1,
-    1.5,
-    4,
-    6.5,
-  ];
-
   return (
     <group>
-      {/* Ground */}
-      <mesh
-        rotation={[-Math.PI / 2, 0, 0]}
-        position={[0, 0, 0]}
-        receiveShadow
-      >
-        <planeGeometry
-          args={[40, 40]}
-        />
-
-        <meshStandardMaterial
-          color="#88aa66"
-          roughness={1}
-        />
+      {/* Concrete hangar floor */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+        <planeGeometry args={[26, 24]} />
+        <meshStandardMaterial color="#9a9388" roughness={0.96} />
       </mesh>
 
-      {/* Road */}
-      <mesh
-        rotation={[-Math.PI / 2, 0, 0]}
-        position={[0, 0.01, 0]}
-        receiveShadow
-      >
-        <planeGeometry
-          args={[3.4, 22]}
-        />
-
-        <meshStandardMaterial
-          color="#5a5348"
-          roughness={1}
-        />
+      {/* Dark service lane beneath the aircraft */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.012, 0]} receiveShadow>
+        <planeGeometry args={[7.6, 15]} />
+        <meshStandardMaterial color="#34363a" roughness={0.94} />
       </mesh>
 
-      {/* Road edge lines */}
-      {[-1.62, 1.62].map((x) => (
-        <mesh
-          key={x}
-          rotation={[-Math.PI / 2, 0, 0]}
-          position={[x, 0.012, 0]}
-        >
-          <planeGeometry
-            args={[0.07, 22]}
-          />
+      {/* Gold taxi / maintenance markings */}
+      {[-2.75, 2.75].map((x) => (
+        <mesh key={x} rotation={[-Math.PI / 2, 0, 0]} position={[x, 0.019, 0]}>
+          <planeGeometry args={[0.075, 15]} />
+          <meshStandardMaterial color="#d2a24d" roughness={0.78} />
+        </mesh>
+      ))}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.021, -3.7]}>
+        <planeGeometry args={[5.6, 0.08]} />
+        <meshStandardMaterial color="#eee7d9" roughness={0.8} />
+      </mesh>
 
-          <meshStandardMaterial
-            color="#ffe600"
-            roughness={0.8}
-          />
+      {/* Rear hangar wall */}
+      <mesh position={[0, 3.0, -6.3]} receiveShadow>
+        <boxGeometry args={[15, 6, 0.22]} />
+        <meshStandardMaterial color="#17202b" roughness={0.86} />
+      </mesh>
+
+      {/* Open door / warm Leonida daylight */}
+      <mesh position={[0, 2.7, -6.16]}>
+        <planeGeometry args={[7.8, 4.6]} />
+        <meshBasicMaterial color="#e7b06e" />
+      </mesh>
+      <mesh position={[0, 1.55, -6.10]}>
+        <planeGeometry args={[7.7, 2.25]} />
+        <meshBasicMaterial color="#7fa7b4" />
+      </mesh>
+
+      {/* Hangar ribs */}
+      {[-6.8, -4.6, 4.6, 6.8].map((x) => (
+        <mesh key={x} position={[x, 2.9, -5.95]} castShadow>
+          <boxGeometry args={[0.22, 5.8, 0.36]} />
+          <meshStandardMaterial color="#252c34" metalness={0.35} roughness={0.65} />
         </mesh>
       ))}
 
-      {/* Road center markings */}
-      {[-8, -5, -2, 1, 4, 7].map((z) => (
-        <mesh
-          key={z}
-          rotation={[-Math.PI / 2, 0, 0]}
-          position={[0, 0.013, z]}
-        >
-          <planeGeometry
-            args={[0.16, 0.9]}
-          />
-
-          <meshStandardMaterial
-            color="#f7f4ea"
-            roughness={0.8}
-          />
-        </mesh>
-      ))}
-
-      {/* Trees */}
-      {zs.map((z, i) => (
-        <group key={z}>
-          <Tree
-            x={-4.0}
-            z={z}
-            s={i % 2 ? 0.9 : 1}
-          />
-
-          <Tree
-            x={4.0}
-            z={z + 0.6}
-            s={i % 2 ? 1.1 : 0.85}
-          />
+      {/* Tool cabinets / airport clutter */}
+      {[
+        [-4.3, 0.45, -2.8, '#8d3f2f'],
+        [4.15, 0.45, -2.45, '#d0a24f'],
+        [4.65, 0.34, 2.6, '#26394e'],
+      ].map(([x, y, z, color], i) => (
+        <group key={i} position={[x as number, y as number, z as number]}>
+          <RoundedBox args={[1.15, 0.8, 0.55]} radius={0.06} smoothness={2} castShadow>
+            <meshStandardMaterial color={color as string} roughness={0.78} metalness={0.18} />
+          </RoundedBox>
+          {[0.18, 0, -0.18].map((yy) => (
+            <mesh key={yy} position={[0, yy, 0.286]}>
+              <boxGeometry args={[0.76, 0.025, 0.018]} />
+              <meshBasicMaterial color="#171b21" />
+            </mesh>
+          ))}
         </group>
+      ))}
+
+      {/* Ceiling strip lights */}
+      {[-4.4, 0, 4.4].map((x) => (
+        <mesh key={x} position={[x, 4.75, -1.2]} rotation={[Math.PI / 2, 0, 0]}>
+          <planeGeometry args={[2.6, 0.13]} />
+          <meshBasicMaterial color="#f6dfb0" />
+        </mesh>
       ))}
     </group>
   );
@@ -293,6 +275,154 @@ function HangarMan({
     </group>
   );
 }
+
+type PlayerGender = 'man' | 'woman';
+
+const PLAYER_START = new THREE.Vector3(0, 0, 3.65);
+const FLAG_APPROACH = {
+  'flag-left': new THREE.Vector3(-0.82, 0, 1.58),
+  'flag-right': new THREE.Vector3(0.82, 0, 1.58),
+} as const;
+
+function MainCharacter({
+  gender,
+  position,
+}: {
+  gender: PlayerGender;
+  position: React.MutableRefObject<THREE.Vector3>;
+}) {
+  const group = useRef<THREE.Group>(null);
+  const leftArm = useRef<THREE.Group>(null);
+  const rightArm = useRef<THREE.Group>(null);
+  const leftLeg = useRef<THREE.Group>(null);
+  const rightLeg = useRef<THREE.Group>(null);
+  const last = useRef(position.current.clone());
+
+  useFrame(({ clock }) => {
+    if (!group.current) return;
+    const moved = last.current.distanceToSquared(position.current) > 0.00001;
+    const dx = position.current.x - last.current.x;
+    const dz = position.current.z - last.current.z;
+    group.current.position.copy(position.current);
+    if (moved) group.current.rotation.y = Math.atan2(dx, dz);
+
+    const swing = moved ? Math.sin(clock.elapsedTime * 9) * 0.48 : 0;
+    if (leftArm.current) leftArm.current.rotation.x = swing;
+    if (rightArm.current) rightArm.current.rotation.x = -swing;
+    if (leftLeg.current) leftLeg.current.rotation.x = -swing * 0.72;
+    if (rightLeg.current) rightLeg.current.rotation.x = swing * 0.72;
+    last.current.copy(position.current);
+  });
+
+  const female = gender === 'woman';
+  const skin = female ? '#a96f52' : '#9b684c';
+  const shirt = female ? '#f2eee5' : '#102f59';
+  const trousers = female ? '#17223a' : '#24272b';
+  const hair = '#211714';
+
+  return (
+    <group ref={group} position={position.current.toArray()} scale={0.58}>
+      <mesh position={[0, 1.48, 0]} castShadow>
+        <boxGeometry args={[female ? 0.58 : 0.72, 0.88, 0.38]} />
+        <meshStandardMaterial color={shirt} roughness={0.86} />
+      </mesh>
+      {female && (
+        <>
+          <mesh position={[-0.22, 1.55, 0.205]}><boxGeometry args={[0.16, 0.68, 0.04]} /><meshStandardMaterial color="#0b274b" /></mesh>
+          <mesh position={[0.22, 1.55, 0.205]}><boxGeometry args={[0.16, 0.68, 0.04]} /><meshStandardMaterial color="#0b274b" /></mesh>
+        </>
+      )}
+      <mesh position={[0, 2.02, 0]} castShadow><boxGeometry args={[0.18, 0.18, 0.18]} /><meshStandardMaterial color={skin} /></mesh>
+      <mesh position={[0, 2.30, 0]} castShadow><boxGeometry args={[0.46, 0.48, 0.41]} /><meshStandardMaterial color={skin} roughness={0.9} /></mesh>
+      <mesh position={[0, 2.56, -0.02]} castShadow><boxGeometry args={[0.49, female ? 0.16 : 0.12, 0.42]} /><meshStandardMaterial color={hair} /></mesh>
+      {female && <>
+        <mesh position={[-0.205, 2.28, -0.07]} castShadow><boxGeometry args={[0.11, 0.55, 0.22]} /><meshStandardMaterial color={hair} /></mesh>
+        <mesh position={[0.205, 2.28, -0.07]} castShadow><boxGeometry args={[0.11, 0.55, 0.22]} /><meshStandardMaterial color={hair} /></mesh>
+        <mesh position={[0, 2.18, -0.205]} castShadow><boxGeometry args={[0.35, 0.48, 0.11]} /><meshStandardMaterial color={hair} /></mesh>
+      </>}
+      {[-0.1, 0.1].map((x) => <mesh key={x} position={[x, 2.33, 0.216]}><boxGeometry args={[0.04, 0.025, 0.016]} /><meshBasicMaterial color="#111" /></mesh>)}
+
+      <group ref={leftArm} position={[-(female ? .36 : .43), 1.72, 0]}>
+        <mesh position={[0, -0.31, 0]} castShadow><capsuleGeometry args={[0.09, 0.52, 5, 8]} /><meshStandardMaterial color={skin} /></mesh>
+      </group>
+      <group ref={rightArm} position={[(female ? .36 : .43), 1.72, 0]}>
+        <mesh position={[0, -0.31, 0]} castShadow><capsuleGeometry args={[0.09, 0.52, 5, 8]} /><meshStandardMaterial color={skin} /></mesh>
+      </group>
+      <group ref={leftLeg} position={[-0.15, 1.05, 0]}>
+        <mesh position={[0, -0.47, 0]} castShadow><capsuleGeometry args={[0.12, 0.72, 5, 8]} /><meshStandardMaterial color={trousers} /></mesh>
+      </group>
+      <group ref={rightLeg} position={[0.15, 1.05, 0]}>
+        <mesh position={[0, -0.47, 0]} castShadow><capsuleGeometry args={[0.12, 0.72, 5, 8]} /><meshStandardMaterial color={trousers} /></mesh>
+      </group>
+    </group>
+  );
+}
+
+function PlayerController({
+  position,
+  enabled,
+  onNearFace,
+  onInteract,
+}: {
+  position: React.MutableRefObject<THREE.Vector3>;
+  enabled: boolean;
+  onNearFace: (face: Face | null) => void;
+  onInteract: (face: Face) => void;
+}) {
+  const keys = useRef(new Set<string>());
+  const invalidate = useThree((state) => state.invalidate);
+  const nearRef = useRef<Face | null>(null);
+
+  useEffect(() => {
+    const down = (event: KeyboardEvent) => {
+      const key = event.key.toLowerCase();
+      if (['arrowup','arrowdown','arrowleft','arrowright','w','a','s','d','e'].includes(key)) {
+        event.preventDefault();
+      }
+      keys.current.add(key);
+      if (key === 'e' && enabled && nearRef.current) onInteract(nearRef.current);
+      invalidate();
+    };
+    const up = (event: KeyboardEvent) => keys.current.delete(event.key.toLowerCase());
+    window.addEventListener('keydown', down);
+    window.addEventListener('keyup', up);
+    return () => {
+      window.removeEventListener('keydown', down);
+      window.removeEventListener('keyup', up);
+    };
+  }, [enabled, invalidate, onInteract]);
+
+  useFrame((_, delta) => {
+    if (!enabled) return;
+    let dx = 0, dz = 0;
+    if (keys.current.has('a') || keys.current.has('arrowleft')) dx -= 1;
+    if (keys.current.has('d') || keys.current.has('arrowright')) dx += 1;
+    if (keys.current.has('w') || keys.current.has('arrowup')) dz -= 1;
+    if (keys.current.has('s') || keys.current.has('arrowdown')) dz += 1;
+
+    if (dx || dz) {
+      const mag = Math.hypot(dx, dz);
+      const speed = Math.min(delta, .05) * 2.25;
+      position.current.x = THREE.MathUtils.clamp(position.current.x + dx / mag * speed, -4.7, 4.7);
+      position.current.z = THREE.MathUtils.clamp(position.current.z + dz / mag * speed, -4.7, 4.6);
+      invalidate();
+    }
+
+    let closest: Face | null = null;
+    let distance = Infinity;
+    (FACES as Face[]).forEach((face) => {
+      const d = position.current.distanceTo(FLAG_APPROACH[face as 'flag-left' | 'flag-right']);
+      if (d < distance) { distance = d; closest = face; }
+    });
+    const next = distance < 1.05 ? closest : null;
+    if (nearRef.current !== next) {
+      nearRef.current = next;
+      onNearFace(next);
+    }
+  });
+  return null;
+}
+
 
 // ============================================================
 // COCKPIT SEAT
@@ -915,6 +1045,58 @@ function SoundToggle({
   );
 }
 
+
+const TAKEOFF_SCORE = 80;
+
+function loadCoverageImage(src: string) {
+  return new Promise<HTMLImageElement>((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = reject;
+    image.src = src;
+  });
+}
+
+async function getPaintCoverage(edited: string | null, fallback: string) {
+  if (!edited) return 0;
+  try {
+    const [painted, base] = await Promise.all([
+      loadCoverageImage(edited),
+      loadCoverageImage(fallback),
+    ]);
+    const size = 256;
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    if (!ctx) return 0;
+
+    ctx.clearRect(0, 0, size, size);
+    ctx.drawImage(base, 0, 0, size, size);
+    const baseData = ctx.getImageData(0, 0, size, size).data;
+
+    ctx.clearRect(0, 0, size, size);
+    ctx.drawImage(painted, 0, 0, size, size);
+    const editData = ctx.getImageData(0, 0, size, size).data;
+
+    let paintable = 0;
+    let changed = 0;
+    for (let i = 0; i < baseData.length; i += 4) {
+      if (baseData[i + 3] < 12) continue;
+      paintable++;
+      const delta =
+        Math.abs(baseData[i] - editData[i]) +
+        Math.abs(baseData[i + 1] - editData[i + 1]) +
+        Math.abs(baseData[i + 2] - editData[i + 2]) +
+        Math.abs(baseData[i + 3] - editData[i + 3]);
+      if (delta > 54) changed++;
+    }
+    return paintable ? Math.min(100, Math.round((changed / paintable) * 100)) : 0;
+  } catch {
+    return 0;
+  }
+}
+
 // ============================================================
 // HANGAR PAGE
 // ============================================================
@@ -922,481 +1104,297 @@ function SoundToggle({
 export default function HangarPage() {
   const go = useNavigate();
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const playerPosition = useRef(PLAYER_START.clone());
   const [muted, setMuted] = useState(true);
+  const [introOpen, setIntroOpen] = useState(true);
+  const [openingCount, setOpeningCount] = useState<number | null>(null);
+  const [gameReady, setGameReady] = useState(false);
+  const [nearFace, setNearFace] = useState<Face | null>(null);
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [scores, setScores] = useState<Record<'flag-left' | 'flag-right', number>>({
+    'flag-left': 0,
+    'flag-right': 0,
+  });
 
   const {
     activeFace,
     setActiveFace,
     liveries,
+    gender,
   } = usePlaneStore();
 
-useEffect(() => {
-  const audio = new Audio('/boot.mp3');
-  audio.loop = true;
-  audio.volume = 0.35;
-  audio.muted = true;
-  audioRef.current = audio;
+  const playerGender: PlayerGender = gender === 'woman' ? 'woman' : 'man';
 
-  return () => {
-    audio.pause();
-    audio.src = '';
-    audioRef.current = null;
+  useEffect(() => {
+    const audio = new Audio('/boot.mp3');
+    audio.loop = true;
+    audio.volume = 0.35;
+    audio.muted = true;
+    audioRef.current = audio;
+    return () => {
+      audio.pause();
+      audio.src = '';
+      audioRef.current = null;
+    };
+  }, []);
+
+  const toggleSound = () => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    audio.muted = !audio.muted;
+    setMuted(audio.muted);
+    if (!audio.muted) audio.play().catch(() => {});
   };
-}, []);
-const toggleSound = () => {
-  const audio = audioRef.current;
-  if (!audio) return;
-  audio.muted = !audio.muted;
-  setMuted(audio.muted);
-  if (!audio.muted) {
-    audio.play().catch(() => {});
-  }
-};
 
-  const painted = FACES.every(
-    (face) => Boolean(liveries[face])
-  );
+  useEffect(() => {
+    if (openingCount === null) return;
+    if (openingCount <= 0) {
+      setOpeningCount(null);
+      setGameReady(true);
+      return;
+    }
+    const timer = window.setTimeout(() => setOpeningCount((n) => (n ?? 1) - 1), 650);
+    return () => window.clearTimeout(timer);
+  }, [openingCount]);
+
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all([
+      getPaintCoverage(liveries['flag-left'], '/templates/flag-left.svg'),
+      getPaintCoverage(liveries['flag-right'], '/templates/flag-right.svg'),
+    ]).then(([left, right]) => {
+      if (!cancelled) setScores({ 'flag-left': left, 'flag-right': right });
+    });
+    return () => { cancelled = true; };
+  }, [liveries['flag-left'], liveries['flag-right']]);
+
+  const openFlagEditor = useCallback((face: Face) => {
+    if (face !== 'flag-left' && face !== 'flag-right') return;
+    setActiveFace(face);
+    setEditorOpen(true);
+  }, [setActiveFace]);
+
+  const bothReady =
+    scores['flag-left'] >= TAKEOFF_SCORE &&
+    scores['flag-right'] >= TAKEOFF_SCORE;
+  const overallScore = Math.round((scores['flag-left'] + scores['flag-right']) / 2);
+
+  const startHangar = () => {
+    setIntroOpen(false);
+    setOpeningCount(3);
+    playerPosition.current.copy(PLAYER_START);
+  };
 
   return (
     <main className="launch-bay">
       <style>{LAUNCH_BAY_CSS}</style>
 
-      <section className="launch-bay-layout">
-        <aside className="launch-bay-editor">
-          <div className="launch-bay-editor-head">
-            <p className="launch-bay-prompt">
-Paint them flags, dawg, then we out.
+      {introOpen && (
+        <div className="mission-intro">
+          <div className="mission-card">
+            <span className="mission-kicker">MARSHOUT / FREE FLIGHT</span>
+            <h1>I got the flight.<br /><em>You make it ours.</em></h1>
+            <p>
+              I’m giving you a free flight, homie. Paint both flags at least 80%,
+              then we out.
             </p>
-
-            <div className="launch-bay-faces">
-              {FACES.map((face) => (
-                <button
-                  key={face}
-                  type="button"
-                  onClick={() => setActiveFace(face)}
-                  className={`launch-bay-face ${
-                    activeFace === face ? 'is-active' : ''
-                  } ${liveries[face] ? 'is-done' : ''}`}
-                >
-                  <span>{face.toUpperCase()}</span>
-                  {liveries[face] && <span className="launch-bay-check">✓</span>}
-                </button>
-              ))}
+            <div className="mission-tip">
+              <span className="pen-icon">✏️</span>
+              <div>
+                <b>KEEP THE FLAG SHAPE.</b>
+                <small>Don’t crop the flag — paint it using the <strong>Draw</strong> tool.</small>
+              </div>
             </div>
-          </div>
-
-          <div className="launch-bay-editor-body">
-            <LiveryEditor />
-          </div>
-        </aside>
-
-        <section className="launch-bay-preview">
-          <div className="launch-bay-preview-top">
-            <span
-              className={`launch-bay-readiness-dot ${
-                painted ? 'is-ready' : ''
-              }`}
-            />
-
-            <SoundToggle muted={muted} onToggle={toggleSound} />
-
-            <button
-              type="button"
-              onClick={() => {
-                if (painted) {
-                  go('/fly');
-                }
-              }}
-              disabled={!painted}
-              className={`launch-bay-takeoff-button ${
-                painted ? 'is-ready' : ''
-              }`}
-            >
-              <span>TAKE OFF</span>
-              <span className="launch-bay-arrow">→</span>
+            <button type="button" className="mission-ok" onClick={startHangar}>
+              <span>BET. OPEN THE HANGAR</span><b>→</b>
             </button>
           </div>
+        </div>
+      )}
 
-          <div className="launch-bay-viewport">
-            <Canvas
-              shadows
-              dpr={[1, 1.25]}
-              frameloop="demand"
-              gl={{
-                antialias: false,
-                powerPreference: 'high-performance',
-                alpha: false,
-                stencil: false,
-              }}
-              camera={{
-                position: [3.4, 1.8, 3.4],
-                fov: 38,
-                near: 0.1,
-                far: 40,
-              }}
-              style={{
-                width: '100%',
-                height: '100%',
-                display: 'block',
-              }}
-            >
-              <color
-                attach="background"
-                args={['#edf2f5']}
-              />
+      {openingCount !== null && (
+        <div className="opening-overlay">
+          <span>VICE CITY AIRFIELD / BAY 01</span>
+          <strong>{openingCount > 0 ? openingCount : 'GO'}</strong>
+          <h2>ROLLING THE BIRD OUT...</h2>
+          <div className="opening-track"><i /></div>
+        </div>
+      )}
 
-              <ambientLight intensity={0.65} />
+      <header className="hangar-topbar">
+        <button type="button" className="top-door" onClick={() => go('/')}>
+          <span className="top-door-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <path d="M3 11.2 12 4l9 7.2" />
+              <path d="M5.5 10.2V21h13V10.2" />
+              <path d="M9.5 21v-6.7h5V21" />
+              <path d="M14.5 14.3h2.2" />
+            </svg>
+          </span>
+          <span><small>BACK TO THE BOULEVARD</small><strong>OPEN ANOTHER DOOR</strong></span>
+          <b>↗</b>
+        </button>
 
-              <directionalLight
-                position={[5, 8, 5]}
-                intensity={2}
-                castShadow
-                shadow-mapSize-width={1024}
-                shadow-mapSize-height={1024}
-              />
+        <div className="hangar-title">
+          <small>MARSHOUT / PLANE HANGAR</small>
+          <strong>FLAG RUN</strong>
+        </div>
 
-              <directionalLight
-                position={[-4, 3, -5]}
-                intensity={0.7}
-              />
+        <SoundToggle muted={muted} onToggle={toggleSound} />
+      </header>
 
-              <Road />
-              <Plane liveries={liveries} />
+      <section className="game-shell">
+        <div className="game-viewport">
+          <Canvas
+            shadows
+            dpr={[1, 1.25]}
+            frameloop="always"
+            gl={{ antialias: false, powerPreference: 'high-performance', alpha: false, stencil: false }}
+            camera={{ position: [5.2, 3.4, 6.5], fov: 42, near: 0.1, far: 50 }}
+          >
+            <color attach="background" args={['#202b38']} />
+            <fog attach="fog" args={['#202b38', 12, 27]} />
+            <hemisphereLight args={['#f5d7aa', '#27313a', 1.1]} />
+            <directionalLight position={[5, 8, 5]} intensity={2.3} castShadow shadow-mapSize-width={1024} shadow-mapSize-height={1024} />
+            <pointLight position={[-4, 2.4, 1]} color="#e59b5b" intensity={13} distance={8} />
+            <pointLight position={[4, 2.6, -1]} color="#6e9fc6" intensity={9} distance={8} />
 
-              <Suspense
-                fallback={
-                  <Html
-                    center
-                    style={{
-                      color: '#071a38',
-                      fontSize: '10px',
-                      fontWeight: 900,
-                      letterSpacing: '0.18em',
-                      textTransform: 'uppercase',
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    rolling the bird out…
-                  </Html>
-                }
-              >
-                <HangarMan position={[1.3, 0, -0.2]} />
-              </Suspense>
+            <Road />
+            <Plane liveries={liveries} />
+            <MainCharacter gender={playerGender} position={playerPosition} />
+            <PlayerController
+              position={playerPosition}
+              enabled={gameReady && !editorOpen && !introOpen}
+              onNearFace={setNearFace}
+              onInteract={openFlagEditor}
+            />
 
-              <OrbitControls
-                makeDefault
-                enablePan={false}
-                enableDamping
-                dampingFactor={0.12}
-                minDistance={2.6}
-                maxDistance={8}
-                maxPolarAngle={1.3}
-                minPolarAngle={0.3}
-                target={[0, 0.65, 0]}
-              />
-            </Canvas>
+            <Suspense fallback={<Html center style={{ color:'#f4d8a7',fontSize:'9px',fontWeight:900,letterSpacing:'.16em' }}>PILOT CLOCKING IN…</Html>}>
+              <HangarMan position={[1.75, 0, -0.35]} />
+            </Suspense>
 
-            <div className="launch-bay-viewport-label">
-              <span>Move your pc mouse to move around the plane</span>
+            <OrbitControls
+              makeDefault
+              enablePan={false}
+              enableDamping
+              dampingFactor={0.12}
+              minDistance={4.5}
+              maxDistance={9}
+              maxPolarAngle={1.25}
+              minPolarAngle={0.45}
+              target={[0, 0.75, 0.6]}
+            />
+          </Canvas>
+
+          <div className="game-hud">
+            <div className="hud-controls">
+              <small>MOVE</small><b>WASD / ARROWS</b>
+              <i />
+              <small>INTERACT</small><b>E</b>
             </div>
+
+            {nearFace && (
+              <button className="interaction-prompt" type="button" onClick={() => openFlagEditor(nearFace)}>
+                <kbd>E</kbd>
+                <span>
+                  <small>YOU’RE AT {nearFace === 'flag-left' ? 'LEFT FLAG' : 'RIGHT FLAG'}</small>
+                  <strong>PAINT THIS FLAG</strong>
+                </span>
+                <b>✏️</b>
+              </button>
+            )}
+
+            {!nearFace && gameReady && (
+              <div className="walk-prompt">Walk around the plane. Get close to a flag.</div>
+            )}
           </div>
-        </section>
+        </div>
+
+        <aside className="mission-panel">
+          <div className="mission-panel-head">
+            <span>FLIGHT PREP / 01</span>
+            <strong>PAINT BOTH FLAGS</strong>
+            <p>Get each flag to 80%. Both sides count.</p>
+          </div>
+
+          <div className="score-card">
+            {(['flag-left','flag-right'] as const).map((face) => (
+              <div className="flag-score" key={face}>
+                <div>
+                  <span>{face === 'flag-left' ? 'LEFT FLAG' : 'RIGHT FLAG'}</span>
+                  <b className={scores[face] >= 80 ? 'ready' : ''}>{scores[face]}%</b>
+                </div>
+                <div className="score-track"><i style={{ width: `${scores[face]}%` }} /></div>
+                <small>{scores[face] >= 80 ? 'READY ✓' : `${80 - scores[face]}% TO GO`}</small>
+              </div>
+            ))}
+          </div>
+
+          <div className="overall">
+            <span>COMBINED PAINT</span><b>{overallScore}%</b>
+          </div>
+
+          <div className="draw-notice">
+            <span>✏️</span>
+            <p><b>DON’T CROP THE FLAG.</b><br />Use <strong>Draw</strong> and paint over the flag itself.</p>
+          </div>
+
+          <div className="pilot-status">
+            <i /><span><small>PILOT-OUT</small><b>WAITING ON YOU</b></span>
+          </div>
+
+          <button
+            type="button"
+            disabled={!bothReady}
+            className={`launch-bay-takeoff-button ${bothReady ? 'is-ready' : ''}`}
+            onClick={() => bothReady && go('/fly')}
+          >
+            <span>{bothReady ? 'TAKE OFF' : 'PAINT BOTH TO 80%'}</span>
+            <span className="launch-bay-arrow">→</span>
+          </button>
+        </aside>
       </section>
+
+      {editorOpen && (
+        <div className="editor-overlay">
+          <div className="editor-window">
+            <div className="editor-window-head">
+              <div>
+                <small>NOW PAINTING</small>
+                <strong>{activeFace === 'flag-left' ? 'LEFT FLAG' : 'RIGHT FLAG'}</strong>
+              </div>
+              <div className="editor-rule"><span>✏️</span><b>DON’T CROP IT.</b> USE DRAW.</div>
+              <button type="button" onClick={() => setEditorOpen(false)}>DONE / CLOSE ×</button>
+            </div>
+            <div className="editor-body"><LiveryEditor /></div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
 
 const LAUNCH_BAY_CSS = `
-  .launch-bay {
-    min-height: 100vh;
-    min-height: 100svh;
-    position: relative;
-    overflow: hidden;
-    color: #071a38;
-    background:
-      radial-gradient(circle at 78% 22%, rgba(31, 71, 119, 0.055), transparent 27%),
-      linear-gradient(135deg, #fbfcfc 0%, #f5f7f9 55%, #eef2f6 100%);
-    font-family:
-      Inter,
-      ui-sans-serif,
-      system-ui,
-      -apple-system,
-      BlinkMacSystemFont,
-      "Segoe UI",
-      sans-serif;
-  }
-
-  .launch-bay::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    opacity: 0.22;
-    background-image:
-      linear-gradient(rgba(7, 26, 56, 0.035) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(7, 26, 56, 0.035) 1px, transparent 1px);
-    background-size: 72px 72px;
-    mask-image: linear-gradient(to bottom, black, transparent 82%);
-  }
-
-  .launch-bay-layout {
-    position: relative;
-    z-index: 5;
-    height: 100svh;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    align-items: stretch;
-    max-width: 1680px;
-    margin: 0 auto;
-    padding: 24px clamp(22px, 5vw, 76px);
-    gap: 20px;
-  }
-
-  .launch-bay-editor,
-  .launch-bay-preview {
-    min-width: 0;
-    min-height: 0;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-  }
-
-  .launch-bay-editor-head {
-    min-height: 64px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    gap: 10px;
-    margin-bottom: 12px;
-  }
-
-  .launch-bay-prompt {
-    margin: 0;
-    color: #071a38;
-    font-size: 15px;
-    font-weight: 800;
-    letter-spacing: -0.01em;
-  }
-
-  .launch-bay-faces {
-    display: flex;
-    gap: 6px;
-    flex-wrap: wrap;
-  }
-
-  .launch-bay-face {
-    min-width: 64px;
-    padding: 9px 11px;
-    border: 1px solid rgba(7, 26, 56, 0.1);
-    border-radius: 3px;
-    background: rgba(255, 255, 255, 0.54);
-    color: rgba(7, 26, 56, 0.48);
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    font-size: 8px;
-    font-weight: 900;
-    letter-spacing: 0.13em;
-    transition:
-      color 150ms ease,
-      background 150ms ease,
-      border-color 150ms ease,
-      transform 150ms ease;
-  }
-
-  .launch-bay-face:hover {
-    transform: translateY(-2px);
-    border-color: rgba(197, 139, 60, 0.45);
-  }
-
-  .launch-bay-face.is-active {
-    border-color: #0a2850;
-    background: #0a2850;
-    color: #ffffff;
-  }
-
-  .launch-bay-face.is-done:not(.is-active) {
-    border-color: rgba(52, 111, 83, 0.28);
-    background: rgba(52, 111, 83, 0.08);
-    color: #356d52;
-  }
-
-  .launch-bay-check {
-    font-size: 10px;
-  }
-
-  .launch-bay-editor-body {
-    flex: 1 1 auto;
-min-height: 520px;
-max-height: 72vh;display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    border: 1px solid rgba(7, 26, 56, 0.09);
-    border-radius: 8px;
-    background: #edf2f5;
-    box-shadow:
-      0 24px 60px rgba(7, 26, 56, 0.08),
-      inset 0 0 0 1px rgba(255, 255, 255, 0.48);
-  }
-
-  .launch-bay-editor-body > * {
-    flex: 1 1 auto;
-    min-height: 0;
-    width: 100%;
-    height: 100%;
-  }
-
-  .launch-bay-preview-top {
-    min-height: 64px;
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 14px;
-    margin-bottom: 12px;
-  }
-
-  .launch-bay-readiness-dot {
-    width: 8px;
-    height: 8px;
-    flex: 0 0 auto;
-    border-radius: 50%;
-    background: #b8bec5;
-    margin-right: auto;
-  }
-
-  .launch-bay-readiness-dot.is-ready {
-    background: #c58b3c;
-    box-shadow: 0 0 0 4px rgba(197, 139, 60, 0.1);
-  }
-
-  .launch-bay-sound-toggle {
-    width: 46px;
-    height: 46px;
-    flex: 0 0 auto;
-    border: 1px solid rgba(7, 26, 56, 0.1);
-    border-radius: 8px;
-    background: rgba(255, 255, 255, 0.7);
-    color: rgba(7, 26, 56, 0.55);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    box-shadow: 0 8px 18px rgba(7, 26, 56, 0.06);
-    transition:
-      color 150ms ease,
-      border-color 150ms ease,
-      transform 150ms ease,
-      background 150ms ease;
-  }
-
-  .launch-bay-sound-toggle:hover {
-    color: #0a2850;
-    border-color: rgba(197, 139, 60, 0.45);
-    transform: translateY(-2px);
-  }
-
-  .launch-bay-takeoff-button {
-    min-width: 185px;
-    height: 46px;
-    padding: 0 17px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 20px;
-    border: 0;
-    border-radius: 8px;
-    background: #dfe4e8;
-    color: rgba(7, 26, 56, 0.3);
-    font-size: 12px;
-    font-weight: 950;
-    letter-spacing: 0.16em;
-    cursor: not-allowed;
-    transition:
-      transform 150ms ease,
-      background 150ms ease;
-  }
-
-  .launch-bay-takeoff-button.is-ready {
-    background: #0a2850;
-    color: #ffffff;
-    cursor: pointer;
-    box-shadow: 0 12px 25px rgba(7, 26, 56, 0.14);
-  }
-
-  .launch-bay-takeoff-button.is-ready:hover {
-    transform: translateY(-2px);
-    background: #123b6b;
-  }
-
-  .launch-bay-arrow {
-    color: #d8a35c;
-    font-size: 16px;
-  }
-
-  .launch-bay-viewport {
-    position: relative;
-    flex: 1 1 auto;
-    min-height: 0;
-    overflow: hidden;
-    border: 1px solid rgba(7, 26, 56, 0.09);
-    border-radius: 8px;
-    background: #edf2f5;
-    box-shadow:
-      0 24px 60px rgba(7, 26, 56, 0.08),
-      inset 0 0 0 1px rgba(255, 255, 255, 0.48);
-  }
-
-  .launch-bay-viewport-label {
-    position: absolute;
-    left: 14px;
-    bottom: 14px;
-    color: rgba(7, 26, 56, 0.42);
-    font-size: 10px;
-    font-weight: 800;
-    letter-spacing: 0.06em;
-    pointer-events: none;
-  }
-
-  @media (max-width: 1050px) {
-    .launch-bay-layout {
-      grid-template-columns: 1fr;
-      height: auto;
-      min-height: 100svh;
-      overflow: auto;
-    }
-
-    .launch-bay-editor,
-    .launch-bay-preview {
-      height: auto;
-    }
-
-    .launch-bay-editor-body {
-      min-height: 420px;
-    }
-
-    .launch-bay-viewport {
-      min-height: 480px;
-    }
-  }
-
-  @media (max-width: 650px) {
-    .launch-bay-layout {
-      padding: 22px 22px 30px;
-      gap: 26px;
-    }
-
-    .launch-bay-prompt {
-      font-size: 18px;
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .launch-bay-face,
-    .launch-bay-sound-toggle,
-    .launch-bay-takeoff-button {
-      transition: none;
-    }
-  }
+*{box-sizing:border-box}
+.launch-bay{min-height:100svh;background:#111923;color:#f5f0e7;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;overflow:hidden}
+.launch-bay button{font:inherit}
+.hangar-topbar{height:84px;padding:12px clamp(16px,3vw,44px);display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:18px;background:#f6f2e9;color:#071a38;border-bottom:1px solid rgba(7,26,56,.12);position:relative;z-index:20}
+.top-door{justify-self:start;min-height:58px;padding:7px 12px 7px 8px;border:1px solid rgba(192,139,67,.55);border-radius:9px;background:#071a38;color:white;display:grid;grid-template-columns:43px auto 18px;align-items:center;gap:11px;text-align:left;cursor:pointer;box-shadow:0 12px 28px rgba(7,26,56,.16);transition:.15s}
+.top-door:hover{transform:translateY(-2px);border-color:#d3a252}.top-door-icon{width:43px;height:43px;border-radius:7px;background:#d3a252;color:#071a38;display:grid;place-items:center}.top-door-icon svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.top-door small,.top-door strong{display:block}.top-door small{font-size:6px;color:rgba(255,255,255,.5);letter-spacing:.13em}.top-door strong{margin-top:3px;font-size:9px;letter-spacing:.1em}.top-door>b{color:#d3a252;font-size:17px}
+.hangar-title{text-align:center}.hangar-title small,.hangar-title strong{display:block}.hangar-title small{font-size:7px;letter-spacing:.18em;color:#c08b43;font-weight:950}.hangar-title strong{font-size:19px;letter-spacing:-.03em;margin-top:3px}
+.launch-bay-sound-toggle{justify-self:end;width:46px;height:46px;border:1px solid rgba(7,26,56,.12);border-radius:8px;background:white;color:#071a38;display:grid;place-items:center;cursor:pointer}
+.game-shell{height:calc(100svh - 84px);display:grid;grid-template-columns:minmax(0,1fr) 310px;background:#121b25}
+.game-viewport{position:relative;min-width:0;overflow:hidden}.game-viewport canvas{display:block}
+.game-hud{position:absolute;inset:0;pointer-events:none}.hud-controls{position:absolute;left:18px;top:18px;display:flex;align-items:center;gap:8px;padding:9px 11px;border:1px solid rgba(255,255,255,.12);border-radius:6px;background:rgba(7,17,29,.76);backdrop-filter:blur(10px);box-shadow:0 10px 25px rgba(0,0,0,.18)}.hud-controls small{font-size:6px;color:#d3a252;font-weight:950;letter-spacing:.13em}.hud-controls b{font-size:8px;letter-spacing:.08em}.hud-controls i{width:1px;height:16px;background:rgba(255,255,255,.14);margin:0 3px}
+.interaction-prompt{pointer-events:auto;position:absolute;left:50%;bottom:32px;transform:translateX(-50%);min-width:310px;padding:10px 13px;border:1px solid rgba(211,162,82,.7);border-radius:7px;background:rgba(7,20,37,.94);color:white;display:grid;grid-template-columns:40px 1fr 28px;align-items:center;gap:12px;text-align:left;cursor:pointer;box-shadow:0 20px 55px rgba(0,0,0,.3)}.interaction-prompt kbd{width:38px;height:38px;border-radius:5px;background:#d3a252;color:#071a38;display:grid;place-items:center;font-weight:950}.interaction-prompt small,.interaction-prompt strong{display:block}.interaction-prompt small{font-size:6px;color:rgba(255,255,255,.5);letter-spacing:.12em}.interaction-prompt strong{font-size:10px;letter-spacing:.1em;margin-top:3px}.interaction-prompt>b{font-size:20px}.walk-prompt{position:absolute;left:50%;bottom:26px;transform:translateX(-50%);padding:8px 12px;background:rgba(7,20,37,.72);border-radius:4px;font-size:8px;font-weight:850;letter-spacing:.08em}
+.mission-panel{padding:24px 20px;background:linear-gradient(180deg,#f4f0e8,#e8e2d7);color:#071a38;border-left:1px solid rgba(0,0,0,.15);display:flex;flex-direction:column;gap:18px;overflow:auto}.mission-panel-head>span{font-size:7px;color:#b37a35;font-weight:950;letter-spacing:.16em}.mission-panel-head>strong{display:block;font-size:20px;letter-spacing:-.035em;margin-top:5px}.mission-panel-head p{font-size:10px;color:rgba(7,26,56,.56);line-height:1.5;margin:5px 0 0}
+.score-card{display:grid;gap:14px}.flag-score{padding:13px;border:1px solid rgba(7,26,56,.1);border-radius:7px;background:rgba(255,255,255,.55)}.flag-score>div:first-child{display:flex;justify-content:space-between;align-items:center}.flag-score span{font-size:8px;font-weight:950;letter-spacing:.1em}.flag-score b{font-size:17px;color:#9a5d3b}.flag-score b.ready{color:#33704e}.score-track{height:5px;margin:9px 0 6px;background:rgba(7,26,56,.09);border-radius:9px;overflow:hidden}.score-track i{display:block;height:100%;background:#c58b3c;border-radius:9px;transition:width .3s}.flag-score small{font-size:6px;color:rgba(7,26,56,.45);font-weight:950;letter-spacing:.1em}.overall{display:flex;justify-content:space-between;align-items:end;padding:0 2px}.overall span{font-size:7px;font-weight:950;letter-spacing:.14em;color:rgba(7,26,56,.48)}.overall b{font-size:24px}
+.draw-notice{display:flex;gap:10px;padding:12px;border:1px solid rgba(197,139,60,.35);background:#fff7e9;border-radius:7px}.draw-notice>span{font-size:19px}.draw-notice p{margin:0;font-size:9px;line-height:1.5}.draw-notice p>b{letter-spacing:.07em}.pilot-status{display:flex;align-items:center;gap:9px;margin-top:auto;padding-top:8px}.pilot-status>i{width:8px;height:8px;border-radius:50%;background:#3f815e;box-shadow:0 0 0 4px rgba(63,129,94,.1)}.pilot-status small,.pilot-status b{display:block}.pilot-status small{font-size:6px;color:rgba(7,26,56,.45);letter-spacing:.13em}.pilot-status b{font-size:8px;letter-spacing:.09em;margin-top:2px}
+.launch-bay-takeoff-button{height:52px;padding:0 16px;border:0;border-radius:7px;background:#cbc8c1;color:rgba(7,26,56,.35);display:flex;align-items:center;justify-content:space-between;font-size:9px;font-weight:950;letter-spacing:.12em;cursor:not-allowed}.launch-bay-takeoff-button.is-ready{background:#071a38;color:white;cursor:pointer;box-shadow:0 12px 25px rgba(7,26,56,.18)}.launch-bay-arrow{color:#d3a252;font-size:17px}
+.mission-intro,.opening-overlay,.editor-overlay{position:fixed;inset:0;z-index:100;background:rgba(5,12,22,.82);backdrop-filter:blur(12px);display:grid;place-items:center;padding:20px}.mission-card{width:min(540px,100%);padding:34px;background:#f3eee4;color:#071a38;border:1px solid rgba(211,162,82,.45);border-radius:10px;box-shadow:0 35px 90px rgba(0,0,0,.35)}.mission-kicker{font-size:7px;color:#b77e38;font-weight:950;letter-spacing:.18em}.mission-card h1{font-size:clamp(38px,5vw,62px);line-height:.88;letter-spacing:-.06em;margin:14px 0 16px;text-transform:uppercase}.mission-card h1 em{font-family:Georgia,serif;font-weight:400;text-transform:none;color:#bd8240}.mission-card>p{font-size:13px;line-height:1.55;color:rgba(7,26,56,.66)}.mission-tip{margin:22px 0;display:flex;gap:12px;padding:13px;background:#fff8e9;border:1px solid rgba(197,139,60,.3);border-radius:7px}.pen-icon{font-size:22px}.mission-tip b,.mission-tip small{display:block}.mission-tip b{font-size:9px;letter-spacing:.1em}.mission-tip small{margin-top:3px;font-size:9px;color:rgba(7,26,56,.6)}.mission-ok{width:100%;height:54px;padding:0 16px;border:0;border-radius:7px;background:#071a38;color:white;display:flex;justify-content:space-between;align-items:center;font-size:9px;font-weight:950;letter-spacing:.12em;cursor:pointer}.mission-ok b{color:#d3a252;font-size:18px}
+.opening-overlay{z-index:110;background:#071523;color:white;text-align:center}.opening-overlay>span{font-size:7px;color:#d3a252;font-weight:950;letter-spacing:.2em}.opening-overlay>strong{display:block;font-size:clamp(100px,18vw,220px);line-height:.8;letter-spacing:-.08em;margin:20px 0;color:#f3eee4}.opening-overlay h2{font-size:10px;letter-spacing:.22em}.opening-track{width:min(330px,70vw);height:3px;background:rgba(255,255,255,.12);margin:18px auto 0;overflow:hidden}.opening-track i{display:block;width:100%;height:100%;background:#d3a252;animation:openTrack 1.95s linear}@keyframes openTrack{from{transform:translateX(-100%)}to{transform:translateX(0)}}
+.editor-overlay{z-index:120;padding:28px}.editor-window{width:min(1180px,96vw);height:min(800px,92vh);display:flex;flex-direction:column;background:#eef1f3;border-radius:10px;overflow:hidden;box-shadow:0 35px 100px rgba(0,0,0,.5)}.editor-window-head{min-height:70px;padding:10px 14px;background:#071a38;color:white;display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:18px}.editor-window-head small,.editor-window-head strong{display:block}.editor-window-head small{font-size:6px;color:#d3a252;letter-spacing:.14em}.editor-window-head strong{font-size:13px;margin-top:3px}.editor-rule{font-size:8px;letter-spacing:.08em;color:rgba(255,255,255,.7)}.editor-rule span{font-size:17px;margin-right:7px}.editor-rule b{color:#d3a252}.editor-window-head button{height:38px;padding:0 12px;border:1px solid rgba(255,255,255,.18);border-radius:5px;background:white;color:#071a38;font-size:8px;font-weight:950;letter-spacing:.08em;cursor:pointer}.editor-body{flex:1;min-height:0}.editor-body>*{width:100%;height:100%;min-height:0}
+@media(max-width:900px){.hangar-topbar{height:auto;grid-template-columns:1fr auto;padding:10px 12px}.hangar-title{display:none}.top-door{min-height:52px}.game-shell{height:calc(100svh - 73px);grid-template-columns:1fr}.mission-panel{position:absolute;right:10px;top:86px;z-index:30;width:230px;max-height:calc(100svh - 105px);padding:14px;gap:11px;border-radius:8px;box-shadow:0 18px 50px rgba(0,0,0,.25)}.mission-panel-head>strong{font-size:15px}.draw-notice,.pilot-status{display:none}.interaction-prompt{min-width:min(310px,88vw);bottom:20px}.editor-window-head{grid-template-columns:1fr auto}.editor-rule{grid-column:1/-1;grid-row:2}.editor-window{height:94vh}.editor-overlay{padding:10px}}
+@media(max-width:560px){.top-door{grid-template-columns:38px auto 14px}.top-door-icon{width:38px;height:38px}.top-door small{display:none}.top-door strong{font-size:8px}.mission-panel{width:190px}.flag-score{padding:9px}.hud-controls{top:10px;left:10px}.walk-prompt{display:none}}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}.opening-track i{animation:none}}
 `;
