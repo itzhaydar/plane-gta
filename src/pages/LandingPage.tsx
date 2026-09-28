@@ -103,6 +103,7 @@ function Pedestrian({ x, z, speed, direction, look, phase = 0 }: {
   x: number; z: number; speed: number; direction: 1 | -1; look: WalkerLook; phase?: number;
 }) {
   const ref = useRef<THREE.Group>(null);
+  const torso = useRef<THREE.Group>(null);
   const leftArm = useRef<THREE.Group>(null);
   const rightArm = useRef<THREE.Group>(null);
   const leftLeg = useRef<THREE.Group>(null);
@@ -110,28 +111,123 @@ function Pedestrian({ x, z, speed, direction, look, phase = 0 }: {
 
   useFrame(({ clock }, delta) => {
     if (!ref.current) return;
+
     ref.current.position.x += direction * speed * delta;
     if (direction > 0 && ref.current.position.x > 50) ref.current.position.x = -10;
     if (direction < 0 && ref.current.position.x < -10) ref.current.position.x = 50;
-    const t = clock.elapsedTime * 6.5 + phase;
-    const swing = Math.sin(t) * 0.5;
+
+    const t = clock.elapsedTime * 6.4 + phase;
+    const swing = Math.sin(t) * 0.48;
+    const bob = Math.abs(Math.sin(t)) * 0.018;
+
+    if (torso.current) torso.current.position.y = bob;
     if (leftArm.current) leftArm.current.rotation.x = swing;
     if (rightArm.current) rightArm.current.rotation.x = -swing;
-    if (leftLeg.current) leftLeg.current.rotation.x = -swing * 0.7;
-    if (rightLeg.current) rightLeg.current.rotation.x = swing * 0.7;
+    if (leftLeg.current) leftLeg.current.rotation.x = -swing * 0.72;
+    if (rightLeg.current) rightLeg.current.rotation.x = swing * 0.72;
+
     ref.current.rotation.y = direction > 0 ? Math.PI / 2 : -Math.PI / 2;
   });
 
-  return <group ref={ref} position={[x, 0, z]} scale={0.88}>
-    <mesh position={[0, 1.42, 0]} castShadow><capsuleGeometry args={[0.27, 0.66, 7, 12]} /><meshStandardMaterial color={look.top} roughness={0.72} /></mesh>
-    <mesh position={[0, 2.02, 0]} castShadow><sphereGeometry args={[0.25, 18, 16]} /><meshStandardMaterial color={look.skin} roughness={0.85} /></mesh>
-    <mesh position={[0, 2.22, -0.02]} scale={[1, 0.55, 1]} castShadow><sphereGeometry args={[0.255, 16, 12]} /><meshStandardMaterial color={look.hair} roughness={0.95} /></mesh>
-    <mesh position={[0.27, 1.55, 0.02]}><boxGeometry args={[0.05, 0.38, 0.05]} /><meshStandardMaterial color={look.accent} metalness={0.6} /></mesh>
-    <group ref={leftArm} position={[-0.34, 1.62, 0]}><mesh position={[0, -0.35, 0]} castShadow><capsuleGeometry args={[0.085, 0.52, 5, 8]} /><meshStandardMaterial color={look.skin} /></mesh></group>
-    <group ref={rightArm} position={[0.34, 1.62, 0]}><mesh position={[0, -0.35, 0]} castShadow><capsuleGeometry args={[0.085, 0.52, 5, 8]} /><meshStandardMaterial color={look.skin} /></mesh></group>
-    <group ref={leftLeg} position={[-0.15, 1.05, 0]}><mesh position={[0, -0.48, 0]} castShadow><capsuleGeometry args={[0.11, 0.72, 5, 8]} /><meshStandardMaterial color={look.bottom} /></mesh><mesh position={[0, -0.91, 0.08]}><boxGeometry args={[0.23, 0.13, 0.42]} /><meshStandardMaterial color="#f4f0e8" /></mesh></group>
-    <group ref={rightLeg} position={[0.15, 1.05, 0]}><mesh position={[0, -0.48, 0]} castShadow><capsuleGeometry args={[0.11, 0.72, 5, 8]} /><meshStandardMaterial color={look.bottom} /></mesh><mesh position={[0, -0.91, 0.08]}><boxGeometry args={[0.23, 0.13, 0.42]} /><meshStandardMaterial color="#f4f0e8" /></mesh></group>
-  </group>;
+  return (
+    <group ref={ref} position={[x, 0, z]} scale={0.88}>
+      <group ref={torso}>
+        {/* Same smooth blocky character language as the player, varied casual clothes */}
+        <mesh position={[0, 1.48, 0]} castShadow>
+          <boxGeometry args={[0.70, 0.86, 0.38]} />
+          <meshStandardMaterial color={look.top} roughness={0.84} />
+        </mesh>
+
+        {/* shirt seams / layered casual detail */}
+        <mesh position={[0, 1.49, 0.205]}>
+          <boxGeometry args={[0.10, 0.78, 0.025]} />
+          <meshStandardMaterial color={look.accent} roughness={0.78} />
+        </mesh>
+
+        <mesh position={[0, 1.98, 0]} castShadow>
+          <boxGeometry args={[0.20, 0.20, 0.20]} />
+          <meshStandardMaterial color={look.skin} roughness={0.9} />
+        </mesh>
+
+        <mesh position={[0, 2.27, 0]} castShadow>
+          <boxGeometry args={[0.48, 0.47, 0.42]} />
+          <meshStandardMaterial color={look.skin} roughness={0.9} />
+        </mesh>
+
+        {/* cropped hair */}
+        <mesh position={[0, 2.53, -0.01]} castShadow>
+          <boxGeometry args={[0.49, 0.13, 0.42]} />
+          <meshStandardMaterial color={look.hair} roughness={1} />
+        </mesh>
+        {[-0.15,-0.05,0.05,0.15].map((hx, i) => (
+          <mesh key={hx} position={[hx, 2.595 + (i % 2) * .012, 0.015]}>
+            <boxGeometry args={[0.085, 0.065, 0.085]} />
+            <meshStandardMaterial color={look.hair} roughness={1} />
+          </mesh>
+        ))}
+
+        {/* simple human face, no glasses */}
+        {[-0.10,0.10].map((ex) => (
+          <mesh key={ex} position={[ex,2.31,0.219]}>
+            <boxGeometry args={[0.04,.024,.016]} />
+            <meshStandardMaterial color="#171719" />
+          </mesh>
+        ))}
+        <mesh position={[0,2.245,0.23]}>
+          <boxGeometry args={[0.065,.09,.05]} />
+          <meshStandardMaterial color={look.skin} />
+        </mesh>
+        <mesh position={[0,2.16,0.219]}>
+          <boxGeometry args={[0.17,.03,.016]} />
+          <meshStandardMaterial color="#633f32" />
+        </mesh>
+      </group>
+
+      <group ref={leftArm} position={[-0.43,1.70,0]}>
+        <mesh position={[0,-0.31,0]} castShadow>
+          <capsuleGeometry args={[0.095,0.53,6,10]} />
+          <meshStandardMaterial color={look.skin} roughness={0.9} />
+        </mesh>
+        <mesh position={[0,-0.65,0.02]}>
+          <boxGeometry args={[0.17,.19,.17]} />
+          <meshStandardMaterial color={look.skin} />
+        </mesh>
+      </group>
+
+      <group ref={rightArm} position={[0.43,1.70,0]}>
+        <mesh position={[0,-0.31,0]} castShadow>
+          <capsuleGeometry args={[0.095,0.53,6,10]} />
+          <meshStandardMaterial color={look.skin} roughness={0.9} />
+        </mesh>
+        <mesh position={[0,-0.65,0.02]}>
+          <boxGeometry args={[0.17,.19,.17]} />
+          <meshStandardMaterial color={look.skin} />
+        </mesh>
+      </group>
+
+      <group ref={leftLeg} position={[-0.16,1.05,0]}>
+        <mesh position={[0,-0.46,0]} castShadow>
+          <capsuleGeometry args={[0.12,0.69,6,10]} />
+          <meshStandardMaterial color={look.bottom} roughness={0.9} />
+        </mesh>
+        <mesh position={[0,-0.90,0.10]}>
+          <boxGeometry args={[0.26,.16,.45]} />
+          <meshStandardMaterial color="#17181c" roughness={0.88} />
+        </mesh>
+      </group>
+
+      <group ref={rightLeg} position={[0.16,1.05,0]}>
+        <mesh position={[0,-0.46,0]} castShadow>
+          <capsuleGeometry args={[0.12,0.69,6,10]} />
+          <meshStandardMaterial color={look.bottom} roughness={0.9} />
+        </mesh>
+        <mesh position={[0,-0.90,0.10]}>
+          <boxGeometry args={[0.26,.16,.45]} />
+          <meshStandardMaterial color="#17181c" roughness={0.88} />
+        </mesh>
+      </group>
+    </group>
+  );
 }
 
 function Car({ x, z, speed, direction, kind = 0 }: { x: number; z: number; speed: number; direction: 1 | -1; kind?: number }) {
@@ -189,12 +285,11 @@ function Player({ position }: { position: MutableRefObject<THREE.Vector3> }) {
   const skin = '#b47a52';
   const hair = '#241b16';
   const stubble = '#8a5f42';
-  const olive = '#40503c';
-  const vest = '#d9cfb6';
-  const gold = '#d9b65e';
-  const denim = '#222a37';
-  const shoes = '#141319';
-  const backpack = '#3a2f24';
+  const olive = '#0b274b';
+  const vest = '#f5f2eb';
+  const gold = '#d3a34f';
+  const denim = '#071a38';
+  const shoes = '#10151d';
 
   return (
     <group ref={group} position={START.toArray()} scale={1.04}>
@@ -221,20 +316,6 @@ function Player({ position }: { position: MutableRefObject<THREE.Vector3> }) {
         <mesh position={[0.33, 1.52, -0.02]} rotation={[0,0,0.05]} castShadow>
           <boxGeometry args={[0.17, 0.88, 0.43]} />
           <meshStandardMaterial color={olive} roughness={0.84} />
-        </mesh>
-
-        {/* small brown backpack */}
-        <mesh position={[0, 1.52, -0.29]} castShadow>
-          <boxGeometry args={[0.54, 0.65, 0.22]} />
-          <meshStandardMaterial color={backpack} roughness={0.92} />
-        </mesh>
-        <mesh position={[-0.30, 1.60, -0.17]} rotation={[0,0,-0.08]}>
-          <boxGeometry args={[0.07, 0.70, 0.08]} />
-          <meshStandardMaterial color={backpack} roughness={0.92} />
-        </mesh>
-        <mesh position={[0.30, 1.60, -0.17]} rotation={[0,0,0.08]}>
-          <boxGeometry args={[0.07, 0.70, 0.08]} />
-          <meshStandardMaterial color={backpack} roughness={0.92} />
         </mesh>
 
         {/* blocky neck + rounded/blocky head */}
@@ -298,11 +379,12 @@ function Player({ position }: { position: MutableRefObject<THREE.Vector3> }) {
 
 function City({ position, near }: { position: MutableRefObject<THREE.Vector3>; near: number | null }) {
   const walkers: Array<{x:number;z:number;speed:number;direction:1|-1;look:WalkerLook;phase:number}> = [
-    { x: 5, z: -4.0, speed: 0.7, direction: 1, phase: 0, look: { skin:'#70472f', top:'#e7dfd3', bottom:'#3c4658', hair:'#111317', accent:'#8d6c39' } },
-    { x: 14, z: 4.2, speed: 0.55, direction: -1, phase: 2, look: { skin:'#d5a17e', top:'#8b5f49', bottom:'#d8d1c6', hair:'#38251d', accent:'#192d47' } },
-    { x: 25, z: -4.0, speed: 0.8, direction: 1, phase: 4, look: { skin:'#8b5a42', top:'#466071', bottom:'#242833', hair:'#171311', accent:'#b49a73' } },
-    { x: 40, z: 4.25, speed: 0.62, direction: -1, phase: 1, look: { skin:'#c88767', top:'#d5c8b8', bottom:'#6e5848', hair:'#201914', accent:'#23384f' } },
-    { x: 33, z: -4.0, speed: 0.48, direction: -1, phase: 3, look: { skin:'#5f3d2c', top:'#6e735e', bottom:'#26384d', hair:'#0e1014', accent:'#ddd4c5' } },
+    { x: 3,  z: -4.0, speed: 0.64, direction: 1,  phase: 0, look: { skin:'#70472f', top:'#d9c7a5', bottom:'#3b4558', hair:'#111317', accent:'#9b5a42' } },
+    { x: 12, z: 4.2,  speed: 0.52, direction: -1, phase: 2, look: { skin:'#d5a17e', top:'#9d554d', bottom:'#ded6c8', hair:'#38251d', accent:'#e0b967' } },
+    { x: 22, z: -4.0, speed: 0.70, direction: 1,  phase: 4, look: { skin:'#8b5a42', top:'#47748a', bottom:'#252833', hair:'#171311', accent:'#c9b38b' } },
+    { x: 31, z: 4.25, speed: 0.57, direction: -1, phase: 1, look: { skin:'#c88767', top:'#765d86', bottom:'#625144', hair:'#201914', accent:'#e2c98f' } },
+    { x: 41, z: -4.0, speed: 0.47, direction: -1, phase: 3, look: { skin:'#5f3d2c', top:'#627550', bottom:'#293a50', hair:'#0e1014', accent:'#d7b26a' } },
+    { x: 47, z: 4.15, speed: 0.60, direction: 1,  phase: 5, look: { skin:'#b97758', top:'#c06f3f', bottom:'#30343c', hair:'#2b1d18', accent:'#f0d7aa' } },
   ];
 
   return <>
@@ -325,10 +407,10 @@ function City({ position, near }: { position: MutableRefObject<THREE.Vector3>; n
     {[-1, 10, 21, 32, 43].map((x) => <StreetLight key={x} x={x} />)}
 
     {/* moving city life */}
-    <Car x={-8} z={1.75} speed={3.5} direction={1} kind={0} />
-    <Car x={18} z={-1.75} speed={4.2} direction={-1} kind={1} />
-    <Car x={37} z={1.75} speed={2.9} direction={1} kind={2} />
-    <Car x={50} z={-1.75} speed={3.7} direction={-1} kind={3} />
+    <Car x={-12} z={1.75} speed={3.15} direction={1} kind={0} />
+    <Car x={20} z={-1.75} speed={3.35} direction={-1} kind={1} />
+    <Car x={34} z={1.75} speed={3.15} direction={1} kind={2} />
+    <Car x={54} z={-1.75} speed={3.35} direction={-1} kind={3} />
     {walkers.map((w, i) => <Pedestrian key={i} {...w} />)}
 
     <Player position={position} />
@@ -406,7 +488,7 @@ export default function LandingPage() {
     const down = (event: KeyboardEvent) => {
       const key = event.key.toLowerCase();
       if (['arrowleft', 'arrowright', 'arrowup', 'arrowdown', ' '].includes(key)) event.preventDefault();
-      if (key === 'e' || key === 'enter') {
+      if (key === 'e') {
         if (activeRef.current !== null) {
           const door = DESTINATIONS[activeRef.current];
           setRole(door.path === '/homie' ? 'homie' : 'pilot');
@@ -437,9 +519,7 @@ export default function LandingPage() {
     {phase === 'intro' && <main className="tour-intro"><div className="tour-intro-copy"><div className="tour-eyebrow">MARSHOUT / VICE CITY <span>✦</span></div><h1>Take a <em>tour.</em></h1><p className="tour-lead">See which door gets you a travel flyer and which one gets you to a new destination.</p><button className="tour-start" aria-label="Take a tour" onClick={() => { setCount(3); setPhase('countdown'); }}><span className="tour-play">▶</span><span>TAKE A TOUR</span></button><p className="tour-hint">Walk the boulevard. Three doors are waiting.</p></div><div className="tour-hero" aria-hidden="true"><div className="tour-sun" /><div className="tour-skyline"><i /><i /><i /><i /><i /><i /><i /><i /></div><div className="tour-palm">✳</div><div className="tour-hero-caption">VICE CITY <span>BOARDING LATE</span></div></div></main>}
     {phase !== 'intro' && <><div className="tour-topline"><span>VICE CITY <b>/</b> MARSHOUT BOULEVARD</span><span>FOLLOW THE GOLD · CHOOSE A DOOR</span></div>{phase === 'tour' && <><div className="tour-mission"><small>YOU'RE ON THE BOULEVARD</small><strong>Where are you headed?</strong><p>Walk up to a marked entrance. The city will tell you when you're close.</p></div><div className="tour-controls">
       <span className="control-block"><b className="control-label">MOVE</b><span className="arrow-pad"><kbd className="key up">↑</kbd><kbd className="key left">←</kbd><kbd className="key down">↓</kbd><kbd className="key right">→</kbd></span></span>
-      <span className="control-block"><kbd className="key wide">SHIFT</kbd><b className="control-label">RUN</b></span>
       <span className="control-block"><kbd className="key">E</kbd><b className="control-label">ENTER</b></span>
-      <span className="control-block"><kbd className="key wide">ENTER</kbd><b className="control-label">ENTER</b></span>
     </div>{active !== null && <button className="tour-enter" onClick={enter}>ENTER <strong>{DESTINATIONS[active].title}</strong><span>↗</span></button>}<div className="tour-touch" aria-label="Movement controls"><button aria-label="Move left" onPointerDown={() => move('arrowleft', true)} onPointerUp={() => move('arrowleft', false)} onPointerCancel={() => move('arrowleft', false)}>←</button><button aria-label="Move forward" onPointerDown={() => move('arrowup', true)} onPointerUp={() => move('arrowup', false)} onPointerCancel={() => move('arrowup', false)}>↑</button><button aria-label="Move backward" onPointerDown={() => move('arrowdown', true)} onPointerUp={() => move('arrowdown', false)} onPointerCancel={() => move('arrowdown', false)}>↓</button><button aria-label="Move right" onPointerDown={() => move('arrowright', true)} onPointerUp={() => move('arrowright', false)} onPointerCancel={() => move('arrowright', false)}>→</button></div></>}{phase === 'countdown' && <div className="tour-countdown"><p>VICE CITY / LOADING THE BLOCK</p><strong key={count}>{count}</strong><span>STREETS OPEN IN</span></div>}</>}
     <footer className="tour-footer"><span>✦ &nbsp; A TRIP WORTH TAKING</span><span>MARSHOUT © 2026</span></footer>
   </div>;
