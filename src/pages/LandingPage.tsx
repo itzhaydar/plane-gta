@@ -273,7 +273,7 @@ function Car({ x, z, speed, direction, kind = 0 }: { x: number; z: number; speed
   </group>;
 }
 
-function Player({ position }: { position: MutableRefObject<THREE.Vector3> }) {
+function MalePlayer({ position }: { position: MutableRefObject<THREE.Vector3> }) {
   const group = useRef<THREE.Group>(null);
   const torso = useRef<THREE.Group>(null);
   const leftArm = useRef<THREE.Group>(null);
@@ -400,7 +400,168 @@ function Player({ position }: { position: MutableRefObject<THREE.Vector3> }) {
   );
 }
 
-function City({ position, near }: { position: MutableRefObject<THREE.Vector3>; near: number | null }) {
+
+function FemalePlayer({ position }: { position: MutableRefObject<THREE.Vector3> }) {
+  const group = useRef<THREE.Group>(null);
+  const torso = useRef<THREE.Group>(null);
+  const leftArm = useRef<THREE.Group>(null);
+  const rightArm = useRef<THREE.Group>(null);
+  const leftLeg = useRef<THREE.Group>(null);
+  const rightLeg = useRef<THREE.Group>(null);
+  const last = useRef(START.clone());
+
+  useFrame(({ clock }) => {
+    if (!group.current) return;
+
+    const moved = last.current.distanceToSquared(position.current) > 0.000008;
+    const dx = position.current.x - last.current.x;
+    const dz = position.current.z - last.current.z;
+
+    group.current.position.copy(position.current);
+    if (moved) group.current.rotation.y = Math.atan2(dx, dz);
+
+    const t = clock.elapsedTime * 8.2;
+    const swing = moved ? Math.sin(t) * 0.46 : 0;
+    const bob = moved
+      ? Math.abs(Math.sin(t)) * 0.023
+      : Math.sin(clock.elapsedTime * 1.8) * 0.006;
+
+    if (torso.current) torso.current.position.y = bob;
+    if (leftArm.current) leftArm.current.rotation.x = swing;
+    if (rightArm.current) rightArm.current.rotation.x = -swing;
+    if (leftLeg.current) leftLeg.current.rotation.x = -swing * 0.74;
+    if (rightLeg.current) rightLeg.current.rotation.x = swing * 0.74;
+
+    last.current.copy(position.current);
+  });
+
+  const skin = '#a96f52';
+  const hair = '#241914';
+  const navy = '#0b274b';
+  const cream = '#f5f2eb';
+  const gold = '#d3a34f';
+  const denim = '#17223a';
+  const shoes = '#10151d';
+
+  return (
+    <group ref={group} position={START.toArray()} scale={1.01}>
+      <group ref={torso}>
+        {/* Female main character: same polished blocky world, clearly different silhouette. */}
+        <mesh position={[0, 1.48, 0]} castShadow>
+          <boxGeometry args={[0.64, 0.88, 0.36]} />
+          <meshStandardMaterial color={cream} roughness={0.8} />
+        </mesh>
+
+        {/* Cropped navy jacket panels */}
+        <mesh position={[-0.225, 1.55, 0.205]} castShadow>
+          <boxGeometry args={[0.19, 0.67, 0.05]} />
+          <meshStandardMaterial color={navy} roughness={0.82} />
+        </mesh>
+        <mesh position={[0.225, 1.55, 0.205]} castShadow>
+          <boxGeometry args={[0.19, 0.67, 0.05]} />
+          <meshStandardMaterial color={navy} roughness={0.82} />
+        </mesh>
+
+        <mesh position={[0, 1.99, 0]} castShadow>
+          <boxGeometry args={[0.19, 0.20, 0.19]} />
+          <meshStandardMaterial color={skin} roughness={0.9} />
+        </mesh>
+
+        <mesh position={[0, 2.28, 0]} castShadow>
+          <boxGeometry args={[0.46, 0.47, 0.41]} />
+          <meshStandardMaterial color={skin} roughness={0.9} />
+        </mesh>
+
+        {/* Long dark hair: side sections + back section, no glasses. */}
+        <mesh position={[0, 2.54, -0.025]} castShadow>
+          <boxGeometry args={[0.50, 0.14, 0.42]} />
+          <meshStandardMaterial color={hair} roughness={1} />
+        </mesh>
+        <mesh position={[-0.205, 2.28, -0.07]} castShadow>
+          <boxGeometry args={[0.11, 0.52, 0.22]} />
+          <meshStandardMaterial color={hair} roughness={1} />
+        </mesh>
+        <mesh position={[0.205, 2.28, -0.07]} castShadow>
+          <boxGeometry args={[0.11, 0.52, 0.22]} />
+          <meshStandardMaterial color={hair} roughness={1} />
+        </mesh>
+        <mesh position={[0, 2.18, -0.205]} castShadow>
+          <boxGeometry args={[0.35, 0.46, 0.11]} />
+          <meshStandardMaterial color={hair} roughness={1} />
+        </mesh>
+
+        {/* Face */}
+        {[-0.10, 0.10].map((x) => (
+          <mesh key={`fe${x}`} position={[x, 2.32, 0.216]}>
+            <boxGeometry args={[0.042, 0.024, 0.016]} />
+            <meshStandardMaterial color="#171719" />
+          </mesh>
+        ))}
+        <mesh position={[0, 2.25, 0.226]}>
+          <boxGeometry args={[0.062, 0.09, 0.048]} />
+          <meshStandardMaterial color={skin} />
+        </mesh>
+        <mesh position={[0, 2.18, 0.216]}>
+          <boxGeometry args={[0.15, 0.028, 0.016]} />
+          <meshStandardMaterial color="#704238" />
+        </mesh>
+
+        {/* MARSHOUT gold chain */}
+        <mesh position={[0, 1.91, 0.205]} rotation={[Math.PI / 2, 0, 0]}>
+          <torusGeometry args={[0.13, 0.011, 6, 22, Math.PI]} />
+          <meshStandardMaterial color={gold} metalness={0.9} roughness={0.22} />
+        </mesh>
+      </group>
+
+      <group ref={leftArm} position={[-0.40, 1.70, 0]}>
+        <mesh position={[0, -0.30, 0]} castShadow>
+          <capsuleGeometry args={[0.09, 0.52, 6, 10]} />
+          <meshStandardMaterial color={skin} roughness={0.9} />
+        </mesh>
+        <mesh position={[0, -0.64, 0.02]}>
+          <boxGeometry args={[0.16, 0.18, 0.16]} />
+          <meshStandardMaterial color={skin} />
+        </mesh>
+      </group>
+
+      <group ref={rightArm} position={[0.40, 1.70, 0]}>
+        <mesh position={[0, -0.30, 0]} castShadow>
+          <capsuleGeometry args={[0.09, 0.52, 6, 10]} />
+          <meshStandardMaterial color={skin} roughness={0.9} />
+        </mesh>
+        <mesh position={[0, -0.64, 0.02]}>
+          <boxGeometry args={[0.16, 0.18, 0.16]} />
+          <meshStandardMaterial color={skin} />
+        </mesh>
+      </group>
+
+      {/* Slimmer dark trousers and low-profile shoes */}
+      <group ref={leftLeg} position={[-0.145, 1.05, 0]}>
+        <mesh position={[0, -0.46, 0]} castShadow>
+          <capsuleGeometry args={[0.115, 0.71, 6, 10]} />
+          <meshStandardMaterial color={denim} roughness={0.9} />
+        </mesh>
+        <mesh position={[0, -0.91, 0.10]}>
+          <boxGeometry args={[0.25, 0.16, 0.43]} />
+          <meshStandardMaterial color={shoes} roughness={0.88} />
+        </mesh>
+      </group>
+
+      <group ref={rightLeg} position={[0.145, 1.05, 0]}>
+        <mesh position={[0, -0.46, 0]} castShadow>
+          <capsuleGeometry args={[0.115, 0.71, 6, 10]} />
+          <meshStandardMaterial color={denim} roughness={0.9} />
+        </mesh>
+        <mesh position={[0, -0.91, 0.10]}>
+          <boxGeometry args={[0.25, 0.16, 0.43]} />
+          <meshStandardMaterial color={shoes} roughness={0.88} />
+        </mesh>
+      </group>
+    </group>
+  );
+}
+
+function City({ position, near, gender }: { position: MutableRefObject<THREE.Vector3>; near: number | null; gender: 'man' | 'woman' }) {
   const walkers: Array<{x:number;z:number;speed:number;direction:1|-1;look:WalkerLook;phase:number;variant:'man'|'woman'}> = [
     // North sidewalk — mixed crowd, equal speed preserves spacing.
     { x: -7, z: -4.0, speed: 0.50, direction: 1, phase: 0.0, variant:'man', look: { skin:'#70472f', top:'#d9c7a5', bottom:'#3b4558', hair:'#111317', accent:'#9b5a42' } },
@@ -446,7 +607,7 @@ function City({ position, near }: { position: MutableRefObject<THREE.Vector3>; n
     <Car x={8}  z={-1.75} speed={3.25} direction={-1} kind={5} />
     {walkers.map((w, i) => <Pedestrian key={i} {...w} />)}
 
-    <Player position={position} />
+    {gender === 'woman' ? <FemalePlayer position={position} /> : <MalePlayer position={position} />}
   </>;
 }
 
@@ -458,7 +619,7 @@ function Movement({ position, keys, onMove }: { position: MutableRefObject<THREE
     const dx = Number(held.has('arrowright')) - Number(held.has('arrowleft'));
     const dz = Number(held.has('arrowdown')) - Number(held.has('arrowup'));
     if (dx || dz) {
-      const step = Math.min(delta, 0.05) * (held.has('shift') ? 8 : 5) / Math.hypot(dx, dz);
+      const step = Math.min(delta, 0.05) * 5 / Math.hypot(dx, dz);
       position.current.x = THREE.MathUtils.clamp(position.current.x + dx * step, -7, 44);
       position.current.z = THREE.MathUtils.clamp(position.current.z + dz * step, -2.7, 2.8);
       onMove(position.current.x, position.current.z);
@@ -473,7 +634,9 @@ function Movement({ position, keys, onMove }: { position: MutableRefObject<THREE
 export default function LandingPage() {
   const navigate = useNavigate();
   const setRole = usePlaneStore((state) => state.setRole);
-  const [phase, setPhase] = useState<'intro' | 'countdown' | 'tour'>('intro');
+  const gender = usePlaneStore((state) => state.gender);
+  const setGender = usePlaneStore((state) => state.setGender);
+  const [phase, setPhase] = useState<'intro' | 'gender' | 'countdown' | 'tour'>('intro');
   const [count, setCount] = useState(3);
   const [location, setLocation] = useState({ x: -4, z: 0 });
   const [soundOn, setSoundOn] = useState(true);
@@ -550,10 +713,72 @@ export default function LandingPage() {
 
   return <div className="tour-page">
     <style>{CSS}</style>
-    {phase !== 'intro' && <div className="tour-canvas"><Canvas shadows dpr={[1, 1.5]} camera={{ position: [-9, 5, 11], fov: 55 }} gl={{ antialias: false, powerPreference: 'high-performance' }}><Suspense fallback={null}><City position={position} near={active} /><Movement position={position} keys={keys} onMove={(x, z) => setLocation((old) => Math.abs(old.x - x) > 0.05 || Math.abs(old.z - z) > 0.05 ? { x, z } : old)} /></Suspense></Canvas></div>}
+    {(phase === 'countdown' || phase === 'tour') && <div className="tour-canvas"><Canvas shadows dpr={[1, 1.5]} camera={{ position: [-9, 5, 11], fov: 55 }} gl={{ antialias: false, powerPreference: 'high-performance' }}><Suspense fallback={null}><City position={position} near={active} gender={gender === 'woman' ? 'woman' : 'man'} /><Movement position={position} keys={keys} onMove={(x, z) => setLocation((old) => Math.abs(old.x - x) > 0.05 || Math.abs(old.z - z) > 0.05 ? { x, z } : old)} /></Suspense></Canvas></div>}
     <header className="tour-header"><div className="tour-brand"><i /> MARSHOUT <span>VICE CITY / WORLD 01</span></div><span className="tour-live">● &nbsp; ONLINE</span></header>
-    {phase === 'intro' && <main className="tour-intro"><div className="tour-intro-copy"><div className="tour-eyebrow">MARSHOUT / VICE CITY <span>✦</span></div><h1>Take a <em>tour.</em></h1><p className="tour-lead">See which door gets you a travel flyer and which one gets you to a new destination.</p><button className="tour-start" aria-label="Take a tour" onClick={() => { setCount(3); setPhase('countdown'); }}><span className="tour-play">▶</span><span>TAKE A TOUR</span></button><p className="tour-hint">Walk the boulevard. Three doors are waiting.</p></div><div className="tour-hero" aria-hidden="true"><div className="tour-sun" /><div className="tour-skyline"><i /><i /><i /><i /><i /><i /><i /><i /></div><div className="tour-palm">✳</div><div className="tour-hero-caption">VICE CITY <span>BOARDING LATE</span></div></div></main>}
-    {phase !== 'intro' && <><div className="tour-topline"><span>VICE CITY <b>/</b> MARSHOUT BOULEVARD</span><span>FOLLOW THE GOLD · CHOOSE A DOOR</span></div>{phase === 'tour' && <><div className="tour-mission"><small>YOU'RE ON THE BOULEVARD</small><strong>Where are you headed?</strong><p>Walk up to a marked entrance. The city will tell you when you're close.</p></div><div className="tour-controls">
+    {phase === 'intro' && <main className="tour-intro"><div className="tour-intro-copy"><div className="tour-eyebrow">MARSHOUT / VICE CITY <span>✦</span></div><h1>Take a <em>tour.</em></h1><p className="tour-lead">See which door gets you a travel flyer and which one gets you to a new destination.</p><button className="tour-start" aria-label="Take a tour" onClick={() => setPhase('gender')}><span className="tour-play">▶</span><span>TAKE A TOUR</span></button><p className="tour-hint">Walk the boulevard. Three doors are waiting.</p></div><div className="tour-hero" aria-hidden="true"><div className="tour-sun" /><div className="tour-skyline"><i /><i /><i /><i /><i /><i /><i /><i /></div><div className="tour-palm">✳</div><div className="tour-hero-caption">VICE CITY <span>BOARDING LATE</span></div></div></main>}
+
+    {phase === 'gender' && (
+      <main className="tour-gender">
+        <div className="tour-gender-card">
+          <div className="tour-eyebrow">MARSHOUT / PLAYER SETUP <span>✦</span></div>
+          <h2>Choose your <em>character.</em></h2>
+          <p>This character stays with you through the trip.</p>
+
+          <div className="tour-gender-options">
+            <button
+              type="button"
+              className="tour-gender-option"
+              onClick={() => {
+                setGender('man');
+                position.current.copy(START);
+                setLocation({ x: -4, z: 0 });
+                setCount(3);
+                setPhase('countdown');
+              }}
+            >
+              <span className="gender-figure gender-man" aria-hidden="true">
+                <i className="gender-head" />
+                <i className="gender-body" />
+                <i className="gender-legs" />
+              </span>
+              <span className="gender-copy">
+                <small>01 / CHARACTER</small>
+                <strong>MALE</strong>
+                <b>SELECT →</b>
+              </span>
+            </button>
+
+            <button
+              type="button"
+              className="tour-gender-option"
+              onClick={() => {
+                setGender('woman');
+                position.current.copy(START);
+                setLocation({ x: -4, z: 0 });
+                setCount(3);
+                setPhase('countdown');
+              }}
+            >
+              <span className="gender-figure gender-woman" aria-hidden="true">
+                <i className="gender-hair-back" />
+                <i className="gender-head" />
+                <i className="gender-hair-side left" />
+                <i className="gender-hair-side right" />
+                <i className="gender-body" />
+                <i className="gender-legs" />
+              </span>
+              <span className="gender-copy">
+                <small>02 / CHARACTER</small>
+                <strong>FEMALE</strong>
+                <b>SELECT →</b>
+              </span>
+            </button>
+          </div>
+        </div>
+      </main>
+    )}
+
+    {(phase === 'countdown' || phase === 'tour') && <><div className="tour-topline"><span>VICE CITY <b>/</b> MARSHOUT BOULEVARD</span><span>FOLLOW THE GOLD · CHOOSE A DOOR</span></div>{phase === 'tour' && <><div className="tour-mission"><small>YOU'RE ON THE BOULEVARD</small><strong>Where are you headed?</strong><p>Walk up to a marked entrance. The city will tell you when you're close.</p></div><div className="tour-controls">
       <span className="control-block"><b className="control-label">MOVE</b><span className="arrow-pad"><kbd className="key up">↑</kbd><kbd className="key left">←</kbd><kbd className="key down">↓</kbd><kbd className="key right">→</kbd></span></span>
       <span className="control-block"><kbd className="key">E</kbd><b className="control-label">ENTER</b></span>
     
@@ -584,6 +809,22 @@ const CSS = `
 .tour-lead{font-size:clamp(18px,1.7vw,25px);font-weight:720;line-height:1.38;max-width:560px;color:#17385e;margin:0;text-wrap:balance}
 .tour-start{margin-top:36px;border:0;background:var(--navy);color:white;padding:0 27px 0 8px;height:62px;display:inline-flex;align-items:center;gap:18px;font-weight:950;font-size:11px;letter-spacing:.2em;cursor:pointer;box-shadow:0 16px 35px rgba(7,26,56,.16);transition:transform .2s,box-shadow .2s}.tour-start:hover{transform:translateY(-3px);box-shadow:0 22px 44px rgba(7,26,56,.22)}.tour-play{width:46px;height:46px;border-radius:50%;display:grid;place-items:center;background:var(--gold);color:var(--navy);font-size:13px;padding-left:2px}.tour-hint{font-size:9px;letter-spacing:.14em;color:rgba(7,26,56,.38);margin-top:22px;font-weight:800;text-transform:uppercase}
 .tour-hero{position:relative;overflow:hidden;min-height:100svh;background:linear-gradient(#0b274b 0%,#12365f 45%,#d3a34f 72%,#071a38 72%)}.tour-sun{position:absolute;width:25vw;height:25vw;min-width:260px;min-height:260px;border-radius:50%;left:17%;top:20%;background:#f7f3e9;box-shadow:0 0 100px rgba(245,239,222,.3)}.tour-skyline{position:absolute;bottom:12%;left:-4%;width:110%;height:51%;display:flex;align-items:end;gap:1.3%;filter:drop-shadow(0 0 18px rgba(4,15,31,.4))}.tour-skyline i{display:block;background:repeating-linear-gradient(0deg,transparent 0 16px,rgba(211,163,79,.32) 17px 21px,transparent 22px 29px),#081a35;width:14%;height:65%;box-shadow:inset 4px 0 #15365d}.tour-skyline i:nth-child(2){height:90%}.tour-skyline i:nth-child(3){height:50%}.tour-skyline i:nth-child(4){height:100%}.tour-skyline i:nth-child(5){height:75%}.tour-skyline i:nth-child(6){height:95%}.tour-skyline i:nth-child(7){height:58%}.tour-skyline i:nth-child(8){height:77%}.tour-palm{position:absolute;right:6%;top:7%;font-size:clamp(180px,29vw,420px);color:#06162d;transform:rotate(-15deg);opacity:.88}.tour-hero-caption{position:absolute;bottom:16%;right:9%;font-size:clamp(32px,4.8vw,76px);font-weight:950;line-height:.86;letter-spacing:-.075em;text-align:right;color:white;text-shadow:0 8px 28px #031024}.tour-hero-caption span{display:block;color:#e1b966;font-size:.54em;letter-spacing:.02em;margin-top:10px}
+
+.tour-gender{position:relative;z-index:4;min-height:100svh;display:grid;place-items:center;padding:110px 24px 70px;background:radial-gradient(circle at 50% 18%,#173d69 0,#0b274b 34%,#071a38 72%);color:var(--white)}
+.tour-gender:before{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);background-size:54px 54px;mask-image:linear-gradient(to bottom,#000,transparent 92%)}
+.tour-gender-card{position:relative;width:min(980px,100%);text-align:center}.tour-gender .tour-eyebrow{justify-content:center;color:rgba(245,242,235,.55)}
+.tour-gender h2{margin:18px 0 8px;font-size:clamp(45px,6vw,82px);line-height:.92;letter-spacing:-.065em;text-transform:uppercase}.tour-gender h2 em{font-family:Georgia,serif;font-weight:400;text-transform:none;color:var(--gold)}
+.tour-gender-card>p{margin:0 auto 32px;color:rgba(245,242,235,.58);font-size:13px;font-weight:700}
+.tour-gender-options{display:grid;grid-template-columns:1fr 1fr;gap:16px;max-width:760px;margin:0 auto}
+.tour-gender-option{position:relative;min-height:340px;overflow:hidden;border:1px solid rgba(255,255,255,.13);background:linear-gradient(155deg,rgba(255,255,255,.08),rgba(255,255,255,.025));color:white;cursor:pointer;text-align:left;padding:0;transition:transform .2s,border-color .2s,background .2s;box-shadow:0 24px 70px rgba(0,0,0,.18)}
+.tour-gender-option:hover{transform:translateY(-5px);border-color:rgba(211,163,79,.75);background:linear-gradient(155deg,rgba(255,255,255,.11),rgba(211,163,79,.055))}
+.gender-copy{position:absolute;left:22px;right:22px;bottom:20px;z-index:3;display:grid;grid-template-columns:1fr auto;align-items:end}.gender-copy small{grid-column:1/-1;color:var(--gold);font-size:8px;font-weight:950;letter-spacing:.19em;margin-bottom:5px}.gender-copy strong{font-size:29px;letter-spacing:-.04em}.gender-copy b{font-size:8px;letter-spacing:.16em;color:rgba(255,255,255,.62);padding-bottom:5px}
+.gender-figure{position:absolute;left:50%;top:25px;width:160px;height:235px;transform:translateX(-50%);filter:drop-shadow(0 22px 20px rgba(0,0,0,.22))}
+.gender-figure i{position:absolute;display:block}.gender-head{left:54px;top:10px;width:52px;height:55px;border-radius:8px;background:#b47a52}.gender-body{left:37px;top:68px;width:86px;height:92px;border-radius:9px 9px 4px 4px;background:linear-gradient(90deg,#0b274b 0 28%,#f5f2eb 28% 72%,#0b274b 72%)}.gender-legs{left:43px;top:158px;width:74px;height:77px;background:linear-gradient(90deg,#071a38 0 44%,transparent 44% 56%,#071a38 56%);border-radius:0 0 7px 7px}
+.gender-man .gender-head:before{content:"";position:absolute;left:0;right:0;top:-7px;height:14px;border-radius:6px 6px 2px 2px;background:#241b16}
+.gender-woman .gender-head{background:#a96f52}.gender-woman .gender-body{left:42px;width:76px;background:linear-gradient(90deg,#0b274b 0 25%,#f5f2eb 25% 75%,#0b274b 75%)}.gender-woman .gender-legs{left:46px;width:68px;background:linear-gradient(90deg,#17223a 0 44%,transparent 44% 56%,#17223a 56%)}
+.gender-hair-back{left:48px;top:5px;width:64px;height:79px;border-radius:10px;background:#241914}.gender-hair-side{top:28px;width:11px;height:63px;background:#241914;border-radius:4px}.gender-hair-side.left{left:47px}.gender-hair-side.right{right:47px}
+
 .tour-canvas{position:absolute;inset:0}.tour-topline{position:absolute;z-index:5;top:92px;left:clamp(22px,5vw,78px);right:clamp(22px,5vw,78px);display:flex;justify-content:space-between;font-size:9px;font-weight:900;letter-spacing:.2em;color:#f5f2eb}.tour-topline b{color:var(--gold);padding:0 8px}
 .tour-mission{position:absolute;z-index:5;top:132px;left:clamp(22px,5vw,78px);padding:18px 21px;background:rgba(7,26,56,.91);border-left:3px solid var(--gold);box-shadow:0 16px 45px rgba(0,0,0,.24);max-width:360px;backdrop-filter:blur(12px)}.tour-mission small{font-size:8px;color:var(--gold);font-weight:950;letter-spacing:.22em}.tour-mission strong{display:block;font-size:27px;margin:7px 0 3px;letter-spacing:-.04em}.tour-mission p{color:rgba(245,242,235,.65);font-size:11px;line-height:1.55;margin:0}
 .tour-controls{position:absolute;z-index:5;right:clamp(22px,5vw,78px);bottom:68px;display:flex;gap:15px;color:white;font-size:9px;font-weight:800;letter-spacing:.1em;background:rgba(7,26,56,.9);padding:14px 16px;border:1px solid rgba(211,163,79,.25);backdrop-filter:blur(10px)}.tour-controls span{white-space:nowrap}kbd{font:inherit;border:1px solid rgba(255,255,255,.34);border-radius:2px;padding:4px 6px;margin-right:3px;color:var(--gold)}
@@ -591,5 +832,5 @@ const CSS = `
 .city-sign{font-family:Inter,system-ui,sans-serif;font-size:21px;font-weight:1000;letter-spacing:.11em;text-align:center;white-space:nowrap;text-shadow:0 2px 14px #06162d}.city-door-label{font-family:Inter,system-ui,sans-serif;min-width:245px;max-width:350px;padding:13px 16px;color:white;text-align:center;background:rgba(7,26,56,.93);border:1px solid rgba(211,163,79,.42);box-shadow:0 12px 32px rgba(0,0,0,.28);transition:transform .2s,border-color .2s;backdrop-filter:blur(8px)}.city-door-label.is-near{transform:scale(1.13);border-color:var(--gold)}.city-door-label small,.city-door-label span{display:block;font-size:8px;color:var(--gold);font-weight:950;letter-spacing:.17em}.city-door-label strong{display:block;font-size:16px;line-height:1.25;margin:6px 0}
 .tour-countdown{position:absolute;z-index:10;inset:0;background:rgba(7,26,56,.96);display:flex;align-items:center;justify-content:center;flex-direction:column}.tour-countdown:before{content:"";position:absolute;width:min(62vw,760px);height:min(62vw,760px);border:1px solid rgba(211,163,79,.18);border-radius:50%}.tour-countdown p,.tour-countdown span{position:relative;font-size:10px;font-weight:950;letter-spacing:.29em;color:var(--gold)}.tour-countdown strong{position:relative;font-size:clamp(150px,28vw,330px);line-height:.9;color:#f7f4ed;font-weight:950;text-shadow:0 0 70px rgba(211,163,79,.3);animation:count .8s cubic-bezier(.2,.8,.2,1)}.tour-countdown span{color:white}@keyframes count{from{transform:scale(1.45);opacity:0}to{transform:scale(1);opacity:1}}
 .tour-header-actions{display:flex;align-items:center;gap:16px}.sound-toggle{height:34px;padding:0 11px;border:1px solid rgba(211,163,79,.35);background:rgba(7,26,56,.65);color:#f5f2eb;display:flex;align-items:center;gap:8px;cursor:pointer;backdrop-filter:blur(8px)}.sound-toggle span{width:17px;height:17px;border-radius:50%;display:grid;place-items:center;background:#d3a34f;color:#071a38;font-size:10px;font-weight:1000}.sound-toggle i{font-style:normal;font-size:7px;font-weight:950;letter-spacing:.14em}.sound-toggle:not(.is-on){opacity:.58}.control-block{display:flex;align-items:center;gap:7px}.speaker-control{border:0;background:transparent;color:#f5f2eb;display:flex;align-items:center;gap:6px;padding:0;cursor:pointer}.speaker-icon{font-size:16px;line-height:1;filter:saturate(.7)}.sound-control{gap:6px}.control-label{font-size:8px;letter-spacing:.13em;color:#f5f2eb}.key{min-width:29px;height:28px;padding:0 7px!important;display:inline-grid;place-items:center;border:1px solid rgba(255,255,255,.55)!important;border-bottom:3px solid rgba(211,163,79,.75)!important;border-radius:4px!important;background:linear-gradient(#f7f5ef,#dcd8cf)!important;color:#071a38!important;box-shadow:0 3px 8px rgba(0,0,0,.24);font-size:10px!important;font-weight:950!important;margin:0!important}.key.wide{min-width:54px}.arrow-pad{width:89px;height:58px;display:grid;grid-template-columns:repeat(3,29px);grid-template-rows:repeat(2,28px);gap:2px}.arrow-pad .up{grid-column:2;grid-row:1}.arrow-pad .left{grid-column:1;grid-row:2}.arrow-pad .down{grid-column:2;grid-row:2}.arrow-pad .right{grid-column:3;grid-row:2}.key-group{display:flex!important;align-items:center;gap:3px}.key-group b{margin-left:6px;font-size:9px;letter-spacing:.12em}.door-enter-key{margin-top:8px!important}.door-enter-key b{display:inline-grid;place-items:center;margin-right:7px;padding:4px 7px;border:1px solid rgba(255,255,255,.55);border-bottom-width:2px;border-radius:3px;background:#f5f2eb;color:#071a38;font-size:8px;letter-spacing:.08em}.tour-touch{display:none}
-@media(max-width:900px){.tour-intro{grid-template-columns:1fr;background:#fbfaf7}.tour-intro-copy{padding:130px 28px 70px}.tour-hero{position:absolute;inset:0;opacity:.1}.tour-intro h1{font-size:clamp(74px,17vw,130px)}.tour-controls{display:none}.tour-touch{position:absolute;z-index:8;bottom:85px;right:20px;display:grid;grid-template-columns:repeat(2,55px);gap:6px;touch-action:none}.tour-touch button{height:52px;border:1px solid rgba(211,163,79,.55);background:rgba(7,26,56,.92);color:white;font-size:24px}.tour-topline span:last-child{display:none}.tour-brand span{display:none}.tour-mission{top:122px;max-width:275px}.tour-enter{bottom:160px;max-width:90vw;white-space:normal}.tour-footer{font-size:8px}}
+@media(max-width:900px){.tour-gender{padding-top:95px}.tour-gender-options{grid-template-columns:1fr 1fr;gap:9px}.tour-gender-option{min-height:300px}.gender-figure{transform:translateX(-50%) scale(.88);transform-origin:top center}.gender-copy{left:14px;right:14px}.gender-copy strong{font-size:22px}.gender-copy b{display:none}.tour-intro{grid-template-columns:1fr;background:#fbfaf7}.tour-intro-copy{padding:130px 28px 70px}.tour-hero{position:absolute;inset:0;opacity:.1}.tour-intro h1{font-size:clamp(74px,17vw,130px)}.tour-controls{display:none}.tour-touch{position:absolute;z-index:8;bottom:85px;right:20px;display:grid;grid-template-columns:repeat(2,55px);gap:6px;touch-action:none}.tour-touch button{height:52px;border:1px solid rgba(211,163,79,.55);background:rgba(7,26,56,.92);color:white;font-size:24px}.tour-topline span:last-child{display:none}.tour-brand span{display:none}.tour-mission{top:122px;max-width:275px}.tour-enter{bottom:160px;max-width:90vw;white-space:normal}.tour-footer{font-size:8px}}
 `;
