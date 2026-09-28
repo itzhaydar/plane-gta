@@ -1,8 +1,7 @@
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { Html, RoundedBox, useTexture, OrbitControls, useGLTF, useAnimations } from '@react-three/drei';
+import { Html, RoundedBox, useTexture, OrbitControls } from '@react-three/drei';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
-import { SkeletonUtils } from 'three-stdlib';
 import { useNavigate } from 'react-router-dom';
 import { usePlaneStore, type Face } from '../store';
 
@@ -34,99 +33,6 @@ function FlagSkin({
   );
 }
 
-
-function Tree({
-  x,
-  z,
-  s = 1,
-}: {
-  x: number;
-  z: number;
-  s?: number;
-}) {
-  return (
-    <group
-      position={[x, 0, z]}
-      scale={s}
-    >
-      <mesh
-        position={[0, 0.45, 0]}
-      >
-        <cylinderGeometry
-          args={[0.06, 0.08, 0.9, 6]}
-        />
-
-        <meshStandardMaterial
-          color="#6b4a2e"
-          roughness={0.9}
-        />
-      </mesh>
-
-      <mesh
-        position={[0, 1.15, 0]}
-      >
-        <coneGeometry
-          args={[0.55, 1.1, 6]}
-        />
-
-        <meshStandardMaterial
-          color="#3d7a4a"
-          roughness={0.9}
-        />
-      </mesh>
-    </group>
-  );
-}
-
-
-function Seat({
-  position,
-}: {
-  position: [number, number, number];
-}) {
-  return (
-    <group position={position}>
-      <RoundedBox
-        args={[0.30, 0.08, 0.27]}
-        radius={0.035}
-        smoothness={3}
-        position={[0, -0.04, 0]}
-        castShadow
-      >
-        <meshStandardMaterial
-          color="#20252a"
-          roughness={0.82}
-        />
-      </RoundedBox>
-
-      <RoundedBox
-        args={[0.13, 0.36, 0.27]}
-        radius={0.035}
-        smoothness={3}
-        position={[-0.08, 0.14, 0]}
-        castShadow
-      >
-        <meshStandardMaterial
-          color="#252a30"
-          roughness={0.82}
-        />
-      </RoundedBox>
-
-      <RoundedBox
-        args={[0.12, 0.09, 0.22]}
-        radius={0.03}
-        smoothness={3}
-        position={[-0.09, 0.36, 0]}
-        castShadow
-      >
-        <meshStandardMaterial
-          color="#292e35"
-          roughness={0.8}
-        />
-      </RoundedBox>
-    </group>
-  );
-}
 
 // ============================================================
 // COCKPIT / CANOPY
