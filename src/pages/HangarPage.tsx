@@ -71,53 +71,6 @@ function FlagSkin({
 }
 
 // ============================================================
-// SIMPLE TREE
-// ============================================================
-
-function Tree({
-  x,
-  z,
-  s = 1,
-}: {
-  x: number;
-  z: number;
-  s?: number;
-}) {
-  return (
-    <group
-      position={[x, 0, z]}
-      scale={s}
-    >
-      <mesh
-        position={[0, 0.45, 0]}
-      >
-        <cylinderGeometry
-          args={[0.06, 0.08, 0.9, 6]}
-        />
-
-        <meshStandardMaterial
-          color="#6b4a2e"
-          roughness={0.9}
-        />
-      </mesh>
-
-      <mesh
-        position={[0, 1.15, 0]}
-      >
-        <coneGeometry
-          args={[0.55, 1.1, 6]}
-        />
-
-        <meshStandardMaterial
-          color="#3d7a4a"
-          roughness={0.9}
-        />
-      </mesh>
-    </group>
-  );
-}
-
-// ============================================================
 // ROAD / HANGAR ENVIRONMENT
 // ============================================================
 
