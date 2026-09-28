@@ -910,6 +910,7 @@ export default function HangarPage() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [muted, setMuted] = useState(true);
   const [introOpen, setIntroOpen] = useState(true);
+  const [paintHelpOpen, setPaintHelpOpen] = useState(false);
   const [scores, setScores] = useState<Record<'flag-left' | 'flag-right', number>>({
     'flag-left': 0,
     'flag-right': 0,
@@ -975,6 +976,27 @@ export default function HangarPage() {
     <main className="launch-bay">
       <style>{LAUNCH_BAY_CSS}</style>
 
+      {paintHelpOpen && (
+        <div className="paint-help-overlay" role="dialog" aria-modal="true" aria-label="How to paint">
+          <div className="paint-help-card">
+            <button
+              type="button"
+              className="paint-help-close"
+              onClick={() => setPaintHelpOpen(false)}
+              aria-label="Close how to paint"
+            >
+              ×
+            </button>
+            <span className="paint-help-kicker">HOW TO PAINT</span>
+            <h2>Paint faster. ✏️</h2>
+            <p>
+              Tap <strong>Draw ✏️</strong>, and increase the size of the draw paint
+              so you paint faster.
+            </p>
+          </div>
+        </div>
+      )}
+
       {introOpen && (
         <div className="mission-intro">
           <div className="mission-card">
@@ -1012,6 +1034,14 @@ export default function HangarPage() {
           </div>
         </div>
       )}
+
+      <button
+        type="button"
+        className="paint-help-top"
+        onClick={() => setPaintHelpOpen(true)}
+      >
+        HOW TO PAINT <span>✏️</span>
+      </button>
 
       <header className="hangar-topbar">
         <button
@@ -1850,4 +1880,103 @@ const LAUNCH_BAY_CSS = `
     transition: none;
   }
 }
+
+.paint-help-top {
+  position: fixed;
+  top: 10px;
+  left: 50%;
+  z-index: 95;
+  transform: translateX(-50%);
+  height: 34px;
+  padding: 0 14px;
+  border: 1px solid rgba(211,162,82,.65);
+  border-radius: 999px;
+  background: #071a38;
+  color: #fff;
+  box-shadow: 0 9px 24px rgba(7,26,56,.18);
+  cursor: pointer;
+  font-size: 8px;
+  font-weight: 950;
+  letter-spacing: .12em;
+  white-space: nowrap;
+}
+
+.paint-help-top span {
+  margin-left: 5px;
+}
+
+.paint-help-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 140;
+  padding: 20px;
+  display: grid;
+  place-items: center;
+  background: rgba(5,12,22,.72);
+  backdrop-filter: blur(9px);
+}
+
+.paint-help-card {
+  position: relative;
+  width: min(430px, 100%);
+  padding: 30px 30px 28px;
+  border: 1px solid rgba(211,162,82,.5);
+  border-radius: 10px;
+  background: #f3eee4;
+  color: #071a38;
+  box-shadow: 0 32px 85px rgba(0,0,0,.32);
+}
+
+.paint-help-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 34px;
+  height: 34px;
+  border: 1px solid rgba(7,26,56,.12);
+  border-radius: 50%;
+  background: #fff;
+  color: #071a38;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  font-size: 22px;
+  line-height: 1;
+}
+
+.paint-help-kicker {
+  color: #b77e38;
+  font-size: 7px;
+  font-weight: 950;
+  letter-spacing: .18em;
+}
+
+.paint-help-card h2 {
+  margin: 10px 42px 10px 0;
+  font-size: clamp(28px, 5vw, 42px);
+  line-height: .95;
+  letter-spacing: -.05em;
+  text-transform: uppercase;
+}
+
+.paint-help-card p {
+  margin: 0;
+  max-width: 340px;
+  color: rgba(7,26,56,.7);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.paint-help-card strong {
+  color: #b77e38;
+}
+
+@media (max-width: 760px) {
+  .paint-help-top {
+    top: 7px;
+    height: 30px;
+    font-size: 7px;
+  }
+}
+
 `;
