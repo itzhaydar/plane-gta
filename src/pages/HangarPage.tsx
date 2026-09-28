@@ -1143,6 +1143,8 @@ export default function HangarPage() {
             </button>
           </div>
 
+          <div className="preview-spacer" aria-hidden="true" />
+
           <div className="launch-bay-viewport">
             <Canvas
               shadows
@@ -1385,7 +1387,7 @@ const LAUNCH_BAY_CSS = `
   margin: 0 auto;
   padding: 18px clamp(18px, 3vw, 46px) 26px;
   display: grid;
-  grid-template-columns: minmax(470px, .95fr) minmax(540px, 1.05fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 18px;
 }
 
@@ -1393,8 +1395,13 @@ const LAUNCH_BAY_CSS = `
 .launch-bay-preview {
   min-width: 0;
   min-height: 0;
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-rows: 68px 48px minmax(0, 1fr);
+  gap: 10px;
+}
+
+.launch-bay-preview {
+  grid-template-rows: 68px 48px minmax(0, 1fr);
 }
 
 .launch-bay-editor-head,
@@ -1407,7 +1414,6 @@ const LAUNCH_BAY_CSS = `
   align-items: center;
   justify-content: space-between;
   gap: 15px;
-  margin-bottom: 10px;
 }
 
 .panel-kicker {
@@ -1469,7 +1475,7 @@ const LAUNCH_BAY_CSS = `
 
 .draw-notice {
   min-height: 48px;
-  margin-bottom: 10px;
+  margin: 0;
   padding: 8px 12px;
   border: 1px solid rgba(197,139,60,.3);
   border-radius: 7px;
@@ -1492,7 +1498,8 @@ const LAUNCH_BAY_CSS = `
 
 .launch-bay-editor-body,
 .launch-bay-viewport {
-  flex: 1 1 auto;
+  width: 100%;
+  height: 100%;
   min-height: 0;
   overflow: hidden;
   border: 1px solid rgba(7,26,56,.1);
@@ -1504,13 +1511,27 @@ const LAUNCH_BAY_CSS = `
 .launch-bay-editor-body {
   display: flex;
   flex-direction: column;
+  overflow: auto;
 }
 
 .launch-bay-editor-body > * {
-  flex: 1 1 auto;
+  flex: 1 0 100%;
   width: 100%;
-  min-height: 0;
+  min-width: 0;
+  min-height: 620px;
   height: 100%;
+}
+
+/* Keep the Unlayer image-editor controls visible instead of clipping
+   the lower Draw/Text/Shapes/Sticker/Frame controls. */
+.launch-bay-editor-body > div {
+  overflow: visible !important;
+}
+
+.preview-spacer {
+  width: 100%;
+  height: 48px;
+  visibility: hidden;
 }
 
 .launch-bay-preview-top {
@@ -1518,7 +1539,6 @@ const LAUNCH_BAY_CSS = `
   align-items: center;
   justify-content: flex-end;
   gap: 11px;
-  margin-bottom: 10px;
 }
 
 .preview-status {
@@ -1738,7 +1758,7 @@ const LAUNCH_BAY_CSS = `
   font-size: 18px;
 }
 
-@media (max-width: 1050px) {
+@media (max-width: 820px) {
   .launch-bay {
     overflow: auto;
   }
@@ -1749,12 +1769,22 @@ const LAUNCH_BAY_CSS = `
     grid-template-columns: 1fr;
   }
 
+  .launch-bay-editor,
+  .launch-bay-preview {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .preview-spacer {
+    display: none;
+  }
+
   .launch-bay-editor-body {
-    min-height: 540px;
+    min-height: 620px;
   }
 
   .launch-bay-viewport {
-    min-height: 560px;
+    min-height: 620px;
   }
 }
 
