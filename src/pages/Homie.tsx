@@ -294,9 +294,32 @@ export default function Homie() {
             <p className="headerDeck">A sun-soaked city flyer studio for your next door out.</p>
           </div>
 
-          <div className="headerMeta">
-            <span>FLYER STUDIO</span>
-            <b>1080 × 1350</b>
+          <div className="headerActions">
+            <button
+              type="button"
+              className="topDoor"
+              onClick={() => navigate('/')}
+              aria-label="Open another door"
+            >
+              <span className="topDoorIcon" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                  <path d="M3 11.2 12 4l9 7.2" />
+                  <path d="M5.5 10.2V21h13V10.2" />
+                  <path d="M9.5 21v-6.7h5V21" />
+                  <path d="M14.5 14.3h2.2" />
+                </svg>
+              </span>
+              <span className="topDoorCopy">
+                <small>BACK TO THE BOULEVARD</small>
+                <strong>OPEN ANOTHER DOOR</strong>
+              </span>
+              <b className="topDoorArrow">↗</b>
+            </button>
+
+            <div className="headerMeta">
+              <span>FLYER STUDIO</span>
+              <b>1080 × 1350</b>
+            </div>
           </div>
         </header>
 
@@ -516,9 +539,7 @@ export default function Homie() {
             </div>
 
             <div className="actions">
-              <button type="button" className="anotherDoor" onClick={() => navigate('/')}>
-                <span>←</span><b>OPEN ANOTHER DOOR</b>
-              </button>
+
               <button
                 type="button"
                 className="editAgain"
@@ -649,6 +670,81 @@ const CSS = `
   font-size: clamp(30px, 3vw, 52px);
   line-height: .98;
   letter-spacing: -.055em;
+}
+
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.topDoor {
+  min-height: 58px;
+  padding: 7px 12px 7px 8px;
+  border: 1px solid rgba(192, 139, 67, .52);
+  border-radius: 9px;
+  background: #071a38;
+  color: #ffffff;
+  display: grid;
+  grid-template-columns: 43px auto 18px;
+  align-items: center;
+  gap: 11px;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: 0 12px 28px rgba(7, 26, 56, .16);
+  transition: transform 150ms ease, border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.topDoor:hover {
+  transform: translateY(-2px);
+  border-color: #d3a252;
+  box-shadow: 0 16px 34px rgba(7, 26, 56, .22);
+}
+
+.topDoorIcon {
+  width: 43px;
+  height: 43px;
+  border-radius: 7px;
+  background: #d3a252;
+  color: #071a38;
+  display: grid;
+  place-items: center;
+}
+
+.topDoorIcon svg {
+  width: 24px;
+  height: 24px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.topDoorCopy small,
+.topDoorCopy strong {
+  display: block;
+}
+
+.topDoorCopy small {
+  margin-bottom: 3px;
+  color: rgba(255,255,255,.48);
+  font-size: 6px;
+  font-weight: 950;
+  letter-spacing: .13em;
+}
+
+.topDoorCopy strong {
+  color: #ffffff;
+  font-size: 9px;
+  font-weight: 950;
+  letter-spacing: .1em;
+}
+
+.topDoorArrow {
+  color: #d3a252;
+  font-size: 17px;
 }
 
 .headerMeta {
@@ -1370,6 +1466,16 @@ const CSS = `
   .header {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .headerActions {
+    width: 100%;
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .topDoor {
+    width: 100%;
   }
 
   .headerMeta {
