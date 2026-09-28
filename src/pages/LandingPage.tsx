@@ -64,7 +64,7 @@ function Building({ destination, index, near }: { destination: Destination; inde
         <div className={`city-door-label ${near ? 'is-near' : ''}`}>
           <small>0{index + 1} / DESTINATION</small>
           <strong>{destination.title}</strong>
-          {near && <span>ENTER / STEP THROUGH</span>}
+          {near && <span className="door-enter-key"><b>ENTER</b> STEP INSIDE</span>}
         </div>
       </Html>
       <pointLight position={[0, 3, 3.8]} intensity={near ? 12 : 6} distance={8} color={color} />
@@ -156,7 +156,7 @@ function Car({ x, z, speed, direction, kind = 0 }: { x: number; z: number; speed
 
 function Player({ position }: { position: MutableRefObject<THREE.Vector3> }) {
   const group = useRef<THREE.Group>(null);
-  const torso = useRef<THREE.Group>(null);
+  const body = useRef<THREE.Group>(null);
   const leftArm = useRef<THREE.Group>(null);
   const rightArm = useRef<THREE.Group>(null);
   const leftLeg = useRef<THREE.Group>(null);
@@ -165,52 +165,154 @@ function Player({ position }: { position: MutableRefObject<THREE.Vector3> }) {
 
   useFrame(({ clock }) => {
     if (!group.current) return;
-    const moving = last.current.distanceToSquared(position.current) > 0.00001;
+    const moved = last.current.distanceToSquared(position.current) > 0.000008;
     const dx = position.current.x - last.current.x;
     const dz = position.current.z - last.current.z;
+
     group.current.position.copy(position.current);
-    if (moving) group.current.rotation.y = Math.atan2(dx, dz);
-    const t = clock.elapsedTime * 9;
-    const swing = moving ? Math.sin(t) * 0.62 : 0;
-    const bob = moving ? Math.abs(Math.sin(t)) * 0.035 : Math.sin(clock.elapsedTime * 2) * 0.008;
-    if (torso.current) torso.current.position.y = bob;
+    if (moved) group.current.rotation.y = Math.atan2(dx, dz);
+
+    const t = clock.elapsedTime * 8.5;
+    const swing = moved ? Math.sin(t) * 0.58 : 0;
+    const idle = moved ? Math.abs(Math.sin(t)) * 0.028 : Math.sin(clock.elapsedTime * 1.7) * 0.008;
+
+    if (body.current) body.current.position.y = idle;
     if (leftArm.current) leftArm.current.rotation.x = swing;
     if (rightArm.current) rightArm.current.rotation.x = -swing;
-    if (leftLeg.current) leftLeg.current.rotation.x = -swing * 0.72;
-    if (rightLeg.current) rightLeg.current.rotation.x = swing * 0.72;
+    if (leftLeg.current) leftLeg.current.rotation.x = -swing * 0.76;
+    if (rightLeg.current) rightLeg.current.rotation.x = swing * 0.76;
+
     last.current.copy(position.current);
   });
 
-  return <group ref={group} position={START.toArray()} scale={1.04}>
-    <group ref={torso}>
-      {/* layered streetwear torso */}
-      <mesh position={[0, 1.45, 0]} castShadow><capsuleGeometry args={[0.32, 0.72, 8, 16]} /><meshStandardMaterial color="#f2eee5" roughness={0.68} /></mesh>
-      <mesh position={[0, 1.5, -0.19]} castShadow><boxGeometry args={[0.72, 0.78, 0.13]} /><meshStandardMaterial color="#0a2344" roughness={0.5} /></mesh>
-      <mesh position={[0, 1.46, 0.31]}><boxGeometry args={[0.17, 0.035, 0.03]} /><meshStandardMaterial color="#d3a34f" metalness={0.9} roughness={0.18} /></mesh>
-      {/* neck + head */}
-      <mesh position={[0, 1.91, 0]}><cylinderGeometry args={[0.12, 0.14, 0.2, 12]} /><meshStandardMaterial color="#9a6247" /></mesh>
-      <mesh position={[0, 2.18, 0]} castShadow><sphereGeometry args={[0.285, 24, 20]} /><meshStandardMaterial color="#9a6247" roughness={0.82} /></mesh>
-      {/* fade/hair + beard + gold detail */}
-      <mesh position={[0, 2.36, -0.025]} scale={[1.02, 0.52, 1.01]} castShadow><sphereGeometry args={[0.285, 20, 16]} /><meshStandardMaterial color="#101318" roughness={0.92} /></mesh>
-      <mesh position={[0, 2.09, 0.235]} scale={[0.82, 0.5, 0.3]}><sphereGeometry args={[0.24, 16, 12]} /><meshStandardMaterial color="#171515" roughness={1} /></mesh>
-      <mesh position={[0.13, 2.18, 0.272]}><sphereGeometry args={[0.022, 8, 8]} /><meshStandardMaterial color="#d3a34f" metalness={1} /></mesh>
-      {/* chain */}
-      <mesh position={[0, 1.83, 0.305]} rotation={[Math.PI / 2, 0, 0]}><torusGeometry args={[0.17, 0.018, 8, 22, Math.PI]} /><meshStandardMaterial color="#d3a34f" metalness={0.95} roughness={0.16} /></mesh>
+  const skin = '#8c583d';
+  const hair = '#15171b';
+  const shirt = '#eeeae1';
+  const pants = '#10233f';
+  const gold = '#d3a34f';
+
+  return (
+    <group ref={group} position={START.toArray()} scale={1.04}>
+      <group ref={body}>
+        {/* Casual fitted T-shirt torso */}
+        <mesh position={[0, 1.52, 0]} scale={[1.08, 1, 0.72]} castShadow>
+          <capsuleGeometry args={[0.31, 0.68, 10, 18]} />
+          <meshStandardMaterial color={shirt} roughness={0.78} />
+        </mesh>
+
+        {/* subtle collar */}
+        <mesh position={[0, 1.88, 0.245]} rotation={[Math.PI / 2, 0, 0]}>
+          <torusGeometry args={[0.115, 0.018, 8, 20, Math.PI]} />
+          <meshStandardMaterial color="#d9d5cd" roughness={0.8} />
+        </mesh>
+
+        {/* neck */}
+        <mesh position={[0, 1.98, 0]}>
+          <cylinderGeometry args={[0.115, 0.135, 0.22, 16]} />
+          <meshStandardMaterial color={skin} roughness={0.88} />
+        </mesh>
+
+        {/* human head, slightly elongated */}
+        <mesh position={[0, 2.25, 0]} scale={[0.92, 1.08, 0.9]} castShadow>
+          <sphereGeometry args={[0.285, 28, 22]} />
+          <meshStandardMaterial color={skin} roughness={0.9} />
+        </mesh>
+
+        {/* ears */}
+        {[-1, 1].map((side) => (
+          <mesh key={side} position={[side * 0.267, 2.25, 0]}>
+            <sphereGeometry args={[0.052, 12, 10]} />
+            <meshStandardMaterial color={skin} roughness={0.9} />
+          </mesh>
+        ))}
+
+        {/* textured-looking short curls / fade silhouette */}
+        <mesh position={[0, 2.455, -0.018]} scale={[0.95, 0.47, 0.92]} castShadow>
+          <sphereGeometry args={[0.29, 20, 16]} />
+          <meshStandardMaterial color={hair} roughness={1} />
+        </mesh>
+        {[-0.16,-0.08,0,0.08,0.16].map((x, i) => (
+          <mesh key={x} position={[x, 2.55 + (i % 2) * 0.018, 0.015]}>
+            <sphereGeometry args={[0.065, 9, 8]} />
+            <meshStandardMaterial color={hair} roughness={1} />
+          </mesh>
+        ))}
+
+        {/* brows */}
+        {[-0.09,0.09].map((x) => (
+          <mesh key={x} position={[x, 2.315, 0.252]} scale={[1.5,.35,.35]}>
+            <sphereGeometry args={[0.036, 8, 6]} />
+            <meshStandardMaterial color={hair} />
+          </mesh>
+        ))}
+
+        {/* simple eyes - no glasses */}
+        {[-0.09,0.09].map((x) => (
+          <mesh key={x} position={[x, 2.292, 0.269]}>
+            <sphereGeometry args={[0.022, 10, 8]} />
+            <meshStandardMaterial color="#17191c" roughness={0.5} />
+          </mesh>
+        ))}
+
+        {/* nose */}
+        <mesh position={[0, 2.235, 0.286]} scale={[0.6,1.2,0.72]}>
+          <sphereGeometry args={[0.055, 12, 10]} />
+          <meshStandardMaterial color={skin} roughness={0.9} />
+        </mesh>
+
+        {/* neat beard */}
+        <mesh position={[0, 2.135, 0.17]} scale={[0.88,.54,.65]}>
+          <sphereGeometry args={[0.245, 18, 12]} />
+          <meshStandardMaterial color={hair} roughness={1} />
+        </mesh>
+        <mesh position={[0, 2.18, 0.292]} scale={[1.4,.28,.28]}>
+          <sphereGeometry args={[0.075, 12, 8]} />
+          <meshStandardMaterial color="#6e3f31" roughness={0.9} />
+        </mesh>
+
+        {/* restrained gold chain */}
+        <mesh position={[0, 1.88, 0.286]} rotation={[Math.PI / 2, 0, 0]}>
+          <torusGeometry args={[0.16, 0.014, 8, 28, Math.PI]} />
+          <meshStandardMaterial color={gold} metalness={0.95} roughness={0.18} />
+        </mesh>
+      </group>
+
+      {/* arms */}
+      <group ref={leftArm} position={[-0.37, 1.72, 0]}>
+        <mesh position={[0, -0.31, 0]} castShadow><capsuleGeometry args={[0.10, 0.54, 7, 12]} /><meshStandardMaterial color={skin} roughness={0.88} /></mesh>
+        <mesh position={[0, 0.01, 0]} scale={[1.2,.75,1.2]}><capsuleGeometry args={[0.112, 0.23, 6, 10]} /><meshStandardMaterial color={shirt} roughness={0.78} /></mesh>
+        <mesh position={[0, -0.68, 0.02]}><sphereGeometry args={[0.115, 14, 12]} /><meshStandardMaterial color={skin} /></mesh>
+      </group>
+      <group ref={rightArm} position={[0.37, 1.72, 0]}>
+        <mesh position={[0, -0.31, 0]} castShadow><capsuleGeometry args={[0.10, 0.54, 7, 12]} /><meshStandardMaterial color={skin} roughness={0.88} /></mesh>
+        <mesh position={[0, 0.01, 0]} scale={[1.2,.75,1.2]}><capsuleGeometry args={[0.112, 0.23, 6, 10]} /><meshStandardMaterial color={shirt} roughness={0.78} /></mesh>
+        <mesh position={[0, -0.68, 0.02]}><sphereGeometry args={[0.115, 14, 12]} /><meshStandardMaterial color={skin} /></mesh>
+      </group>
+
+      {/* relaxed cargo-style pants + sneakers */}
+      <group ref={leftLeg} position={[-0.16, 1.08, 0]}>
+        <mesh position={[0, -0.46, 0]} scale={[1.08,1,1]} castShadow><capsuleGeometry args={[0.125, 0.70, 7, 12]} /><meshStandardMaterial color={pants} roughness={0.84} /></mesh>
+        <mesh position={[-0.105,-0.42,0.04]}><boxGeometry args={[0.08,.25,.22]} /><meshStandardMaterial color="#162d4e" /></mesh>
+        <mesh position={[0, -0.91, 0.11]}><boxGeometry args={[0.28, 0.16, 0.5]} /><meshStandardMaterial color="#f3f0e8" roughness={0.66} /></mesh>
+        <mesh position={[0,-0.96,0.15]}><boxGeometry args={[0.29,.045,.52]} /><meshStandardMaterial color="#d8d5ce" /></mesh>
+      </group>
+      <group ref={rightLeg} position={[0.16, 1.08, 0]}>
+        <mesh position={[0, -0.46, 0]} scale={[1.08,1,1]} castShadow><capsuleGeometry args={[0.125, 0.70, 7, 12]} /><meshStandardMaterial color={pants} roughness={0.84} /></mesh>
+        <mesh position={[0.105,-0.42,0.04]}><boxGeometry args={[0.08,.25,.22]} /><meshStandardMaterial color="#162d4e" /></mesh>
+        <mesh position={[0, -0.91, 0.11]}><boxGeometry args={[0.28, 0.16, 0.5]} /><meshStandardMaterial color="#f3f0e8" roughness={0.66} /></mesh>
+        <mesh position={[0,-0.96,0.15]}><boxGeometry args={[0.29,.045,.52]} /><meshStandardMaterial color="#d8d5ce" /></mesh>
+      </group>
     </group>
-    <group ref={leftArm} position={[-0.38, 1.7, 0]}><mesh position={[0, -0.36, 0]} castShadow><capsuleGeometry args={[0.105, 0.58, 6, 10]} /><meshStandardMaterial color="#9a6247" /></mesh><mesh position={[0, -0.12, 0]} scale={[1.15, 1.3, 1.15]}><capsuleGeometry args={[0.115, 0.25, 5, 8]} /><meshStandardMaterial color="#f2eee5" /></mesh></group>
-    <group ref={rightArm} position={[0.38, 1.7, 0]}><mesh position={[0, -0.36, 0]} castShadow><capsuleGeometry args={[0.105, 0.58, 6, 10]} /><meshStandardMaterial color="#9a6247" /></mesh><mesh position={[0, -0.12, 0]} scale={[1.15, 1.3, 1.15]}><capsuleGeometry args={[0.115, 0.25, 5, 8]} /><meshStandardMaterial color="#f2eee5" /></mesh></group>
-    <group ref={leftLeg} position={[-0.17, 1.05, 0]}><mesh position={[0, -0.49, 0]} castShadow><capsuleGeometry args={[0.125, 0.75, 6, 10]} /><meshStandardMaterial color="#0b2344" roughness={0.78} /></mesh><mesh position={[0, -0.93, 0.1]}><boxGeometry args={[0.27, 0.15, 0.48]} /><meshStandardMaterial color="#f4f0e8" roughness={0.65} /></mesh></group>
-    <group ref={rightLeg} position={[0.17, 1.05, 0]}><mesh position={[0, -0.49, 0]} castShadow><capsuleGeometry args={[0.125, 0.75, 6, 10]} /><meshStandardMaterial color="#0b2344" roughness={0.78} /></mesh><mesh position={[0, -0.93, 0.1]}><boxGeometry args={[0.27, 0.15, 0.48]} /><meshStandardMaterial color="#f4f0e8" roughness={0.65} /></mesh></group>
-  </group>;
+  );
 }
 
 function City({ position, near }: { position: MutableRefObject<THREE.Vector3>; near: number | null }) {
   const walkers: Array<{x:number;z:number;speed:number;direction:1|-1;look:WalkerLook;phase:number}> = [
-    { x: 5, z: -4.0, speed: 0.7, direction: 1, phase: 0, look: { skin:'#70472f', top:'#f0ede5', bottom:'#172844', hair:'#111317', accent:'#d3a34f' } },
-    { x: 14, z: 4.2, speed: 0.55, direction: -1, phase: 2, look: { skin:'#d5a17e', top:'#b78b3e', bottom:'#f1eee8', hair:'#38251d', accent:'#0b2344' } },
-    { x: 25, z: -4.0, speed: 0.8, direction: 1, phase: 4, look: { skin:'#8b5a42', top:'#17365f', bottom:'#151a25', hair:'#171311', accent:'#d3a34f' } },
-    { x: 40, z: 4.25, speed: 0.62, direction: -1, phase: 1, look: { skin:'#c88767', top:'#f5f1e9', bottom:'#a67b35', hair:'#201914', accent:'#0b2344' } },
-    { x: 33, z: -4.0, speed: 0.48, direction: -1, phase: 3, look: { skin:'#5f3d2c', top:'#d3a34f', bottom:'#0b2344', hair:'#0e1014', accent:'#f4f0e8' } },
+    { x: 5, z: -4.0, speed: 0.7, direction: 1, phase: 0, look: { skin:'#70472f', top:'#e7dfd3', bottom:'#3c4658', hair:'#111317', accent:'#8d6c39' } },
+    { x: 14, z: 4.2, speed: 0.55, direction: -1, phase: 2, look: { skin:'#d5a17e', top:'#8b5f49', bottom:'#d8d1c6', hair:'#38251d', accent:'#192d47' } },
+    { x: 25, z: -4.0, speed: 0.8, direction: 1, phase: 4, look: { skin:'#8b5a42', top:'#466071', bottom:'#242833', hair:'#171311', accent:'#b49a73' } },
+    { x: 40, z: 4.25, speed: 0.62, direction: -1, phase: 1, look: { skin:'#c88767', top:'#d5c8b8', bottom:'#6e5848', hair:'#201914', accent:'#23384f' } },
+    { x: 33, z: -4.0, speed: 0.48, direction: -1, phase: 3, look: { skin:'#5f3d2c', top:'#6e735e', bottom:'#26384d', hair:'#0e1014', accent:'#ddd4c5' } },
   ];
 
   return <>
@@ -248,8 +350,8 @@ function Movement({ position, keys, onMove }: { position: MutableRefObject<THREE
   const target = useRef(new THREE.Vector3());
   useFrame((_, delta) => {
     const held = keys.current;
-    const dx = Number(held.has('d') || held.has('arrowright')) - Number(held.has('a') || held.has('arrowleft'));
-    const dz = Number(held.has('s') || held.has('arrowdown')) - Number(held.has('w') || held.has('arrowup'));
+    const dx = Number(held.has('arrowright')) - Number(held.has('arrowleft'));
+    const dz = Number(held.has('arrowdown')) - Number(held.has('arrowup'));
     if (dx || dz) {
       const step = Math.min(delta, 0.05) * (held.has('shift') ? 8 : 5) / Math.hypot(dx, dz);
       position.current.x = THREE.MathUtils.clamp(position.current.x + dx * step, -7, 44);
@@ -287,7 +389,7 @@ export default function LandingPage() {
     const down = (event: KeyboardEvent) => {
       const key = event.key.toLowerCase();
       if (['arrowleft', 'arrowright', 'arrowup', 'arrowdown', ' '].includes(key)) event.preventDefault();
-      if (key === 'enter' || key === 'e') {
+      if (key === 'enter') {
         if (activeRef.current !== null) {
           const door = DESTINATIONS[activeRef.current];
           setRole(door.path === '/homie' ? 'homie' : 'pilot');
@@ -316,7 +418,7 @@ export default function LandingPage() {
     {phase !== 'intro' && <div className="tour-canvas"><Canvas shadows dpr={[1, 1.5]} camera={{ position: [-9, 5, 11], fov: 55 }} gl={{ antialias: false, powerPreference: 'high-performance' }}><Suspense fallback={null}><City position={position} near={active} /><Movement position={position} keys={keys} onMove={(x, z) => setLocation((old) => Math.abs(old.x - x) > 0.05 || Math.abs(old.z - z) > 0.05 ? { x, z } : old)} /></Suspense></Canvas></div>}
     <header className="tour-header"><div className="tour-brand"><i /> MARSHOUT <span>VICE CITY / WORLD 01</span></div><span className="tour-live">● &nbsp; ONLINE</span></header>
     {phase === 'intro' && <main className="tour-intro"><div className="tour-intro-copy"><div className="tour-eyebrow">MARSHOUT / VICE CITY <span>✦</span></div><h1>Take a <em>tour.</em></h1><p className="tour-lead">See which door gets you a travel flyer and which one gets you to a new destination.</p><button className="tour-start" aria-label="Take a tour" onClick={() => { setCount(3); setPhase('countdown'); }}><span className="tour-play">▶</span><span>TAKE A TOUR</span></button><p className="tour-hint">Walk the boulevard. Three doors are waiting.</p></div><div className="tour-hero" aria-hidden="true"><div className="tour-sun" /><div className="tour-skyline"><i /><i /><i /><i /><i /><i /><i /><i /></div><div className="tour-palm">✳</div><div className="tour-hero-caption">VICE CITY <span>BOARDING LATE</span></div></div></main>}
-    {phase !== 'intro' && <><div className="tour-topline"><span>VICE CITY <b>/</b> MARSHOUT BOULEVARD</span><span>FOLLOW THE GOLD · CHOOSE A DOOR</span></div>{phase === 'tour' && <><div className="tour-mission"><small>YOU'RE ON THE BOULEVARD</small><strong>Where are you headed?</strong><p>Walk up to a marked entrance. The city will tell you when you're close.</p></div><div className="tour-controls"><span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> MOVE</span><span><kbd>SHIFT</kbd> RUN</span><span><kbd>ENTER</kbd> STEP INSIDE</span></div>{active !== null && <button className="tour-enter" onClick={enter}>ENTER <strong>{DESTINATIONS[active].title}</strong><span>↗</span></button>}<div className="tour-touch" aria-label="Movement controls"><button aria-label="Move left" onPointerDown={() => move('a', true)} onPointerUp={() => move('a', false)} onPointerCancel={() => move('a', false)}>←</button><button aria-label="Move forward" onPointerDown={() => move('w', true)} onPointerUp={() => move('w', false)} onPointerCancel={() => move('w', false)}>↑</button><button aria-label="Move backward" onPointerDown={() => move('s', true)} onPointerUp={() => move('s', false)} onPointerCancel={() => move('s', false)}>↓</button><button aria-label="Move right" onPointerDown={() => move('d', true)} onPointerUp={() => move('d', false)} onPointerCancel={() => move('d', false)}>→</button></div></>}{phase === 'countdown' && <div className="tour-countdown"><p>VICE CITY / LOADING THE BLOCK</p><strong key={count}>{count}</strong><span>STREETS OPEN IN</span></div>}</>}
+    {phase !== 'intro' && <><div className="tour-topline"><span>VICE CITY <b>/</b> MARSHOUT BOULEVARD</span><span>FOLLOW THE GOLD · CHOOSE A DOOR</span></div>{phase === 'tour' && <><div className="tour-mission"><small>YOU'RE ON THE BOULEVARD</small><strong>Where are you headed?</strong><p>Walk up to a marked entrance. The city will tell you when you're close.</p></div><div className="tour-controls"><span className="key-group"><kbd>←</kbd><kbd>↑</kbd><kbd>↓</kbd><kbd>→</kbd><b>MOVE</b></span><span><kbd>SHIFT</kbd> RUN</span><span><kbd>ENTER</kbd> ENTER</span></div>{active !== null && <button className="tour-enter" onClick={enter}>ENTER <strong>{DESTINATIONS[active].title}</strong><span>↗</span></button>}<div className="tour-touch" aria-label="Movement controls"><button aria-label="Move left" onPointerDown={() => move('arrowleft', true)} onPointerUp={() => move('arrowleft', false)} onPointerCancel={() => move('arrowleft', false)}>←</button><button aria-label="Move forward" onPointerDown={() => move('arrowup', true)} onPointerUp={() => move('arrowup', false)} onPointerCancel={() => move('arrowup', false)}>↑</button><button aria-label="Move backward" onPointerDown={() => move('arrowdown', true)} onPointerUp={() => move('arrowdown', false)} onPointerCancel={() => move('arrowdown', false)}>↓</button><button aria-label="Move right" onPointerDown={() => move('arrowright', true)} onPointerUp={() => move('arrowright', false)} onPointerCancel={() => move('arrowright', false)}>→</button></div></>}{phase === 'countdown' && <div className="tour-countdown"><p>VICE CITY / LOADING THE BLOCK</p><strong key={count}>{count}</strong><span>STREETS OPEN IN</span></div>}</>}
     <footer className="tour-footer"><span>✦ &nbsp; A TRIP WORTH TAKING</span><span>MARSHOUT © 2026</span></footer>
   </div>;
 }
@@ -343,6 +445,6 @@ const CSS = `
 .tour-enter{position:absolute;z-index:6;left:50%;transform:translateX(-50%);bottom:100px;padding:14px 18px;background:var(--gold);border:0;color:var(--navy);cursor:pointer;font-size:10px;font-weight:950;letter-spacing:.16em;box-shadow:0 0 34px rgba(211,163,79,.36);white-space:nowrap}.tour-enter strong{margin:0 18px;font-size:12px;letter-spacing:0}.tour-enter span{font-size:18px}
 .city-sign{font-family:Inter,system-ui,sans-serif;font-size:21px;font-weight:1000;letter-spacing:.11em;text-align:center;white-space:nowrap;text-shadow:0 2px 14px #06162d}.city-door-label{font-family:Inter,system-ui,sans-serif;min-width:245px;max-width:350px;padding:13px 16px;color:white;text-align:center;background:rgba(7,26,56,.93);border:1px solid rgba(211,163,79,.42);box-shadow:0 12px 32px rgba(0,0,0,.28);transition:transform .2s,border-color .2s;backdrop-filter:blur(8px)}.city-door-label.is-near{transform:scale(1.13);border-color:var(--gold)}.city-door-label small,.city-door-label span{display:block;font-size:8px;color:var(--gold);font-weight:950;letter-spacing:.17em}.city-door-label strong{display:block;font-size:16px;line-height:1.25;margin:6px 0}
 .tour-countdown{position:absolute;z-index:10;inset:0;background:rgba(7,26,56,.96);display:flex;align-items:center;justify-content:center;flex-direction:column}.tour-countdown:before{content:"";position:absolute;width:min(62vw,760px);height:min(62vw,760px);border:1px solid rgba(211,163,79,.18);border-radius:50%}.tour-countdown p,.tour-countdown span{position:relative;font-size:10px;font-weight:950;letter-spacing:.29em;color:var(--gold)}.tour-countdown strong{position:relative;font-size:clamp(150px,28vw,330px);line-height:.9;color:#f7f4ed;font-weight:950;text-shadow:0 0 70px rgba(211,163,79,.3);animation:count .8s cubic-bezier(.2,.8,.2,1)}.tour-countdown span{color:white}@keyframes count{from{transform:scale(1.45);opacity:0}to{transform:scale(1);opacity:1}}
-.tour-touch{display:none}
+.key-group{display:flex!important;align-items:center;gap:3px}.key-group b{margin-left:6px;font-size:9px;letter-spacing:.12em}.door-enter-key{margin-top:8px!important}.door-enter-key b{display:inline-grid;place-items:center;margin-right:7px;padding:4px 7px;border:1px solid rgba(255,255,255,.55);border-bottom-width:2px;border-radius:3px;background:#f5f2eb;color:#071a38;font-size:8px;letter-spacing:.08em}.tour-touch{display:none}
 @media(max-width:900px){.tour-intro{grid-template-columns:1fr;background:#fbfaf7}.tour-intro-copy{padding:130px 28px 70px}.tour-hero{position:absolute;inset:0;opacity:.1}.tour-intro h1{font-size:clamp(74px,17vw,130px)}.tour-controls{display:none}.tour-touch{position:absolute;z-index:8;bottom:85px;right:20px;display:grid;grid-template-columns:repeat(2,55px);gap:6px;touch-action:none}.tour-touch button{height:52px;border:1px solid rgba(211,163,79,.55);background:rgba(7,26,56,.92);color:white;font-size:24px}.tour-topline span:last-child{display:none}.tour-brand span{display:none}.tour-mission{top:122px;max-width:275px}.tour-enter{bottom:160px;max-width:90vw;white-space:normal}.tour-footer{font-size:8px}}
 `;
