@@ -1238,6 +1238,11 @@ function FlightWorld({
   const { liveries } = usePlaneStore();
   const aircraft = useRef<THREE.Group>(null);
   const orbit = useRef<any>(null);
+  const speed = useRef(0);
+  const altitude = useRef(0.72);
+  const z = useRef(65);
+  const pitch = useRef(0);
+  const lastHud = useRef(0);
   const { camera } = useThree();
   useFrame((state, dt) => {
     const d = Math.min(dt, 0.045);
@@ -1535,10 +1540,6 @@ export default function FlyPage() {
           setPhase={setPhase}
           onTelemetry={setTelemetry}
           gender={gender}
-          playerPosition={playerPosition}
-          setPlayerPosition={setPlayerPosition}
-          nearPlane={nearPlane}
-          setNearPlane={setNearPlane}
         />
       </Canvas>
 
