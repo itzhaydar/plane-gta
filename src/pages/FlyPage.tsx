@@ -651,177 +651,93 @@ type Telemetry = {
 
 type Gender = 'man' | 'woman';
 
-function Palm({ x, z, s = 1 }: { x: number; z: number; s?: number }) {
+function CityBuilding({ x, z, label, variant = 0 }: { x: number; z: number; label: string; variant?: number }) {
+  const height = [8, 11, 10][variant % 3];
+  const color = ['#d3a34f', '#f4f0e8', '#d3a34f'][variant % 3];
   return (
-    <group position={[x, 0, z]} scale={s}>
-      <mesh position={[0, 1.25, 0]} castShadow>
-        <cylinderGeometry args={[0.075, 0.12, 2.5, 7]} />
-        <meshStandardMaterial color="#7b5336" roughness={0.95} />
+    <group position={[x, 0, z]}>
+      <mesh position={[0, height / 2, 0]} castShadow receiveShadow>
+        <boxGeometry args={[11, height, 5.8]} />
+        <meshStandardMaterial color={['#f1eee7', '#102848', '#e7e3db'][variant % 3]} roughness={0.72} />
       </mesh>
-      {Array.from({ length: 7 }, (_, i) => {
-        const a = (i / 7) * Math.PI * 2;
-        return (
-          <mesh
-            key={i}
-            position={[Math.cos(a) * 0.48, 2.55, Math.sin(a) * 0.48]}
-            rotation={[0.1, -a, a * 0.12]}
-            castShadow
-          >
-            <boxGeometry args={[1.15, 0.055, 0.26]} />
-            <meshStandardMaterial color={i % 2 ? '#2f7251' : '#3f875e'} roughness={0.9} />
+      <mesh position={[0, height + 0.2, 0]} castShadow>
+        <boxGeometry args={[11.6, 0.4, 6.3]} />
+        <meshStandardMaterial color="#111c33" metalness={0.4} />
+      </mesh>
+      {[-4.6, -2.7, 2.7, 4.6].map((offset) => (
+        <group key={offset}>
+          <mesh position={[offset, height / 2, 3.01]}>
+            <boxGeometry args={[0.14, height - 0.5, 0.18]} />
+            <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.4} />
           </mesh>
-        );
-      })}
+          {[3.2, 5.2, 7.2].filter((y) => y < height - 0.7).map((y) => (
+            <mesh key={y} position={[offset + 0.85, y, 2.99]}>
+              <boxGeometry args={[1.1, 1.25, 0.09]} />
+              <meshStandardMaterial color="#f5f1e8" emissive="#d3a34f" emissiveIntensity={0.58} />
+            </mesh>
+          ))}
+        </group>
+      ))}
+      <mesh position={[0, 1.17, 3.07]}><boxGeometry args={[2.1, 2.34, 0.16]} /><meshStandardMaterial color="#102334" metalness={0.7} roughness={0.18} /></mesh>
+      <mesh position={[0, 1.18, 3.18]}><boxGeometry args={[2.35, 2.48, 0.12]} /><meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.85} transparent opacity={0.82} /></mesh>
+      <mesh position={[0, 2.75, 3.42]} castShadow><boxGeometry args={[4.4, 0.24, 1.6]} /><meshStandardMaterial color="#101c32" /></mesh>
+      <mesh position={[0, height - 0.8, 3.14]}><boxGeometry args={[8.8, 1.05, 0.18]} /><meshStandardMaterial color="#13213a" /></mesh>
+      <pointLight position={[0, 3, 3.8]} intensity={5} distance={9} color={color} />
+      {label && <Html position={[0, height + 1.35, 0]} center distanceFactor={15} style={{pointerEvents:'none'}}><div className="city-world-label">{label}</div></Html>}
     </group>
   );
 }
 
-function ViceHouse({
-  x,
-  z,
-  rot = 0,
-  variant = 0,
-}: {
-  x: number;
-  z: number;
-  rot?: number;
-  variant?: number;
-}) {
-  const walls = ['#f0c1a5','#a9ccca','#f0dfb1','#d7b4c8','#b9c8e0','#e9b69e'][variant % 6];
-  const accent = ['#d56f5d','#317585','#c28b43','#75567d','#3e638b','#a75b4d'][variant % 6];
+function CityPalm({ x, z }: { x: number; z: number }) {
+  return <group position={[x, 0, z]}>
+    <mesh position={[0, 2.25, 0]} rotation={[0, 0, -0.06]} castShadow><cylinderGeometry args={[0.12, 0.24, 4.5, 9]} /><meshStandardMaterial color="#6d5944" roughness={0.9} /></mesh>
+    {Array.from({ length: 8 }, (_, i) => <mesh key={i} position={[0, 4.45, 0]} rotation={[0.1, (i * Math.PI * 2) / 8, 0.72]}><coneGeometry args={[0.34, 3.3, 5]} /><meshStandardMaterial color={i % 2 ? '#173b35' : '#244b40'} side={THREE.DoubleSide} /></mesh>)}
+  </group>;
+}
 
-  return (
-    <group position={[x, 0, z]} rotation={[0, rot, 0]}>
-      <RoundedBox args={[4.7, 2.5, 3.3]} radius={0.12} smoothness={3} position={[0, 1.25, 0]} castShadow receiveShadow>
-        <meshStandardMaterial color={walls} roughness={0.8} />
-      </RoundedBox>
-
-      <RoundedBox args={[2.1, 1.2, 0.2]} radius={0.06} smoothness={3} position={[0.65, 1.15, 1.68]}>
-        <meshStandardMaterial color="#82afbd" metalness={0.1} roughness={0.25} />
-      </RoundedBox>
-
-      <mesh position={[-1.35, 0.95, 1.69]}>
-        <boxGeometry args={[0.9, 1.9, 0.12]} />
-        <meshStandardMaterial color="#233746" roughness={0.65} />
-      </mesh>
-
-      <mesh position={[0, 2.63, 0]} rotation={[0, 0, 0]}>
-        <boxGeometry args={[5.15, 0.22, 3.75]} />
-        <meshStandardMaterial color={accent} roughness={0.85} />
-      </mesh>
-
-      <mesh position={[1.45, 2.85, -0.3]}>
-        <boxGeometry args={[1.15, 0.16, 1.3]} />
-        <meshStandardMaterial color="#1c2e3a" roughness={0.55} />
-      </mesh>
-
-      <mesh position={[0, 0.04, 2.8]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-        <planeGeometry args={[5.6, 2.4]} />
-        <meshStandardMaterial color="#c8b89b" roughness={1} />
-      </mesh>
-
-      <mesh position={[2.7, 0.6, 1.9]}>
-        <boxGeometry args={[0.65, 1.2, 0.65]} />
-        <meshStandardMaterial color="#4e8658" roughness={0.9} />
-      </mesh>
-      <mesh position={[0, 2.28, 1.82]} castShadow>
-        <boxGeometry args={[5.0, 0.16, 0.34]} />
-        <meshStandardMaterial color={accent} roughness={0.72} />
-      </mesh>
-      {[-0.35, 1.05].map((wx) => (
-        <group key={wx}>
-          <mesh position={[wx, 1.18, 1.80]}>
-            <boxGeometry args={[1.02, 1.12, 0.10]} />
-            <meshStandardMaterial color="#f6ead8" roughness={0.7} />
-          </mesh>
-          <mesh position={[wx, 1.18, 1.87]}>
-            <boxGeometry args={[0.82, 0.92, 0.05]} />
-            <meshStandardMaterial color="#78aebc" metalness={0.12} roughness={0.2} />
-          </mesh>
-        </group>
-      ))}
-      <mesh position={[-1.35, 2.12, 2.04]} castShadow>
-        <boxGeometry args={[1.5, 0.12, 0.72]} />
-        <meshStandardMaterial color={accent} roughness={0.7} />
-      </mesh>
+type CityLook = { skin: string; top: string; bottom: string; hair: string; accent: string };
+function CityHomie({ position, look, female = false, phaseOffset = 0 }: { position:[number,number,number]; look:CityLook; female?:boolean; phaseOffset?:number }) {
+  const ref=useRef<THREE.Group>(null), torso=useRef<THREE.Group>(null), la=useRef<THREE.Group>(null), ra=useRef<THREE.Group>(null), ll=useRef<THREE.Group>(null), rl=useRef<THREE.Group>(null);
+  useFrame(({clock})=>{ const g=ref.current;if(!g)return; const t=clock.elapsedTime*5.2+phaseOffset, swing=Math.sin(t)*.22; if(torso.current)torso.current.position.y=Math.abs(Math.sin(t))*.01;if(la.current)la.current.rotation.x=swing;if(ra.current)ra.current.rotation.x=-swing;if(ll.current)ll.current.rotation.x=-swing*.45;if(rl.current)rl.current.rotation.x=swing*.45; });
+  return <group ref={ref} position={position} scale={0.58}>
+    <group ref={torso}>
+      <mesh position={[0,1.48,0]} castShadow><boxGeometry args={[female?.64:.70,.86,female?.36:.38]} /><meshStandardMaterial color={look.top} roughness={.84}/></mesh>
+      <mesh position={[0,1.49,.205]}><boxGeometry args={[.10,.78,.025]}/><meshStandardMaterial color={look.accent}/></mesh>
+      <mesh position={[0,1.98,0]} castShadow><boxGeometry args={[.20,.20,.20]}/><meshStandardMaterial color={look.skin}/></mesh>
+      <mesh position={[0,2.27,0]} castShadow><boxGeometry args={[.48,.47,.42]}/><meshStandardMaterial color={look.skin}/></mesh>
+      {female ? <><mesh position={[0,2.51,-.035]}><boxGeometry args={[.51,.15,.43]}/><meshStandardMaterial color={look.hair}/></mesh><mesh position={[-.21,2.30,-.08]}><boxGeometry args={[.11,.48,.24]}/><meshStandardMaterial color={look.hair}/></mesh><mesh position={[.21,2.30,-.08]}><boxGeometry args={[.11,.48,.24]}/><meshStandardMaterial color={look.hair}/></mesh><mesh position={[0,2.18,-.20]}><boxGeometry args={[.34,.36,.12]}/><meshStandardMaterial color={look.hair}/></mesh></> : <><mesh position={[0,2.53,-.01]}><boxGeometry args={[.49,.13,.42]}/><meshStandardMaterial color={look.hair}/></mesh>{[-.15,-.05,.05,.15].map((x,i)=><mesh key={x} position={[x,2.595+(i%2)*.012,.015]}><boxGeometry args={[.085,.065,.085]}/><meshStandardMaterial color={look.hair}/></mesh>)}</>}
+      {[-.10,.10].map(x=><mesh key={x} position={[x,2.31,.219]}><boxGeometry args={[.04,.024,.016]}/><meshStandardMaterial color="#171719"/></mesh>)}
+      <mesh position={[0,2.245,.23]}><boxGeometry args={[.065,.09,.05]}/><meshStandardMaterial color={look.skin}/></mesh><mesh position={[0,2.16,.219]}><boxGeometry args={[.17,.03,.016]}/><meshStandardMaterial color="#633f32"/></mesh>
     </group>
-  );
+    <group ref={la} position={[-.43,1.70,0]}><mesh position={[0,-.31,0]}><capsuleGeometry args={[.095,.53,6,10]}/><meshStandardMaterial color={look.skin}/></mesh><mesh position={[0,-.65,.02]}><boxGeometry args={[.17,.19,.17]}/><meshStandardMaterial color={look.skin}/></mesh></group>
+    <group ref={ra} position={[.43,1.70,0]}><mesh position={[0,-.31,0]}><capsuleGeometry args={[.095,.53,6,10]}/><meshStandardMaterial color={look.skin}/></mesh><mesh position={[0,-.65,.02]}><boxGeometry args={[.17,.19,.17]}/><meshStandardMaterial color={look.skin}/></mesh></group>
+    <group ref={ll} position={[female?-.14:-.16,1.05,0]}><mesh position={[0,-.46,0]}><capsuleGeometry args={[.12,.69,6,10]}/><meshStandardMaterial color={look.bottom}/></mesh><mesh position={[0,-.90,.10]}><boxGeometry args={[.26,.16,.45]}/><meshStandardMaterial color="#17181c"/></mesh></group>
+    <group ref={rl} position={[female?.14:.16,1.05,0]}><mesh position={[0,-.46,0]}><capsuleGeometry args={[.12,.69,6,10]}/><meshStandardMaterial color={look.bottom}/></mesh><mesh position={[0,-.90,.10]}><boxGeometry args={[.26,.16,.45]}/><meshStandardMaterial color="#17181c"/></mesh></group>
+  </group>;
+}
+
+function CityBlock({ arrival=false }:{arrival?:boolean}) {
+  const baseZ=arrival?ROUTE_END_Z+42:65;
+  const name=arrival?DESTINATION_NAME:START_NAME;
+  const looks:CityLook[]=[
+    {skin:'#70472f',top:'#d9c7a5',bottom:'#3b4558',hair:'#111317',accent:'#9b5a42'},
+    {skin:'#a96f52',top:'#a94f58',bottom:'#34394b',hair:'#251914',accent:'#e2bf77'},
+    {skin:'#5f3d2c',top:'#627550',bottom:'#293a50',hair:'#0e1014',accent:'#d7b26a'},
+    {skin:'#c88767',top:'#4d7180',bottom:'#6c5146',hair:'#2c1b17',accent:'#e7d2a6'},
+  ];
+  return <group>
+    <CityBuilding x={-16} z={baseZ-13} label="" variant={0}/><CityBuilding x={0} z={baseZ-16} label={name} variant={1}/><CityBuilding x={16} z={baseZ-13} label="" variant={2}/>
+    {[-22,-10,10,22].map((x,i)=><CityPalm key={x} x={x} z={baseZ-8-(i%2)*3}/>)}
+    <CityHomie position={[-5.3,0,baseZ+3.7]} look={looks[0]} phaseOffset={.3}/><CityHomie position={[-6.6,0,baseZ+.8]} look={looks[1]} female phaseOffset={1.8}/><CityHomie position={[5.5,0,baseZ+4.2]} look={looks[2]} phaseOffset={3.1}/><CityHomie position={[6.8,0,baseZ+1.2]} look={looks[3]} female phaseOffset={4.4}/>
+  </group>;
 }
 
 function Runway({ z, length = 250 }: { z: number; length?: number }) {
-  return (
-    <group position={[0, 0, z]}>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-        <planeGeometry args={[52, length + 42]} />
-        <meshStandardMaterial color="#7b9564" roughness={1} />
-      </mesh>
-
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.012, 0]} receiveShadow>
-        <planeGeometry args={[6.4, length]} />
-        <meshStandardMaterial color="#45484a" roughness={0.98} />
-      </mesh>
-
-      {[-3, 3].map((x) => (
-        <mesh key={x} rotation={[-Math.PI / 2, 0, 0]} position={[x, 0.025, 0]}>
-          <planeGeometry args={[0.09, length]} />
-          <meshBasicMaterial color="#e5b64d" />
-        </mesh>
-      ))}
-
-      {Array.from({ length: Math.floor(length / 7) }, (_, i) => -length / 2 + 4 + i * 7).map((v) => (
-        <mesh key={v} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.03, v]}>
-          <planeGeometry args={[0.18, 2.35]} />
-          <meshBasicMaterial color="#f7f2e7" />
-        </mesh>
-      ))}
-    </group>
-  );
-}
-
-function Neighborhood({ destination = false }: { destination?: boolean }) {
-  const baseZ = destination ? ROUTE_END_Z : 52;
-  const houses = useMemo(
-    () =>
-      Array.from({ length: 22 }, (_, i) => ({
-        x: (i % 2 ? 1 : -1) * (10 + (i % 4) * 4.4),
-        z: baseZ + 52 - Math.floor(i / 2) * 13,
-        rot: i % 2 ? -Math.PI / 2 : Math.PI / 2,
-        variant: i,
-      })),
-    [baseZ],
-  );
-
-  return (
-    <group>
-      {houses.map((h, i) => (
-        <ViceHouse key={i} {...h} />
-      ))}
-      {Array.from({ length: 18 }, (_, i) => (
-        <Palm
-          key={i}
-          x={(i % 2 ? 1 : -1) * (7.5 + (i % 3) * 2)}
-          z={baseZ + 66 - i * 7.4}
-          s={0.82 + (i % 3) * 0.12}
-        />
-      ))}
-    </group>
-  );
+  return <group position={[0,0,z]}><mesh rotation={[-Math.PI/2,0,0]} receiveShadow><planeGeometry args={[52,length+42]}/><meshStandardMaterial color="#071427" roughness={1}/></mesh><mesh rotation={[-Math.PI/2,0,0]} position={[0,.012,0]} receiveShadow><planeGeometry args={[6.4,length]}/><meshStandardMaterial color="#111b2b" roughness={.98}/></mesh>{[-3,3].map(x=><mesh key={x} rotation={[-Math.PI/2,0,0]} position={[x,.025,0]}><planeGeometry args={[.09,length]}/><meshBasicMaterial color="#d3a34f"/></mesh>)}{Array.from({length:Math.floor(length/7)},(_,i)=>-length/2+4+i*7).map(v=><mesh key={v} rotation={[-Math.PI/2,0,0]} position={[0,.03,v]}><planeGeometry args={[.18,2.35]}/><meshBasicMaterial color="#f7f2e7"/></mesh>)}</group>;
 }
 
 function WorldEnvironment() {
-  return (
-    <group>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.04, -330]} receiveShadow>
-        <planeGeometry args={[280, 1180]} />
-        <meshStandardMaterial color="#72905e" roughness={1} />
-      </mesh>
-
-      <Runway z={-45} length={270} />
-      <Runway z={ROUTE_END_Z} length={290} />
-      <Neighborhood />
-      <Neighborhood destination />
-    </group>
-  );
+  return <group><mesh rotation={[-Math.PI/2,0,0]} position={[0,-.04,-330]} receiveShadow><planeGeometry args={[280,1180]}/><meshStandardMaterial color="#071427" roughness={1}/></mesh><Runway z={-45} length={270}/><Runway z={ROUTE_END_Z} length={290}/><CityBlock/><CityBlock arrival/></group>;
 }
 
 function HighClouds() {
@@ -865,29 +781,10 @@ function FlyMalePlayer({ position }: { position: MutableRefObject<THREE.Vector3>
   const rightArm = useRef<THREE.Group>(null);
   const leftLeg = useRef<THREE.Group>(null);
   const rightLeg = useRef<THREE.Group>(null);
-  const last = useRef(CHARACTER_START.clone());
-
-  useFrame(({ clock }) => {
+  useFrame(() => {
     if (!group.current) return;
-
-    const moved = last.current.distanceToSquared(position.current) > 0.000008;
-    const dx = position.current.x - last.current.x;
-    const dz = position.current.z - last.current.z;
-
     group.current.position.copy(position.current);
-    if (moved) group.current.rotation.y = Math.atan2(dx, dz);
-
-    const t = clock.elapsedTime * 8.2;
-    const swing = moved ? Math.sin(t) * 0.52 : 0;
-    const bob = moved ? Math.abs(Math.sin(t)) * 0.025 : Math.sin(clock.elapsedTime * 1.8) * 0.006;
-
-    if (torso.current) torso.current.position.y = bob;
-    if (leftArm.current) leftArm.current.rotation.x = swing;
-    if (rightArm.current) rightArm.current.rotation.x = -swing;
-    if (leftLeg.current) leftLeg.current.rotation.x = -swing * 0.72;
-    if (rightLeg.current) rightLeg.current.rotation.x = swing * 0.72;
-
-    last.current.copy(position.current);
+    group.current.rotation.set(0, Math.PI, 0);
   });
 
   const skin = '#b47a52';
@@ -900,7 +797,7 @@ function FlyMalePlayer({ position }: { position: MutableRefObject<THREE.Vector3>
   const shoes = '#10151d';
 
   return (
-    <group ref={group} position={CHARACTER_START.toArray()} scale={1.04}>
+    <group ref={group} position={CHARACTER_START.toArray()} scale={0.58}>
       <group ref={torso}>
         {/* Smooth blocky torso: pale vest under an open olive sleeveless shirt */}
         <mesh position={[0, 1.48, 0]} castShadow>
@@ -993,31 +890,10 @@ function FlyFemalePlayer({ position }: { position: MutableRefObject<THREE.Vector
   const rightArm = useRef<THREE.Group>(null);
   const leftLeg = useRef<THREE.Group>(null);
   const rightLeg = useRef<THREE.Group>(null);
-  const last = useRef(CHARACTER_START.clone());
-
-  useFrame(({ clock }) => {
+  useFrame(() => {
     if (!group.current) return;
-
-    const moved = last.current.distanceToSquared(position.current) > 0.000008;
-    const dx = position.current.x - last.current.x;
-    const dz = position.current.z - last.current.z;
-
     group.current.position.copy(position.current);
-    if (moved) group.current.rotation.y = Math.atan2(dx, dz);
-
-    const t = clock.elapsedTime * 8.2;
-    const swing = moved ? Math.sin(t) * 0.46 : 0;
-    const bob = moved
-      ? Math.abs(Math.sin(t)) * 0.023
-      : Math.sin(clock.elapsedTime * 1.8) * 0.006;
-
-    if (torso.current) torso.current.position.y = bob;
-    if (leftArm.current) leftArm.current.rotation.x = swing;
-    if (rightArm.current) rightArm.current.rotation.x = -swing;
-    if (leftLeg.current) leftLeg.current.rotation.x = -swing * 0.74;
-    if (rightLeg.current) rightLeg.current.rotation.x = swing * 0.74;
-
-    last.current.copy(position.current);
+    group.current.rotation.set(0, Math.PI, 0);
   });
 
   const skin = '#a96f52';
@@ -1029,7 +905,7 @@ function FlyFemalePlayer({ position }: { position: MutableRefObject<THREE.Vector
   const shoes = '#10151d';
 
   return (
-    <group ref={group} position={CHARACTER_START.toArray()} scale={1.01}>
+    <group ref={group} position={CHARACTER_START.toArray()} scale={0.56}>
       <group ref={torso}>
         {/* Female main character: same polished blocky world, clearly different silhouette. */}
         <mesh position={[0, 1.48, 0]} castShadow>
@@ -1152,64 +1028,6 @@ function GameCharacter({ gender, position }: { gender: Gender; position: THREE.V
   return gender === 'woman'
     ? <FlyFemalePlayer position={staticPosition} />
     : <FlyMalePlayer position={staticPosition} />;
-}
-
-function Homie({
-  position,
-  female = false,
-  phaseOffset = 0,
-}: {
-  position: [number, number, number];
-  female?: boolean;
-  phaseOffset?: number;
-}) {
-  const ref = useRef<THREE.Group>(null);
-  useFrame((state) => {
-    if (!ref.current) return;
-    ref.current.position.x = position[0] + Math.sin(state.clock.elapsedTime * 0.45 + phaseOffset) * 0.7;
-    ref.current.rotation.y = Math.sin(state.clock.elapsedTime * 0.22 + phaseOffset) * 0.45;
-  });
-
-  return (
-    <group ref={ref} position={position} scale={0.78}>
-      <mesh position={[0, 1.72, 0]} castShadow>
-        <sphereGeometry args={[0.22, 14, 10]} />
-        <meshStandardMaterial color={female ? '#b8785b' : '#6f4b37'} roughness={0.85} />
-      </mesh>
-      {female ? (
-        <mesh position={[0, 1.73, 0.06]} castShadow>
-          <sphereGeometry args={[0.24, 14, 10]} />
-          <meshStandardMaterial color="#2b1b18" roughness={0.95} />
-        </mesh>
-      ) : (
-        <mesh position={[0, 1.88, 0]}>
-          <sphereGeometry args={[0.22, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2]} />
-          <meshStandardMaterial color="#171514" />
-        </mesh>
-      )}
-      <RoundedBox args={[0.54, 0.7, 0.3]} radius={0.08} smoothness={2} position={[0, 1.18, 0]} castShadow>
-        <meshStandardMaterial color={female ? '#b7646c' : '#263b56'} roughness={0.86} />
-      </RoundedBox>
-      {[-1, 1].map((side) => (
-        <mesh key={side} position={[side * 0.15, 0.48, 0]} castShadow>
-          <capsuleGeometry args={[0.1, 0.55, 4, 7]} />
-          <meshStandardMaterial color="#20262c" roughness={0.9} />
-        </mesh>
-      ))}
-    </group>
-  );
-}
-
-function GroundCrew({ arrival = false }: { arrival?: boolean }) {
-  const z = arrival ? ROUTE_END_Z + 42 : 65;
-  return (
-    <>
-      <Homie position={[-5.7, 0, z + 4.8]} phaseOffset={0.3} />
-      <Homie position={[-7.1, 0, z + 1.8]} female phaseOffset={1.8} />
-      <Homie position={[6.5, 0, z + 5.7]} female phaseOffset={3.1} />
-      <Homie position={[7.8, 0, z + 2.1]} phaseOffset={4.4} />
-    </>
-  );
 }
 
 function DestinationBeacon({ distance }: { distance: number }) {
@@ -1355,11 +1173,11 @@ function FlightWorld({
 
   return (
     <>
-      <color attach="background" args={['#91c8dc']} />
-      <fog attach="fog" args={['#b7d8e4', 65, 350]} />
-      <ambientLight intensity={0.86} />
-      <hemisphereLight args={['#ffd6ad', '#45674f', 1.25]} />
-      <directionalLight position={[8, 13, 6]} intensity={2.05} castShadow />
+      <color attach="background" args={['#07162b']} />
+      <fog attach="fog" args={['#0a1c35', 65, 350]} />
+      <ambientLight intensity={0.85} color="#dce4ef" />
+      <hemisphereLight intensity={1.05} color="#f6f1e7" groundColor="#071427" />
+      <directionalLight position={[-12, 18, 10]} intensity={2.3} color="#f0c778" castShadow />
 
       <WorldEnvironment />
       <HighClouds />
@@ -1368,14 +1186,11 @@ function FlightWorld({
         <Plane liveries={liveries} />
       </group>
 
-      {(phase === 'outside' || phase === 'parked' || phase === 'takeoff') && <GroundCrew />}
-      {['landed', 'stopped', 'exited'].includes(phase) && <GroundCrew arrival />}
-
       {phase === 'outside' && (
-        <GameCharacter gender={gender} position={new THREE.Vector3(3.2, 0, 68.4)} />
+        <GameCharacter gender={gender} position={new THREE.Vector3(2.15, 0, 66.9)} />
       )}
       {phase === 'exited' && (
-        <GameCharacter gender={gender} position={new THREE.Vector3(3.2, 0, ROUTE_END_Z + 45.4)} />
+        <GameCharacter gender={gender} position={new THREE.Vector3(2.15, 0, ROUTE_END_Z + 43.9)} />
       )}
 
       {!['outside', 'parked', 'takeoff'].includes(phase) && (
@@ -1753,6 +1568,7 @@ export default function FlyPage() {
 }
 
 const FLY_CSS = `
+.city-world-label{padding:9px 14px;background:#071a38e8;border:1px solid #d3a34f88;color:#f5f2eb;font:950 12px Inter;letter-spacing:.18em;white-space:nowrap;box-shadow:0 12px 30px #00102066;text-transform:uppercase}
 *{box-sizing:border-box}
 .fly-page,.fly-gate{position:fixed;left:0;right:0;top:48px;bottom:0;overflow:hidden;font-family:Inter,ui-sans-serif,system-ui;color:#fff;background:#91c8dc;z-index:1}
 .fly-page canvas{position:absolute!important;inset:0}
