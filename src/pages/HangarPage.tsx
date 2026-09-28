@@ -1259,7 +1259,8 @@ const LAUNCH_BAY_CSS = `
 .launch-bay {
   min-height: 100vh;
   min-height: 100svh;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
   color: #071a38;
   background:
     radial-gradient(circle at 78% 18%, rgba(211, 162, 82, .12), transparent 27%),
@@ -1382,8 +1383,9 @@ const LAUNCH_BAY_CSS = `
 }
 
 .launch-bay-layout {
-  height: calc(100svh - 84px);
-  max-width: 1720px;
+  height: auto;
+  min-height: calc(100svh - 84px);
+  max-width: 1420px;
   margin: 0 auto;
   padding: 18px clamp(18px, 3vw, 46px) 26px;
   display: grid;
@@ -1396,12 +1398,12 @@ const LAUNCH_BAY_CSS = `
   min-width: 0;
   min-height: 0;
   display: grid;
-  grid-template-rows: 68px 48px minmax(0, 1fr);
+  grid-template-rows: 68px 48px 580px;
   gap: 10px;
 }
 
 .launch-bay-preview {
-  grid-template-rows: 68px 48px minmax(0, 1fr);
+  grid-template-rows: 68px 48px 580px;
 }
 
 .launch-bay-editor-head,
@@ -1511,14 +1513,14 @@ const LAUNCH_BAY_CSS = `
 .launch-bay-editor-body {
   display: flex;
   flex-direction: column;
-  overflow: auto;
+  overflow: hidden;
 }
 
 .launch-bay-editor-body > * {
-  flex: 1 0 100%;
+  flex: 1 1 auto;
   width: 100%;
   min-width: 0;
-  min-height: 620px;
+  min-height: 0;
   height: 100%;
 }
 
@@ -1771,20 +1773,20 @@ const LAUNCH_BAY_CSS = `
 
   .launch-bay-editor,
   .launch-bay-preview {
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-rows: auto auto 580px;
+    gap: 10px;
   }
 
   .preview-spacer {
-    display: none;
+    display: block;
+    visibility: hidden;
   }
 
-  .launch-bay-editor-body {
-    min-height: 620px;
-  }
-
+  .launch-bay-editor-body,
   .launch-bay-viewport {
-    min-height: 620px;
+    height: 580px;
+    min-height: 580px;
   }
 }
 
