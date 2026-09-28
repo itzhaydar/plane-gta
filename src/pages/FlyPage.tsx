@@ -625,6 +625,7 @@ function Plane({
 
 const CRUISE_SPEED = 235;
 const ROUTE_END_Z = -720;
+const LANDING_STOP_Z = ROUTE_END_Z + 42;
 const DESTINATION_NAME = 'PORT GELLHORN';
 const CHARACTER_START = new THREE.Vector3(0, 0, 0);
 
@@ -1431,13 +1432,40 @@ function FlightWorld({
       pitch.current = THREE.MathUtils.lerp(pitch.current, -0.045, d * 2);
       if (dist < 45) setPhase('landing');
     } else if (phase === 'landing') {
-      speed.current = THREE.MathUtils.lerp(speed.current, 72, d * 0.8);
-      z.current -= Math.max(7, speed.current / 11) * d;
-      altitude.current = Math.max(0.72, altitude.current - 1.05 * d);
-      pitch.current = THREE.MathUtils.lerp(pitch.current, 0.025, d * 2);
-      if (altitude.current <= 0.725) {
+      // Bring the aircraft onto the actual touchdown point instead of flying
+      // past the city and snapping it backwards after the wheels touch.
+      const remaining = Math.max(0, z.current - LANDING_STOP_Z);
+      const landingSpeed = THREE.MathUtils.mapLinear(
+        THREE.MathUtils.clamp(remaining, 0, 45),
+        0,
+        45,
+        18,
+        72,
+      );
+
+      speed.current = THREE.MathUtils.lerp(speed.current, landingSpeed, d * 1.8);
+
+      const forwardStep = Math.max(2.2, speed.current / 11) * d;
+      z.current = Math.max(LANDING_STOP_Z, z.current - forwardStep);
+
+      const altitudeTarget = THREE.MathUtils.mapLinear(
+        THREE.MathUtils.clamp(remaining, 0, 45),
+        0,
+        45,
+        0.72,
+        3.2,
+      );
+      altitude.current = THREE.MathUtils.lerp(altitude.current, altitudeTarget, d * 2.8);
+      pitch.current = THREE.MathUtils.lerp(
+        pitch.current,
+        remaining > 10 ? -0.025 : 0,
+        d * 2.6,
+      );
+
+      if (remaining <= 0.35 && altitude.current <= 0.79) {
+        z.current = LANDING_STOP_Z;
         altitude.current = 0.72;
-        z.current = ROUTE_END_Z + 42;
+        pitch.current = 0;
         setPhase('landed');
       }
     } else if (phase === 'landed') {
@@ -1459,7 +1487,7 @@ function FlightWorld({
 
     const onGround = phase === 'outside' || phase === 'exited';
     const arrivalView = ['landed', 'stopped', 'exited'].includes(phase);
-    const groundZ = phase === 'exited' ? ROUTE_END_Z + 42 : 65;
+    const groundZ = phase === 'exited' ? LANDING_STOP_Z : 65;
 
     const chase = onGround
       ? new THREE.Vector3(6.9, 3.7, groundZ + 8.8)
@@ -1516,10 +1544,10 @@ function FlightWorld({
       </group>
 
       {phase === 'outside' && (
-        <GameCharacter gender={gender} position={new THREE.Vector3(1.35, 0, 66.25)} />
+        <GameCharacter gender={gender} position={new THREE.Vector3(0.95, 0, 65.55)} />
       )}
       {phase === 'exited' && (
-        <GameCharacter gender={gender} position={new THREE.Vector3(1.35, 0, ROUTE_END_Z + 43.15)} />
+        <GameCharacter gender={gender} position={new THREE.Vector3(0.95, 0, LANDING_STOP_Z + 0.55)} />
       )}
 
       {!['outside', 'parked', 'takeoff'].includes(phase) && (
