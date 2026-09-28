@@ -1,6 +1,6 @@
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 
-import { Html, OrbitControls, RoundedBox, useAnimations, useGLTF, useTexture } from '@react-three/drei';
+import { Html, OrbitControls, RoundedBox, useTexture } from '@react-three/drei';
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
@@ -8,17 +8,16 @@ import { useNavigate } from 'react-router-dom';
 
 import * as THREE from 'three';
 
-import { SkeletonUtils } from 'three-stdlib';
 
 
 
-import { usePlaneStore, type Face } from '../store';
+import { usePlaneStore } from '../store';
 
 
 
-const LEFT_PANEL_FALLBACK = '/templates/flag-left.svg';
+const UPPER_PANEL_FALLBACK = '/templates/insu.svg';
 
-const RIGHT_PANEL_FALLBACK = '/templates/flag-right.svg';
+const LOWER_PANEL_FALLBACK = '/templates/insl.svg';
 
 const MAX_SPEED = 28500;
 
@@ -57,12 +56,6 @@ type Telemetry = {
   distance: number;
 
 };
-
-
-
-useGLTF.preload('/astro.glb');
-
-useGLTF.preload('/homie2.glb');
 
 
 
@@ -316,7 +309,7 @@ function EngineFire() {
 
 
 
-function Rocket({ liveries, enginesOn = false }: { liveries: Record<Face, string | null>; enginesOn?: boolean }) {
+function Rocket({ liveries, enginesOn = false }: { liveries: { insu: string | null; insl: string | null }; enginesOn?: boolean }) {
 
   return (
 
@@ -388,9 +381,9 @@ function Rocket({ liveries, enginesOn = false }: { liveries: Record<Face, string
 
       <Porthole y={1.77} />
 
-      <MissionPanel livery={liveries['flag-left']} fallback={LEFT_PANEL_FALLBACK} position={[0, 2.56, 0.435]} />
+      <MissionPanel livery={liveries.insu} fallback={UPPER_PANEL_FALLBACK} position={[0, 2.56, 0.435]} />
 
-      <MissionPanel livery={liveries['flag-right']} fallback={RIGHT_PANEL_FALLBACK} position={[0, 1.28, 0.495]} />
+      <MissionPanel livery={liveries.insl} fallback={LOWER_PANEL_FALLBACK} position={[0, 1.28, 0.495]} />
 
       <RocketFin angle={0} />
 
@@ -795,96 +788,310 @@ function MarsGround() {
 
 
 
-function MarsAstronaut({ visible, animated = false }: { visible: boolean; animated?: boolean }) {
-  const { scene, animations } = useGLTF('/astro.glb');
-  const astronaut = useMemo(() => {
-    const c = SkeletonUtils.clone(scene);
-    c.traverse((o) => { if (o instanceof THREE.Mesh) { o.castShadow = true; o.receiveShadow = true; } });
-    c.updateMatrixWorld(true);
-    const box = new THREE.Box3().setFromObject(c);
-    const size = box.getSize(new THREE.Vector3());
-    c.scale.multiplyScalar(1.55 / Math.max(size.y, 1e-6));
-    c.updateMatrixWorld(true);
-    const fitted = new THREE.Box3().setFromObject(c);
-    const center = fitted.getCenter(new THREE.Vector3());
-    c.position.x -= center.x; c.position.z -= center.z; c.position.y -= fitted.min.y;
-    return c;
-  }, [scene]);
-  const { actions } = useAnimations(animations, astronaut);
-  useEffect(() => {
-    const action = Object.values(actions)[0];
-    if (!action) return;
-    if (visible && animated) action.reset().fadeIn(0.2).play(); else action.stop();
-    return () => { action.stop(); };
-  }, [actions, visible, animated]);
-  if (!visible) return null;
-  return <group position={[1.9, 0, 1.15]} rotation={[0, -Math.PI / 2, 0]}><primitive object={astronaut} /></group>;
-}
 
-function Homie({ visible, playable = false }: { visible: boolean; playable?: boolean }) {
-  const { scene, animations } = useGLTF('/homie2.glb');
+// ============================================================
+// MAIN CHARACTER — EXACT SAME CHARACTER SYSTEM AS PLANE PAGE
+// No GLB characters are loaded on FlyRocket.
+// ============================================================
+
+type Gender = 'man' | 'woman';
+const CHARACTER_START = new THREE.Vector3(0, 0, 0);
+
+function MalePlayer({ position }: { position: { current: THREE.Vector3 } }) {
   const group = useRef<THREE.Group>(null);
-  const keys = useRef<Record<string, boolean>>({});
+  const torso = useRef<THREE.Group>(null);
+  const leftArm = useRef<THREE.Group>(null);
+  const rightArm = useRef<THREE.Group>(null);
+  const leftLeg = useRef<THREE.Group>(null);
+  const rightLeg = useRef<THREE.Group>(null);
+  const last = useRef(CHARACTER_START.clone());
 
-  const homie = useMemo(() => {
-    const c = SkeletonUtils.clone(scene);
-    c.traverse((o) => {
-      if (o instanceof THREE.Mesh) {
-        o.castShadow = true;
-        o.receiveShadow = true;
-      }
-    });
-    c.updateMatrixWorld(true);
-    const box = new THREE.Box3().setFromObject(c);
-    const size = box.getSize(new THREE.Vector3());
-    c.scale.multiplyScalar(1.55 / Math.max(size.y, 1e-6));
-    c.updateMatrixWorld(true);
-    const fitted = new THREE.Box3().setFromObject(c);
-    const center = fitted.getCenter(new THREE.Vector3());
-    c.position.x -= center.x;
-    c.position.z -= center.z;
-    c.position.y -= fitted.min.y;
-    return c;
-  }, [scene]);
+  useFrame(({ clock }) => {
+    if (!group.current) return;
 
-  const { actions } = useAnimations(animations, homie);
-  useEffect(() => {
-    const action = Object.values(actions)[0];
-    if (!action) return;
-    if (visible) action.reset().fadeIn(0.2).play(); else action.stop();
-    return () => { action.stop(); };
-  }, [actions, visible]);
+    const moved = last.current.distanceToSquared(position.current) > 0.000008;
+    const dx = position.current.x - last.current.x;
+    const dz = position.current.z - last.current.z;
 
-  useEffect(() => {
-    if (!playable) return;
-    const down = (e: KeyboardEvent) => { keys.current[e.key.toLowerCase()] = true; };
-    const up = (e: KeyboardEvent) => { keys.current[e.key.toLowerCase()] = false; };
-    window.addEventListener('keydown', down);
-    window.addEventListener('keyup', up);
-    return () => {
-      window.removeEventListener('keydown', down);
-      window.removeEventListener('keyup', up);
-    };
-  }, [playable]);
+    group.current.position.copy(position.current);
+    if (moved) group.current.rotation.y = Math.atan2(dx, dz);
 
-  useFrame((_, dt) => {
-    if (!playable || !visible || !group.current) return;
-    const x = (keys.current['d'] ? 1 : 0) - (keys.current['a'] ? 1 : 0);
-    const z = (keys.current['s'] ? 1 : 0) - (keys.current['w'] ? 1 : 0);
-    if (!x && !z) return;
-    const len = Math.hypot(x, z) || 1;
-    const speed = 2.4;
-    group.current.position.x += (x / len) * speed * dt;
-    group.current.position.z += (z / len) * speed * dt;
-    group.current.rotation.y = Math.atan2(x, z);
+    const t = clock.elapsedTime * 8.2;
+    const swing = moved ? Math.sin(t) * 0.52 : 0;
+    const bob = moved ? Math.abs(Math.sin(t)) * 0.025 : Math.sin(clock.elapsedTime * 1.8) * 0.006;
+
+    if (torso.current) torso.current.position.y = bob;
+    if (leftArm.current) leftArm.current.rotation.x = swing;
+    if (rightArm.current) rightArm.current.rotation.x = -swing;
+    if (leftLeg.current) leftLeg.current.rotation.x = -swing * 0.72;
+    if (rightLeg.current) rightLeg.current.rotation.x = swing * 0.72;
+
+    last.current.copy(position.current);
   });
 
-  if (!visible) return null;
+  const skin = '#b47a52';
+  const hair = '#241b16';
+  const stubble = '#8a5f42';
+  const olive = '#0b274b';
+  const vest = '#f5f2eb';
+  const gold = '#d3a34f';
+  const denim = '#071a38';
+  const shoes = '#10151d';
+
   return (
-    <group ref={group} position={[-1.45, 0, 1.0]} rotation={[0, Math.PI / 2, 0]}>
-      <primitive object={homie} />
+    <group ref={group} position={CHARACTER_START.toArray()} scale={1.04}>
+      <group ref={torso}>
+        {/* Smooth blocky torso: pale vest under an open olive sleeveless shirt */}
+        <mesh position={[0, 1.48, 0]} castShadow>
+          <boxGeometry args={[0.76, 0.92, 0.40]} />
+          <meshStandardMaterial color={vest} roughness={0.8} />
+        </mesh>
+
+        {/* open olive shirt panels */}
+        <mesh position={[-0.265, 1.49, 0.222]} castShadow>
+          <boxGeometry args={[0.23, 0.90, 0.055]} />
+          <meshStandardMaterial color={olive} roughness={0.84} />
+        </mesh>
+        <mesh position={[0.265, 1.49, 0.222]} castShadow>
+          <boxGeometry args={[0.23, 0.90, 0.055]} />
+          <meshStandardMaterial color={olive} roughness={0.84} />
+        </mesh>
+        <mesh position={[-0.33, 1.52, -0.02]} rotation={[0,0,-0.05]} castShadow>
+          <boxGeometry args={[0.17, 0.88, 0.43]} />
+          <meshStandardMaterial color={olive} roughness={0.84} />
+        </mesh>
+        <mesh position={[0.33, 1.52, -0.02]} rotation={[0,0,0.05]} castShadow>
+          <boxGeometry args={[0.17, 0.88, 0.43]} />
+          <meshStandardMaterial color={olive} roughness={0.84} />
+        </mesh>
+
+        {/* blocky neck + rounded/blocky head */}
+        <mesh position={[0, 2.00, 0]} castShadow>
+          <boxGeometry args={[0.22, 0.22, 0.22]} />
+          <meshStandardMaterial color={skin} roughness={0.9} />
+        </mesh>
+        <mesh position={[0, 2.28, 0]} castShadow>
+          <boxGeometry args={[0.50, 0.48, 0.44]} />
+          <meshStandardMaterial color={skin} roughness={0.9} />
+        </mesh>
+
+        {/* cropped dark hair, clean silhouette */}
+        <mesh position={[0, 2.55, -0.01]} castShadow>
+          <boxGeometry args={[0.51, 0.13, 0.43]} />
+          <meshStandardMaterial color={hair} roughness={1} />
+        </mesh>
+        {[-0.18,-0.06,0.06,0.18].map((x, i) => (
+          <mesh key={x} position={[x, 2.62 + (i % 2) * .015, 0.02]}>
+            <boxGeometry args={[0.10, 0.08, 0.10]} />
+            <meshStandardMaterial color={hair} roughness={1} />
+          </mesh>
+        ))}
+
+        {/* simple face: brows, eyes, nose, stubble; no glasses */}
+        {[-0.105,0.105].map((x) => <mesh key={`b${x}`} position={[x,2.36,0.229]}><boxGeometry args={[0.105,.025,.018]} /><meshStandardMaterial color={hair} /></mesh>)}
+        {[-0.105,0.105].map((x) => <mesh key={`e${x}`} position={[x,2.32,0.233]}><boxGeometry args={[0.045,.025,.018]} /><meshStandardMaterial color="#171719" /></mesh>)}
+        <mesh position={[0,2.25,0.245]}><boxGeometry args={[0.07,.10,.06]} /><meshStandardMaterial color={skin} /></mesh>
+        <mesh position={[0,2.13,0.229]}><boxGeometry args={[0.31,.11,.022]} /><meshStandardMaterial color={stubble} roughness={1} /></mesh>
+        <mesh position={[0,2.20,0.237]}><boxGeometry args={[0.18,.035,.018]} /><meshStandardMaterial color="#633f32" /></mesh>
+
+        {/* thin gold chain */}
+        <mesh position={[0,1.91,0.226]} rotation={[Math.PI/2,0,0]}>
+          <torusGeometry args={[0.15,0.012,6,22,Math.PI]} />
+          <meshStandardMaterial color={gold} metalness={0.9} roughness={0.22} />
+        </mesh>
+      </group>
+
+      {/* bare arms from cut-off sleeves */}
+      <group ref={leftArm} position={[-0.47,1.73,0]}>
+        <mesh position={[0,-0.31,0]} castShadow><capsuleGeometry args={[0.105,0.55,6,10]} /><meshStandardMaterial color={skin} roughness={0.9} /></mesh>
+        <mesh position={[0,-0.66,0.02]}><boxGeometry args={[0.18,.20,.18]} /><meshStandardMaterial color={skin} /></mesh>
+      </group>
+      <group ref={rightArm} position={[0.47,1.73,0]}>
+        <mesh position={[0,-0.31,0]} castShadow><capsuleGeometry args={[0.105,0.55,6,10]} /><meshStandardMaterial color={skin} roughness={0.9} /></mesh>
+        <mesh position={[0,-0.66,0.02]}><boxGeometry args={[0.18,.20,.18]} /><meshStandardMaterial color={skin} /></mesh>
+      </group>
+
+      {/* dark denim + black shoes */}
+      <group ref={leftLeg} position={[-0.18,1.06,0]}>
+        <mesh position={[0,-0.47,0]} castShadow><capsuleGeometry args={[0.13,0.72,6,10]} /><meshStandardMaterial color={denim} roughness={0.9} /></mesh>
+        <mesh position={[0,-0.93,0.10]}><boxGeometry args={[0.28,.17,.48]} /><meshStandardMaterial color={shoes} roughness={0.88} /></mesh>
+      </group>
+      <group ref={rightLeg} position={[0.18,1.06,0]}>
+        <mesh position={[0,-0.47,0]} castShadow><capsuleGeometry args={[0.13,0.72,6,10]} /><meshStandardMaterial color={denim} roughness={0.9} /></mesh>
+        <mesh position={[0,-0.93,0.10]}><boxGeometry args={[0.28,.17,.48]} /><meshStandardMaterial color={shoes} roughness={0.88} /></mesh>
+      </group>
     </group>
   );
+}
+
+
+function FemalePlayer({ position }: { position: { current: THREE.Vector3 } }) {
+  const group = useRef<THREE.Group>(null);
+  const torso = useRef<THREE.Group>(null);
+  const leftArm = useRef<THREE.Group>(null);
+  const rightArm = useRef<THREE.Group>(null);
+  const leftLeg = useRef<THREE.Group>(null);
+  const rightLeg = useRef<THREE.Group>(null);
+  const last = useRef(CHARACTER_START.clone());
+
+  useFrame(({ clock }) => {
+    if (!group.current) return;
+
+    const moved = last.current.distanceToSquared(position.current) > 0.000008;
+    const dx = position.current.x - last.current.x;
+    const dz = position.current.z - last.current.z;
+
+    group.current.position.copy(position.current);
+    if (moved) group.current.rotation.y = Math.atan2(dx, dz);
+
+    const t = clock.elapsedTime * 8.2;
+    const swing = moved ? Math.sin(t) * 0.46 : 0;
+    const bob = moved
+      ? Math.abs(Math.sin(t)) * 0.023
+      : Math.sin(clock.elapsedTime * 1.8) * 0.006;
+
+    if (torso.current) torso.current.position.y = bob;
+    if (leftArm.current) leftArm.current.rotation.x = swing;
+    if (rightArm.current) rightArm.current.rotation.x = -swing;
+    if (leftLeg.current) leftLeg.current.rotation.x = -swing * 0.74;
+    if (rightLeg.current) rightLeg.current.rotation.x = swing * 0.74;
+
+    last.current.copy(position.current);
+  });
+
+  const skin = '#a96f52';
+  const hair = '#241914';
+  const navy = '#0b274b';
+  const cream = '#f5f2eb';
+  const gold = '#d3a34f';
+  const denim = '#17223a';
+  const shoes = '#10151d';
+
+  return (
+    <group ref={group} position={CHARACTER_START.toArray()} scale={1.01}>
+      <group ref={torso}>
+        {/* Female main character: same polished blocky world, clearly different silhouette. */}
+        <mesh position={[0, 1.48, 0]} castShadow>
+          <boxGeometry args={[0.64, 0.88, 0.36]} />
+          <meshStandardMaterial color={cream} roughness={0.8} />
+        </mesh>
+
+        {/* Cropped navy jacket panels */}
+        <mesh position={[-0.225, 1.55, 0.205]} castShadow>
+          <boxGeometry args={[0.19, 0.67, 0.05]} />
+          <meshStandardMaterial color={navy} roughness={0.82} />
+        </mesh>
+        <mesh position={[0.225, 1.55, 0.205]} castShadow>
+          <boxGeometry args={[0.19, 0.67, 0.05]} />
+          <meshStandardMaterial color={navy} roughness={0.82} />
+        </mesh>
+
+        <mesh position={[0, 1.99, 0]} castShadow>
+          <boxGeometry args={[0.19, 0.20, 0.19]} />
+          <meshStandardMaterial color={skin} roughness={0.9} />
+        </mesh>
+
+        <mesh position={[0, 2.28, 0]} castShadow>
+          <boxGeometry args={[0.46, 0.47, 0.41]} />
+          <meshStandardMaterial color={skin} roughness={0.9} />
+        </mesh>
+
+        {/* Long dark hair: side sections + back section, no glasses. */}
+        <mesh position={[0, 2.54, -0.025]} castShadow>
+          <boxGeometry args={[0.50, 0.14, 0.42]} />
+          <meshStandardMaterial color={hair} roughness={1} />
+        </mesh>
+        <mesh position={[-0.205, 2.28, -0.07]} castShadow>
+          <boxGeometry args={[0.11, 0.52, 0.22]} />
+          <meshStandardMaterial color={hair} roughness={1} />
+        </mesh>
+        <mesh position={[0.205, 2.28, -0.07]} castShadow>
+          <boxGeometry args={[0.11, 0.52, 0.22]} />
+          <meshStandardMaterial color={hair} roughness={1} />
+        </mesh>
+        <mesh position={[0, 2.18, -0.205]} castShadow>
+          <boxGeometry args={[0.35, 0.46, 0.11]} />
+          <meshStandardMaterial color={hair} roughness={1} />
+        </mesh>
+
+        {/* Face */}
+        {[-0.10, 0.10].map((x) => (
+          <mesh key={`fe${x}`} position={[x, 2.32, 0.216]}>
+            <boxGeometry args={[0.042, 0.024, 0.016]} />
+            <meshStandardMaterial color="#171719" />
+          </mesh>
+        ))}
+        <mesh position={[0, 2.25, 0.226]}>
+          <boxGeometry args={[0.062, 0.09, 0.048]} />
+          <meshStandardMaterial color={skin} />
+        </mesh>
+        <mesh position={[0, 2.18, 0.216]}>
+          <boxGeometry args={[0.15, 0.028, 0.016]} />
+          <meshStandardMaterial color="#704238" />
+        </mesh>
+
+        {/* MARSHOUT gold chain */}
+        <mesh position={[0, 1.91, 0.205]} rotation={[Math.PI / 2, 0, 0]}>
+          <torusGeometry args={[0.13, 0.011, 6, 22, Math.PI]} />
+          <meshStandardMaterial color={gold} metalness={0.9} roughness={0.22} />
+        </mesh>
+      </group>
+
+      <group ref={leftArm} position={[-0.40, 1.70, 0]}>
+        <mesh position={[0, -0.30, 0]} castShadow>
+          <capsuleGeometry args={[0.09, 0.52, 6, 10]} />
+          <meshStandardMaterial color={skin} roughness={0.9} />
+        </mesh>
+        <mesh position={[0, -0.64, 0.02]}>
+          <boxGeometry args={[0.16, 0.18, 0.16]} />
+          <meshStandardMaterial color={skin} />
+        </mesh>
+      </group>
+
+      <group ref={rightArm} position={[0.40, 1.70, 0]}>
+        <mesh position={[0, -0.30, 0]} castShadow>
+          <capsuleGeometry args={[0.09, 0.52, 6, 10]} />
+          <meshStandardMaterial color={skin} roughness={0.9} />
+        </mesh>
+        <mesh position={[0, -0.64, 0.02]}>
+          <boxGeometry args={[0.16, 0.18, 0.16]} />
+          <meshStandardMaterial color={skin} />
+        </mesh>
+      </group>
+
+      {/* Slimmer dark trousers and low-profile shoes */}
+      <group ref={leftLeg} position={[-0.145, 1.05, 0]}>
+        <mesh position={[0, -0.46, 0]} castShadow>
+          <capsuleGeometry args={[0.115, 0.71, 6, 10]} />
+          <meshStandardMaterial color={denim} roughness={0.9} />
+        </mesh>
+        <mesh position={[0, -0.91, 0.10]}>
+          <boxGeometry args={[0.25, 0.16, 0.43]} />
+          <meshStandardMaterial color={shoes} roughness={0.88} />
+        </mesh>
+      </group>
+
+      <group ref={rightLeg} position={[0.145, 1.05, 0]}>
+        <mesh position={[0, -0.46, 0]} castShadow>
+          <capsuleGeometry args={[0.115, 0.71, 6, 10]} />
+          <meshStandardMaterial color={denim} roughness={0.9} />
+        </mesh>
+        <mesh position={[0, -0.91, 0.10]}>
+          <boxGeometry args={[0.25, 0.16, 0.43]} />
+          <meshStandardMaterial color={shoes} roughness={0.88} />
+        </mesh>
+      </group>
+    </group>
+  );
+}
+
+function GameCharacter({ gender, position }: { gender: Gender; position: THREE.Vector3 }) {
+  const staticPosition = useRef(position.clone());
+  staticPosition.current.copy(position);
+
+  return gender === 'woman'
+    ? <FemalePlayer position={staticPosition} />
+    : <MalePlayer position={staticPosition} />;
 }
 
 
@@ -897,6 +1104,7 @@ function RocketWorld({
   onTelemetry,
 
   crewIn,
+  gender,
 
 }: {
 
@@ -907,10 +1115,15 @@ function RocketWorld({
   onTelemetry: (t: Telemetry) => void;
 
   crewIn: boolean;
+  gender: Gender;
 
 }) {
 
   const { liveries } = usePlaneStore();
+  const rocketLiveries = {
+    insu: liveries.insu ?? null,
+    insl: liveries.insl ?? null,
+  };
 
   const rocketRef = useRef<THREE.Group>(null);
 
@@ -1076,9 +1289,9 @@ function RocketWorld({
 
 
 
-    scene.background = new THREE.Color(earthMode ? '#8fc5df' : marsMode ? '#c9784f' : '#020711');
+    scene.background = new THREE.Color(earthMode ? '#79b7d2' : marsMode ? '#c9784f' : '#020711');
 
-    scene.fog = earthMode ? new THREE.Fog('#a9d5e5', 28, 115) : marsMode ? new THREE.Fog('#c9784f', 30, 105) : null;
+    scene.fog = earthMode ? new THREE.Fog('#93c6d8', 25, 110) : marsMode ? new THREE.Fog('#c9784f', 30, 105) : null;
 
 
 
@@ -1135,22 +1348,17 @@ function RocketWorld({
 
       <group ref={rocketRef} position={[0, 0.08, 0]}>
 
-        <Rocket liveries={liveries} enginesOn={enginesOn} />
+        <Rocket liveries={rocketLiveries} enginesOn={enginesOn} />
 
       </group>
+      {phase === 'exited' && (
+        <GameCharacter
+          gender={gender}
+          position={new THREE.Vector3(1.55, 0, 1.35)}
+        />
+      )}
 
-
-
-      <MarsAstronaut visible={(phase === 'parked' && !crewIn) || phase === 'exited'} animated={phase === 'parked' && !crewIn} />
-
-      <Homie
-        visible={(phase === 'parked' && !crewIn) || phase === 'exited'}
-        playable={(phase === 'parked' && !crewIn) || phase === 'exited'}
-      />
-
-
-
-      {phase === 'space' && (
+{phase === 'space' && (
 
         <Html position={[0, 6.2, 0]} center distanceFactor={12} style={{ pointerEvents: 'none' }}>
 
@@ -1215,8 +1423,12 @@ export default function FlyRocket() {
   const go = useNavigate();
 
   const { liveries } = usePlaneStore();
+  const savedGender = usePlaneStore((state) => state.gender);
+  const gender: Gender = savedGender === 'woman' ? 'woman' : 'man';
 
-  const missionReady = Boolean(liveries['flag-left'] && liveries['flag-right']);
+  // Rocket paint is stored separately by RockHangar as insu / insl.
+  // Reading flag-left / flag-right here was why FlyRocket could not see the painted rocket.
+  const missionReady = Boolean(liveries.insu && liveries.insl);
 
   const [phase, setPhase] = useState<RocketPhase>('parked');
 
@@ -1397,7 +1609,7 @@ export default function FlyRocket() {
 
   const status: Record<RocketPhase, [string, string]> = {
 
-    parked: ['READY ON EARTH', crewIn ? 'Crew is inside. Autopilot is standing by for takeoff.' : 'Astro and Homie2 are outside. Get in before takeoff.'],
+    parked: ['READY ON EARTH', crewIn ? 'You are secured inside. Autopilot is standing by for takeoff.' : 'Your Mars transfer is ready. Get in before takeoff.'],
 
     launch: ['LIFTOFF', 'Main engines firing. The rocket is climbing automatically.'],
 
@@ -1412,7 +1624,7 @@ export default function FlyRocket() {
 
     landed: ['LANDED ON MARS', 'Speed is zero. The rocket is secure. You can get out.'],
 
-    exited: ['WELCOME TO MARS', 'Mission complete. Astronaut is outside the vehicle.'],
+    exited: ['WELCOME TO MARS', 'Mission complete. You are standing on the Martian surface.'],
 
   };
 
@@ -1446,7 +1658,7 @@ export default function FlyRocket() {
 
       >
 
-        <RocketWorld phase={phase} setPhase={setPhase} onTelemetry={setTelemetry} crewIn={crewIn} />
+        <RocketWorld phase={phase} setPhase={setPhase} onTelemetry={setTelemetry} crewIn={crewIn} gender={gender} />
 
       </Canvas>
 
@@ -1588,7 +1800,6 @@ export default function FlyRocket() {
           <span><kbd>E</kbd><b>GET OUT</b></span>
 
           <span><kbd>M</kbd><b>SOUND</b></span>
-          {((phase === 'parked' && !crewIn) || phase === 'exited') && <span><kbd>WASD</kbd><b>MOVE HOMIE2</b></span>}
 
           <span className="mouse"><b>DRAG MOUSE</b><small>ROTATE CAMERA</small></span>
 
