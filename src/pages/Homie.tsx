@@ -5,8 +5,10 @@ import {
   type ReactNode,
 } from 'react';
 import ImageEditor from '@unlayer/react-image-editor';
+import { useNavigate } from 'react-router-dom';
 
 type Vehicle = 'Plane' | 'Rocket';
+type Destination = 'Port Gellhorn' | 'Mars';
 type PersonId = 'man' | 'mann' | 'woman';
 
 const PEOPLE = [
@@ -15,12 +17,13 @@ const PEOPLE = [
   { id: 'woman' as PersonId, label: 'WOMAN', src: '/woman.webp' },
 ];
 
-const DEFAULT_CITY = 'Los Angeles';
+const DEFAULT_CITY: Destination = 'Port Gellhorn';
 
 export default function Homie() {
-  const [city, setCity] = useState(DEFAULT_CITY);
+  const navigate = useNavigate();
+  const [city, setCity] = useState<Destination>(DEFAULT_CITY);
   const [name, setName] = useState('');
-  const [vehicle, setVehicle] = useState<Vehicle>('Plane');
+  const vehicle: Vehicle = city === 'Mars' ? 'Rocket' : 'Plane';
   const [person, setPerson] = useState<PersonId>('man');
   const [portraitSrc, setPortraitSrc] = useState('/man.webp');
   const [uploaded, setUploaded] = useState(false);
@@ -30,7 +33,7 @@ export default function Homie() {
   const [exporting, setExporting] = useState(false);
 
   const fileInput = useRef<HTMLInputElement | null>(null);
-  const destination = city.trim() || DEFAULT_CITY;
+  const destination = city;
 
   const pickPerson = (id: PersonId, src: string) => {
     setPerson(id);
@@ -281,12 +284,14 @@ export default function Homie() {
   return (
     <main className="homie">
       <style>{CSS}</style>
+      <div className="viceAtmosphere" aria-hidden="true"><i className="vicePalm vicePalmOne">✳</i><i className="vicePalm vicePalmTwo">✳</i><span>VICE CITY / AFTER HOURS</span></div>
 
       <section className="shell">
         <header className="header">
           <div>
-            <span className="kicker">MARSHOUT / FLYER MAKER</span>
-            <h1>Design where you wanna be taken.</h1>
+            <span className="kicker">MARSHOUT / VICE CITY FLYER STUDIO</span>
+            <h1>Make the flyer. <em>Pick the escape.</em></h1>
+            <p className="headerDeck">A sun-soaked city flyer studio for your next door out.</p>
           </div>
 
           <div className="headerMeta">
@@ -298,14 +303,14 @@ export default function Homie() {
         <div className="workspace">
           <aside className="leftColumn">
             <div className="controls">
-              <Step number="01" title="WHERE ARE WE GOING? TYPE MARS OR A CITY ON EARTH">
-                <input
-                  className="city"
-                  value={city}
-                  onChange={(event) => setCity(event.target.value)}
-                  placeholder="Los Angeles"
-                  maxLength={42}
-                />
+              <Step number="01" title="WHERE ARE WE GOING?">
+                <div className="destinationSelectWrap">
+                  <select className="city destinationSelect" value={city} onChange={(event) => setCity(event.target.value as Destination)} aria-label="Choose destination">
+                    <option value="Port Gellhorn">Port Gellhorn</option>
+                    <option value="Mars">Mars</option>
+                  </select>
+                  <span className="selectArrow">⌄</span>
+                </div>
 
                 <div className="personalField">
                   <span>YOUR NAME</span>
@@ -319,19 +324,11 @@ export default function Homie() {
                 </div>
               </Step>
 
-              <Step number="02" title="CHOOSE YOUR VEHICLE">
-                <div className="vehicles">
-                  {(['Plane', 'Rocket'] as Vehicle[]).map((item) => (
-                    <button
-                      type="button"
-                      key={item}
-                      className={`vehicle ${vehicle === item ? 'active' : ''}`}
-                      onClick={() => setVehicle(item)}
-                    >
-                      <b>{item === 'Plane' ? '✈' : '▲'}</b>
-                      <span>{item}</span>
-                    </button>
-                  ))}
+              <Step number="02" title="YOUR RIDE">
+                <div className="routeVehicle">
+                  <b>{vehicle === 'Plane' ? '✈' : '▲'}</b>
+                  <span><small>{destination === 'Mars' ? 'MARS TRANSFER' : 'PORT GELLHORN TRANSFER'}</small><strong>{vehicle}</strong></span>
+                  <em>AUTO MATCHED</em>
                 </div>
               </Step>
 
@@ -467,6 +464,9 @@ export default function Homie() {
             <div className="stage">
               <article className="flyer">
                 <div className="grid" />
+                <div className="flyerSun" />
+                <div className="flyerPalm" aria-hidden="true">✳</div>
+                <div className="routeStamp">{destination === 'Mars' ? 'VC → MARS' : 'VC → PORT GELLHORN'}</div>
 
                 <div className="brand">
                   <i />
@@ -516,6 +516,9 @@ export default function Homie() {
             </div>
 
             <div className="actions">
+              <button type="button" className="anotherDoor" onClick={() => navigate('/')}>
+                <span>←</span><b>OPEN ANOTHER DOOR</b>
+              </button>
               <button
                 type="button"
                 className="editAgain"
@@ -1336,6 +1339,13 @@ const CSS = `
   text-transform: uppercase;
 }
 
+.viceAtmosphere{position:fixed;inset:0;overflow:hidden;pointer-events:none;z-index:0}.viceAtmosphere:after{content:"";position:absolute;right:-8vw;top:-12vw;width:46vw;height:46vw;border-radius:50%;background:radial-gradient(circle,#f2c77d 0 18%,rgba(242,199,125,.26) 19% 42%,transparent 64%);opacity:.55}.viceAtmosphere>span{position:absolute;right:4vw;top:18px;color:rgba(7,26,56,.12);font-size:8px;font-weight:950;letter-spacing:.22em}.vicePalm{position:absolute;color:#0b2a52;opacity:.035;font-style:normal;font-size:clamp(250px,35vw,560px);line-height:1}.vicePalmOne{right:-5vw;top:6vh;transform:rotate(-15deg)}.vicePalmTwo{left:-8vw;bottom:-15vh;transform:rotate(18deg)}
+.shell{position:relative;z-index:1}.header h1 em{font-family:Georgia,serif;font-weight:400;color:#c08b43}.headerDeck{margin:10px 0 0;color:rgba(7,26,56,.46);font-size:11px;font-weight:700}
+.destinationSelectWrap{position:relative}.destinationSelect{appearance:none;-webkit-appearance:none;padding-right:48px;cursor:pointer}.selectArrow{position:absolute;right:16px;top:50%;transform:translateY(-55%);color:#c08b43;font-size:22px;font-weight:900;pointer-events:none}
+.routeVehicle{min-height:70px;padding:12px 14px;border:1px solid rgba(7,26,56,.1);border-radius:8px;background:linear-gradient(135deg,#071a38,#0b2a52);color:white;display:grid;grid-template-columns:42px 1fr auto;align-items:center;gap:12px}.routeVehicle>b{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:#d3a252;color:#071a38;font-size:18px}.routeVehicle span small,.routeVehicle span strong{display:block}.routeVehicle span small{color:rgba(255,255,255,.45);font-size:7px;font-weight:950;letter-spacing:.13em}.routeVehicle span strong{margin-top:3px;font-size:14px}.routeVehicle em{font-style:normal;color:#d3a252;font-size:7px;font-weight:950;letter-spacing:.12em}
+.flyerSun{position:absolute;right:-9%;top:7%;width:43%;aspect-ratio:1;border-radius:50%;background:radial-gradient(circle,#f2c778 0 42%,rgba(211,162,82,.13) 43% 67%,transparent 68%);opacity:.28;z-index:-1}.flyerPalm{position:absolute;right:-4%;top:2%;z-index:-1;color:#020b18;opacity:.31;font-size:clamp(120px,17vw,235px);transform:rotate(-17deg)}.routeStamp{position:absolute;right:6%;top:7%;z-index:6;padding:7px 9px;border:1px solid rgba(211,162,82,.5);color:#d3a252;font-size:clamp(5px,.55vw,7px);font-weight:950;letter-spacing:.12em;background:rgba(6,21,45,.45)}
+.anotherDoor{height:48px;padding:0 15px;border:1px solid rgba(192,139,67,.42);border-radius:7px;background:#fffaf1;color:#071a38;display:flex;align-items:center;gap:9px;cursor:pointer;font-size:8px;letter-spacing:.1em}.anotherDoor span{color:#c08b43;font-size:17px}.anotherDoor b{font-size:8px}.anotherDoor:hover{border-color:#c08b43;background:#fff4df}
+
 @media (max-width: 1150px) {
   .workspace {
     grid-template-columns: 1fr;
@@ -1402,8 +1412,10 @@ const CSS = `
     flex-direction: column;
   }
 
+  .anotherDoor,
   .editAgain {
     width: 100%;
+    justify-content: center;
   }
 
   .downloadReady {
