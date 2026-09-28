@@ -419,101 +419,135 @@ function Rocket({ liveries, enginesOn = false }: { liveries: { insu: string | nu
 
 
 
-function CityBuilding({ x, z, h, w }: { x: number; z: number; h: number; w: number }) {
+function CityBuilding({ x, z, h, w, variant = 0 }: { x: number; z: number; h: number; w: number; variant?: number }) {
+  const body = ['#f1eee7', '#102848', '#e7e3db'][variant % 3];
+  const accent = variant % 2 === 0 ? '#d3a34f' : '#f4f0e8';
+  const depth = Math.max(4.8, w * 0.58);
+  const floors = Math.max(4, Math.floor(h / 1.65));
 
   return (
+    <group position={[x, 0, z]}>
+      <mesh position={[0, h / 2, 0]} castShadow receiveShadow>
+        <boxGeometry args={[w, h, depth]} />
+        <meshStandardMaterial color={body} roughness={0.7} metalness={variant === 1 ? 0.12 : 0.03} />
+      </mesh>
+      <mesh position={[0, h + 0.18, 0]} castShadow>
+        <boxGeometry args={[w + 0.55, 0.36, depth + 0.5]} />
+        <meshStandardMaterial color="#111c33" metalness={0.42} roughness={0.34} />
+      </mesh>
 
-    <group position={[x, h / 2, z]}>
-
-      <RoundedBox args={[w, h, w * 0.82]} radius={0.08} smoothness={2} castShadow receiveShadow>
-
-        <meshStandardMaterial color={h > 8 ? '#6e8292' : '#8c9ca8'} roughness={0.74} />
-
-      </RoundedBox>
-
-      {Array.from({ length: Math.max(2, Math.floor(h / 1.1)) }, (_, i) => (
-
-        <mesh key={i} position={[0, h / 2 - 0.65 - i * 0.9 - h / 2, w * 0.415 + 0.006]}>
-
-          <planeGeometry args={[w * 0.58, 0.15]} />
-
-          <meshBasicMaterial color="#cce8f4" toneMapped={false} />
-
+      {[-w * 0.38, -w * 0.14, w * 0.14, w * 0.38].map((offset) => (
+        <mesh key={offset} position={[offset, h / 2, depth / 2 + 0.055]}>
+          <boxGeometry args={[0.11, h - 0.45, 0.12]} />
+          <meshStandardMaterial color={accent} emissive={accent} emissiveIntensity={0.28} />
         </mesh>
-
       ))}
 
+      {Array.from({ length: floors }, (_, floor) => {
+        const y = 1.15 + floor * 1.5;
+        return [-w * 0.27, 0, w * 0.27].map((wx, col) => (
+          <mesh key={`${floor}-${col}`} position={[wx, y, depth / 2 + 0.07]}>
+            <boxGeometry args={[Math.max(0.55, w * 0.18), 0.72, 0.08]} />
+            <meshStandardMaterial
+              color="#f5f1e8"
+              emissive={col === 1 && floor % 3 === 0 ? '#d3a34f' : '#c9d7e5'}
+              emissiveIntensity={col === 1 && floor % 3 === 0 ? 0.72 : 0.24}
+            />
+          </mesh>
+        ));
+      })}
+
+      <mesh position={[0, 1.35, depth / 2 + 0.11]}>
+        <boxGeometry args={[Math.min(2.3, w * 0.42), 2.7, 0.14]} />
+        <meshStandardMaterial color="#102334" metalness={0.68} roughness={0.2} />
+      </mesh>
+      <mesh position={[0, 2.92, depth / 2 + 0.19]} castShadow>
+        <boxGeometry args={[Math.min(4.6, w * 0.7), 0.22, 1.35]} />
+        <meshStandardMaterial color="#101c32" />
+      </mesh>
     </group>
-
   );
-
 }
 
+function LaunchPalm({ x, z, scale = 1 }: { x: number; z: number; scale?: number }) {
+  return (
+    <group position={[x, 0, z]} scale={scale}>
+      <mesh position={[0, 2.25, 0]} rotation={[0, 0, -0.06]} castShadow>
+        <cylinderGeometry args={[0.12, 0.24, 4.5, 9]} />
+        <meshStandardMaterial color="#6d5944" roughness={0.9} />
+      </mesh>
+      {Array.from({ length: 8 }, (_, i) => (
+        <mesh key={i} position={[0, 4.45, 0]} rotation={[0.1, (i * Math.PI * 2) / 8, 0.72]}>
+          <coneGeometry args={[0.34, 3.3, 5]} />
+          <meshStandardMaterial color={i % 2 ? '#173b35' : '#244b40'} side={THREE.DoubleSide} />
+        </mesh>
+      ))}
+    </group>
+  );
+}
 
+function LaunchStreetLight({ x, z }: { x: number; z: number }) {
+  return (
+    <group position={[x, 0, z]}>
+      <mesh position={[0, 2.8, 0]}><cylinderGeometry args={[0.055, 0.09, 5.6, 8]} /><meshStandardMaterial color="#0a1930" metalness={0.7} /></mesh>
+      <mesh position={[0.45, 5.55, 0]}><boxGeometry args={[0.95, 0.12, 0.16]} /><meshStandardMaterial color="#0a1930" /></mesh>
+      <mesh position={[0.88, 5.42, 0]}><boxGeometry args={[0.28, 0.1, 0.25]} /><meshStandardMaterial color="#f4f0e8" emissive="#d3a34f" emissiveIntensity={2.4} /></mesh>
+      <pointLight position={[0.88, 5.25, 0]} intensity={3.6} distance={10} color="#f0c778" />
+    </group>
+  );
+}
 
 function EarthLaunchSite({ lift }: { lift: number }) {
-
-  const buildings = useMemo(
-
-    () => Array.from({ length: 26 }, (_, i) => ({
-
-      x: (i % 2 ? 1 : -1) * (5.2 + (i % 5) * 2.3),
-
-      z: -8 + (i % 9) * 4.2,
-
-      h: 3.5 + (i % 7) * 1.6,
-
-      w: 1.1 + (i % 3) * 0.45,
-
-    })),
-
-    [],
-
-  );
-
-
+  const buildings = useMemo(() => [
+    { x: -19, z: -23, h: 18, w: 8.5, variant: 0 },
+    { x: -9,  z: -27, h: 25, w: 9.2, variant: 1 },
+    { x: 3,   z: -30, h: 21, w: 8.8, variant: 2 },
+    { x: 15,  z: -27, h: 29, w: 9.8, variant: 1 },
+    { x: 27,  z: -23, h: 20, w: 8.2, variant: 0 },
+    { x: -28, z: -17, h: 14, w: 7.5, variant: 2 },
+    { x: 35,  z: -16, h: 16, w: 7.8, variant: 0 },
+  ], []);
 
   return (
-
     <group position={[0, -lift, 0]}>
-
       <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-
-        <planeGeometry args={[120, 120]} />
-
-        <meshStandardMaterial color="#667b62" roughness={1} />
-
+        <planeGeometry args={[140, 140]} />
+        <meshStandardMaterial color="#18372f" roughness={1} />
       </mesh>
 
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 0]} receiveShadow>
-
-        <circleGeometry args={[4.8, 64]} />
-
-        <meshStandardMaterial color="#9da7ad" roughness={0.9} />
-
+      {/* Vice City-style launch boulevard, with the skyline deliberately kept away from the rocket. */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.018, -10]} receiveShadow>
+        <planeGeometry args={[105, 11]} />
+        <meshStandardMaterial color="#111b2b" roughness={0.96} />
       </mesh>
-
-      {[2.1, 3.25, 4.25].map((r) => (
-
-        <mesh key={r} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.035, 0]}>
-
-          <ringGeometry args={[r - 0.035, r, 64]} />
-
-          <meshBasicMaterial color="#d8a35c" />
-
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.035, -4.15]} receiveShadow>
+        <planeGeometry args={[105, 2.2]} />
+        <meshStandardMaterial color="#d9d5cc" roughness={0.9} />
+      </mesh>
+      {Array.from({ length: 24 }, (_, i) => (
+        <mesh key={i} rotation={[-Math.PI / 2, 0, 0]} position={[-46 + i * 4, 0.04, -10]}>
+          <planeGeometry args={[1.8, 0.1]} />
+          <meshBasicMaterial color="#d3a34f" />
         </mesh>
+      ))}
 
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.045, 0]} receiveShadow>
+        <circleGeometry args={[5.4, 64]} />
+        <meshStandardMaterial color="#9da7ad" roughness={0.9} />
+      </mesh>
+      {[2.3, 3.6, 4.8].map((r) => (
+        <mesh key={r} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.055, 0]}>
+          <ringGeometry args={[r - 0.045, r, 64]} />
+          <meshBasicMaterial color="#d3a34f" />
+        </mesh>
       ))}
 
       {buildings.map((b, i) => <CityBuilding key={i} {...b} />)}
-
+      {[-25, -14, 11, 23, 34].map((x, i) => <LaunchPalm key={x} x={x} z={i % 2 ? -5.6 : -15.2} scale={i % 2 ? 0.9 : 1.08} />)}
+      {[-22, -10, 9, 21, 33].map((x) => <LaunchStreetLight key={x} x={x} z={-4.8} />)}
     </group>
-
   );
-
 }
-
-
 
 function CloudLayer({ offset }: { offset: number }) {
 
@@ -1105,6 +1139,8 @@ function RocketWorld({
 
   gender,
 
+  crewIn,
+
 }: {
 
   phase: RocketPhase;
@@ -1114,6 +1150,8 @@ function RocketWorld({
   onTelemetry: (t: Telemetry) => void;
 
   gender: Gender;
+
+  crewIn: boolean;
 
 }) {
 
@@ -1349,6 +1387,12 @@ function RocketWorld({
         <Rocket liveries={rocketLiveries} enginesOn={enginesOn} />
 
       </group>
+      {phase === 'parked' && !crewIn && (
+        <GameCharacter
+          gender={gender}
+          position={new THREE.Vector3(1.65, 0, 1.45)}
+        />
+      )}
       {phase === 'exited' && (
         <GameCharacter
           gender={gender}
@@ -1656,7 +1700,7 @@ export default function FlyRocket() {
 
       >
 
-        <RocketWorld phase={phase} setPhase={setPhase} onTelemetry={setTelemetry} gender={gender} />
+        <RocketWorld phase={phase} setPhase={setPhase} onTelemetry={setTelemetry} gender={gender} crewIn={crewIn} />
 
       </Canvas>
 
