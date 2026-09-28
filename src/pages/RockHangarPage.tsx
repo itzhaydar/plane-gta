@@ -33,7 +33,7 @@ const FACES: RocketFace[] = ['insu', 'insl'];
 const UPPER_PANEL_FALLBACK = '/templates/insu.svg';
 const LOWER_PANEL_FALLBACK = '/templates/insl.svg';
 
-useGLTF.preload('/pilot-out.glb');
+useGLTF.preload('/astro.glb');
 
 // ============================================================
 // EDITABLE MISSION PANEL MATERIAL
@@ -68,16 +68,16 @@ function MissionSkin({
 }
 
 // ============================================================
-// PILOT - SAME MODEL AS THE PLANE HANGAR
+// ASTRO — MARS CREW MODEL
 // ============================================================
 
-const PILOT_HEIGHT = 1.32;
+const ASTRO_HEIGHT = 1.32;
 
 function HangarMan({
   position = [1.7, 0, 0.55] as [number, number, number],
 }) {
   const invalidate = useThree((state) => state.invalidate);
-  const { scene, animations } = useGLTF('/pilot-out.glb');
+  const { scene, animations } = useGLTF('/astro.glb');
 
   const man = useMemo(() => {
     const clone = SkeletonUtils.clone(scene);
@@ -92,7 +92,7 @@ function HangarMan({
 
     const box = new THREE.Box3().setFromObject(clone);
     const size = box.getSize(new THREE.Vector3());
-    const scale = PILOT_HEIGHT / Math.max(size.y, 1e-6);
+    const scale = ASTRO_HEIGHT / Math.max(size.y, 1e-6);
 
     clone.scale.multiplyScalar(scale);
     clone.updateMatrixWorld(true);
@@ -807,6 +807,7 @@ export default function RockHangar() {
   const go = useNavigate();
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [muted, setMuted] = useState(true);
+  const [introOpen, setIntroOpen] = useState(true);
 
   const {
     activeFace,
@@ -885,11 +886,80 @@ export default function RockHangar() {
     <main className="rocket-bay">
       <style>{ROCKET_BAY_CSS}</style>
 
+      {introOpen && (
+        <div className="mars-mission-intro">
+          <div className="mars-mission-card">
+            <span className="mars-mission-kicker">MARSHOUT / MARS TRANSFER BRIEFING</span>
+
+            <h1>
+              Your Mars seat is <em>cleared.</em>
+            </h1>
+
+            <p>
+              Transfer fare is zero. Before departure, mission protocol requires
+              both the <strong>upper</strong> and <strong>lower insignias</strong>
+              to be flight-marked to at least {TAKEOFF_SCORE}% coverage.
+            </p>
+
+            <div className="mars-mission-tip">
+              <span className="mars-orbit-icon">◉</span>
+              <div>
+                <b>COMPLETE BOTH VEHICLE MARKINGS.</b>
+                <small>
+                  Use the <strong>Draw</strong> tool on each insignia. Preserve
+                  the panel geometry; apply your markings directly to the surface.
+                </small>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              className="mars-mission-ok"
+              onClick={() => setIntroOpen(false)}
+            >
+              <span>BEGIN PRE-FLIGHT MARKING</span>
+              <b>→</b>
+            </button>
+          </div>
+        </div>
+      )}
+
+      <header className="rocket-hangar-topbar">
+        <button
+          type="button"
+          className="rocket-top-door"
+          onClick={() => go('/')}
+        >
+          <span className="rocket-top-door-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <path d="M3 11.2 12 4l9 7.2" />
+              <path d="M5.5 10.2V21h13V10.2" />
+              <path d="M9.5 21v-6.7h5V21" />
+              <path d="M14.5 14.3h2.2" />
+            </svg>
+          </span>
+
+          <span>
+            <small>BACK TO THE BOULEVARD</small>
+            <strong>OPEN ANOTHER DOOR</strong>
+          </span>
+
+          <b>↗</b>
+        </button>
+
+        <div className="rocket-hangar-title">
+          <small>MARSHOUT / MARS LAUNCH BAY</small>
+          <strong>MARK THE INSIGNIAS</strong>
+        </div>
+
+        <SoundToggle muted={muted} onToggle={toggleSound} />
+      </header>
+
       <section className="rocket-bay-layout">
         <aside className="rocket-bay-editor">
           <div className="rocket-bay-editor-head">
             <p className="rocket-bay-prompt">
-              Suit up, astronaut. Finish both mission insignias, then we launch for Mars.
+              Flight marking protocol: complete the upper and lower insignias before Mars departure.
             </p>
 
             <div className="rocket-bay-faces">
@@ -934,19 +1004,6 @@ export default function RockHangar() {
 
             <button
               type="button"
-              className="rocket-bay-door-button"
-              onClick={() => go('/')}
-            >
-              OPEN ANOTHER DOOR
-            </button>
-
-            <SoundToggle
-              muted={muted}
-              onToggle={toggleSound}
-            />
-
-            <button
-              type="button"
               onClick={() => {
                 if (painted) {
                   go('/fly-rocket');
@@ -987,22 +1044,22 @@ camera={{
             >
               <color
                 attach="background"
-                args={['#d8c7b4']}
+                args={['#17243a']}
               />
 
-              <fog attach="fog" args={['#d8c7b4', 9, 22]} />
+              <fog attach="fog" args={['#17243a', 9, 24]} />
 
-              <ambientLight intensity={0.72} />
+              <ambientLight intensity={0.46} />
 
               <hemisphereLight
                 intensity={0.65}
-                color="#ffe8c7"
-                groundColor="#48515a"
+                color="#ffcf9f"
+                groundColor="#18222e"
               />
 
               <directionalLight
                 position={[5, 9, 5]}
-                intensity={2.1}
+                intensity={2.35}
                 castShadow
                 shadow-mapSize-width={1024}
                 shadow-mapSize-height={1024}
@@ -1015,16 +1072,24 @@ camera={{
 
               <pointLight
                 position={[-3.4, 2.2, 2.8]}
-                color="#ffb866"
-                intensity={12}
+                color="#ff8f5a"
+                intensity={15}
                 distance={8}
                 decay={2}
               />
               <pointLight
                 position={[3.5, 2.4, -2.4]}
-                color="#8fb8df"
-                intensity={8}
+                color="#6ca9df"
+                intensity={10}
                 distance={8}
+                decay={2}
+              />
+
+              <pointLight
+                position={[0, 4.8, 1.8]}
+                color="#d79a46"
+                intensity={5}
+                distance={10}
                 decay={2}
               />
 
@@ -1044,7 +1109,7 @@ camera={{
                       whiteSpace: 'nowrap',
                     }}
                   >
-                    pilot preparing the launch vehicle…
+                    ASTRO RUNNING PRE-FLIGHT…
                   </Html>
                 }
               >
@@ -1065,11 +1130,11 @@ camera={{
             </Canvas>
 
             <div className="rocket-bay-viewport-label">
-              <span>Drag to inspect the rocket • Scroll to zoom</span>
+              <span>DRAG TO INSPECT • SCROLL TO ZOOM • MARS VEHICLE 01</span>
             </div>
 
             <div className="rocket-bay-corner">
-              <span>MARS TRANSFER VEHICLE</span>
+              <span>VICE CITY / MARS TRANSFER VEHICLE</span>
               <strong>01</strong>
             </div>
           </div>
@@ -1406,6 +1471,248 @@ const ROCKET_BAY_CSS = `
     color: #c58b3c;
   }
 
+
+  .rocket-hangar-topbar {
+    position: relative;
+    z-index: 20;
+    height: 84px;
+    padding: 12px clamp(18px, 3vw, 46px);
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 18px;
+    border-bottom: 1px solid rgba(7, 26, 56, 0.1);
+    background: rgba(248, 245, 238, 0.96);
+    backdrop-filter: blur(16px);
+  }
+
+  .rocket-top-door {
+    justify-self: start;
+    min-height: 58px;
+    padding: 7px 12px 7px 8px;
+    border: 1px solid rgba(192, 139, 67, 0.55);
+    border-radius: 9px;
+    background: #071a38;
+    color: #fff;
+    display: grid;
+    grid-template-columns: 43px auto 18px;
+    align-items: center;
+    gap: 11px;
+    text-align: left;
+    cursor: pointer;
+    box-shadow: 0 12px 28px rgba(7, 26, 56, 0.16);
+    transition: 150ms ease;
+  }
+
+  .rocket-top-door:hover {
+    transform: translateY(-2px);
+    border-color: #d3a252;
+  }
+
+  .rocket-top-door-icon {
+    width: 43px;
+    height: 43px;
+    border-radius: 7px;
+    background: #d3a252;
+    color: #071a38;
+    display: grid;
+    place-items: center;
+  }
+
+  .rocket-top-door-icon svg {
+    width: 24px;
+    height: 24px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .rocket-top-door small,
+  .rocket-top-door strong {
+    display: block;
+  }
+
+  .rocket-top-door small {
+    color: rgba(255,255,255,.48);
+    font-size: 6px;
+    font-weight: 950;
+    letter-spacing: .13em;
+  }
+
+  .rocket-top-door strong {
+    margin-top: 3px;
+    font-size: 9px;
+    letter-spacing: .1em;
+  }
+
+  .rocket-top-door > b {
+    color: #d3a252;
+    font-size: 17px;
+  }
+
+  .rocket-hangar-title {
+    text-align: center;
+  }
+
+  .rocket-hangar-title small,
+  .rocket-hangar-title strong {
+    display: block;
+  }
+
+  .rocket-hangar-title small {
+    color: #b77e38;
+    font-size: 7px;
+    font-weight: 950;
+    letter-spacing: .18em;
+  }
+
+  .rocket-hangar-title strong {
+    margin-top: 3px;
+    font-size: 18px;
+    letter-spacing: -.03em;
+  }
+
+  .rocket-hangar-topbar .rocket-bay-sound-toggle {
+    justify-self: end;
+    background: #fff;
+  }
+
+  .mars-mission-intro {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+    background:
+      radial-gradient(circle at 50% 35%, rgba(211, 162, 82, .16), transparent 28%),
+      rgba(4, 13, 29, .82);
+    backdrop-filter: blur(12px);
+  }
+
+  .mars-mission-card {
+    width: min(520px, 100%);
+    padding: 34px;
+    border: 1px solid rgba(211, 162, 82, .55);
+    border-radius: 12px;
+    color: #f8f3e8;
+    background:
+      linear-gradient(145deg, rgba(18, 42, 72, .98), rgba(5, 20, 43, .99));
+    box-shadow:
+      0 30px 90px rgba(0,0,0,.46),
+      inset 0 0 0 1px rgba(255,255,255,.035);
+  }
+
+  .mars-mission-kicker {
+    color: #d3a252;
+    font-size: 8px;
+    font-weight: 950;
+    letter-spacing: .2em;
+  }
+
+  .mars-mission-card h1 {
+    margin: 12px 0 10px;
+    max-width: 420px;
+    font-size: clamp(32px, 5vw, 54px);
+    line-height: .92;
+    letter-spacing: -.055em;
+  }
+
+  .mars-mission-card h1 em {
+    color: #d3a252;
+    font-style: italic;
+  }
+
+  .mars-mission-card > p {
+    margin: 0;
+    color: rgba(248,243,232,.72);
+    font-size: 13px;
+    line-height: 1.65;
+  }
+
+  .mars-mission-card > p strong {
+    color: #fff;
+  }
+
+  .mars-mission-tip {
+    margin: 24px 0 18px;
+    padding: 14px;
+    display: grid;
+    grid-template-columns: 42px 1fr;
+    gap: 12px;
+    align-items: center;
+    border: 1px solid rgba(211,162,82,.22);
+    border-radius: 8px;
+    background: rgba(255,255,255,.045);
+  }
+
+  .mars-orbit-icon {
+    width: 42px;
+    height: 42px;
+    display: grid;
+    place-items: center;
+    border: 1px solid rgba(211,162,82,.38);
+    border-radius: 50%;
+    color: #d3a252;
+    font-size: 18px;
+  }
+
+  .mars-mission-tip b,
+  .mars-mission-tip small {
+    display: block;
+  }
+
+  .mars-mission-tip b {
+    color: #fff;
+    font-size: 9px;
+    letter-spacing: .11em;
+  }
+
+  .mars-mission-tip small {
+    margin-top: 5px;
+    color: rgba(248,243,232,.58);
+    font-size: 10px;
+    line-height: 1.45;
+  }
+
+  .mars-mission-tip strong {
+    color: #d3a252;
+  }
+
+  .mars-mission-ok {
+    width: 100%;
+    height: 52px;
+    padding: 0 16px;
+    border: 0;
+    border-radius: 8px;
+    background: #d3a252;
+    color: #071a38;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    font-size: 9px;
+    font-weight: 950;
+    letter-spacing: .12em;
+  }
+
+  .mars-mission-ok b {
+    font-size: 18px;
+  }
+
+  .rocket-bay-viewport::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      linear-gradient(to top, rgba(3, 12, 26, .22), transparent 34%),
+      radial-gradient(circle at 76% 22%, rgba(255, 132, 82, .10), transparent 28%);
+    mix-blend-mode: screen;
+  }
+
   @media (max-width: 1050px) {
     .rocket-bay-layout {
       grid-template-columns: 1fr;
@@ -1429,6 +1736,29 @@ const ROCKET_BAY_CSS = `
   }
 
   @media (max-width: 650px) {
+    .rocket-hangar-topbar {
+      height: auto;
+      padding: 10px 12px;
+      grid-template-columns: 1fr auto;
+    }
+
+    .rocket-hangar-title {
+      display: none;
+    }
+
+    .rocket-top-door {
+      min-height: 52px;
+    }
+
+    .rocket-top-door small {
+      display: none;
+    }
+
+    .mars-mission-card {
+      padding: 26px 22px;
+    }
+
+
     .rocket-bay-layout {
       padding: 22px 22px 30px;
       gap: 26px;
