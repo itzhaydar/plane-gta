@@ -99,8 +99,8 @@ function StreetLight({ x, z = 4.2 }: { x: number; z?: number }) {
 
 type WalkerLook = { skin: string; top: string; bottom: string; hair: string; accent: string };
 
-function Pedestrian({ x, z, speed, direction, look, phase = 0 }: {
-  x: number; z: number; speed: number; direction: 1 | -1; look: WalkerLook; phase?: number;
+function Pedestrian({ x, z, speed, direction, look, phase = 0, variant = 'man' }: {
+  x: number; z: number; speed: number; direction: 1 | -1; look: WalkerLook; phase?: number; variant?: 'man' | 'woman';
 }) {
   const ref = useRef<THREE.Group>(null);
   const torso = useRef<THREE.Group>(null);
@@ -134,7 +134,7 @@ function Pedestrian({ x, z, speed, direction, look, phase = 0 }: {
       <group ref={torso}>
         {/* Same smooth blocky character language as the player, varied casual clothes */}
         <mesh position={[0, 1.48, 0]} castShadow>
-          <boxGeometry args={[0.70, 0.86, 0.38]} />
+          <boxGeometry args={[variant === 'woman' ? 0.64 : 0.70, 0.86, variant === 'woman' ? 0.36 : 0.38]} />
           <meshStandardMaterial color={look.top} roughness={0.84} />
         </mesh>
 
@@ -154,17 +154,40 @@ function Pedestrian({ x, z, speed, direction, look, phase = 0 }: {
           <meshStandardMaterial color={look.skin} roughness={0.9} />
         </mesh>
 
-        {/* cropped hair */}
-        <mesh position={[0, 2.53, -0.01]} castShadow>
-          <boxGeometry args={[0.49, 0.13, 0.42]} />
-          <meshStandardMaterial color={look.hair} roughness={1} />
-        </mesh>
-        {[-0.15,-0.05,0.05,0.15].map((hx, i) => (
-          <mesh key={hx} position={[hx, 2.595 + (i % 2) * .012, 0.015]}>
-            <boxGeometry args={[0.085, 0.065, 0.085]} />
-            <meshStandardMaterial color={look.hair} roughness={1} />
-          </mesh>
-        ))}
+        {/* Distinct hair silhouettes while keeping the same blocky visual language */}
+        {variant === 'woman' ? (
+          <>
+            <mesh position={[0, 2.51, -0.035]} castShadow>
+              <boxGeometry args={[0.51, 0.15, 0.43]} />
+              <meshStandardMaterial color={look.hair} roughness={1} />
+            </mesh>
+            <mesh position={[-0.21, 2.30, -0.08]} castShadow>
+              <boxGeometry args={[0.11, 0.48, 0.24]} />
+              <meshStandardMaterial color={look.hair} roughness={1} />
+            </mesh>
+            <mesh position={[0.21, 2.30, -0.08]} castShadow>
+              <boxGeometry args={[0.11, 0.48, 0.24]} />
+              <meshStandardMaterial color={look.hair} roughness={1} />
+            </mesh>
+            <mesh position={[0, 2.18, -0.20]} castShadow>
+              <boxGeometry args={[0.34, 0.36, 0.12]} />
+              <meshStandardMaterial color={look.hair} roughness={1} />
+            </mesh>
+          </>
+        ) : (
+          <>
+            <mesh position={[0, 2.53, -0.01]} castShadow>
+              <boxGeometry args={[0.49, 0.13, 0.42]} />
+              <meshStandardMaterial color={look.hair} roughness={1} />
+            </mesh>
+            {[-0.15,-0.05,0.05,0.15].map((hx, i) => (
+              <mesh key={hx} position={[hx, 2.595 + (i % 2) * .012, 0.015]}>
+                <boxGeometry args={[0.085, 0.065, 0.085]} />
+                <meshStandardMaterial color={look.hair} roughness={1} />
+              </mesh>
+            ))}
+          </>
+        )}
 
         {/* simple human face, no glasses */}
         {[-0.10,0.10].map((ex) => (
@@ -205,7 +228,7 @@ function Pedestrian({ x, z, speed, direction, look, phase = 0 }: {
         </mesh>
       </group>
 
-      <group ref={leftLeg} position={[-0.16,1.05,0]}>
+      <group ref={leftLeg} position={[variant === 'woman' ? -0.14 : -0.16,1.05,0]}>
         <mesh position={[0,-0.46,0]} castShadow>
           <capsuleGeometry args={[0.12,0.69,6,10]} />
           <meshStandardMaterial color={look.bottom} roughness={0.9} />
@@ -216,7 +239,7 @@ function Pedestrian({ x, z, speed, direction, look, phase = 0 }: {
         </mesh>
       </group>
 
-      <group ref={rightLeg} position={[0.16,1.05,0]}>
+      <group ref={rightLeg} position={[variant === 'woman' ? 0.14 : 0.16,1.05,0]}>
         <mesh position={[0,-0.46,0]} castShadow>
           <capsuleGeometry args={[0.12,0.69,6,10]} />
           <meshStandardMaterial color={look.bottom} roughness={0.9} />
@@ -378,13 +401,19 @@ function Player({ position }: { position: MutableRefObject<THREE.Vector3> }) {
 }
 
 function City({ position, near }: { position: MutableRefObject<THREE.Vector3>; near: number | null }) {
-  const walkers: Array<{x:number;z:number;speed:number;direction:1|-1;look:WalkerLook;phase:number}> = [
-    { x: 3,  z: -4.0, speed: 0.64, direction: 1,  phase: 0, look: { skin:'#70472f', top:'#d9c7a5', bottom:'#3b4558', hair:'#111317', accent:'#9b5a42' } },
-    { x: 12, z: 4.2,  speed: 0.52, direction: -1, phase: 2, look: { skin:'#d5a17e', top:'#9d554d', bottom:'#ded6c8', hair:'#38251d', accent:'#e0b967' } },
-    { x: 22, z: -4.0, speed: 0.70, direction: 1,  phase: 4, look: { skin:'#8b5a42', top:'#47748a', bottom:'#252833', hair:'#171311', accent:'#c9b38b' } },
-    { x: 31, z: 4.25, speed: 0.57, direction: -1, phase: 1, look: { skin:'#c88767', top:'#765d86', bottom:'#625144', hair:'#201914', accent:'#e2c98f' } },
-    { x: 41, z: -4.0, speed: 0.47, direction: -1, phase: 3, look: { skin:'#5f3d2c', top:'#627550', bottom:'#293a50', hair:'#0e1014', accent:'#d7b26a' } },
-    { x: 47, z: 4.15, speed: 0.60, direction: 1,  phase: 5, look: { skin:'#b97758', top:'#c06f3f', bottom:'#30343c', hair:'#2b1d18', accent:'#f0d7aa' } },
+  const walkers: Array<{x:number;z:number;speed:number;direction:1|-1;look:WalkerLook;phase:number;variant:'man'|'woman'}> = [
+    // North sidewalk — mixed crowd, equal speed preserves spacing.
+    { x: -7, z: -4.0, speed: 0.50, direction: 1, phase: 0.0, variant:'man', look: { skin:'#70472f', top:'#d9c7a5', bottom:'#3b4558', hair:'#111317', accent:'#9b5a42' } },
+    { x:  5, z: -4.0, speed: 0.50, direction: 1, phase: 1.2, variant:'woman', look: { skin:'#a96f52', top:'#a94f58', bottom:'#34394b', hair:'#251914', accent:'#e2bf77' } },
+    { x: 17, z: -4.0, speed: 0.50, direction: 1, phase: 2.4, variant:'man', look: { skin:'#5f3d2c', top:'#627550', bottom:'#293a50', hair:'#0e1014', accent:'#d7b26a' } },
+    { x: 29, z: -4.0, speed: 0.50, direction: 1, phase: 3.6, variant:'woman', look: { skin:'#c88767', top:'#4d7180', bottom:'#6c5146', hair:'#2c1b17', accent:'#e7d2a6' } },
+    { x: 41, z: -4.0, speed: 0.50, direction: 1, phase: 4.8, variant:'man', look: { skin:'#c99572', top:'#6c5d8f', bottom:'#33384a', hair:'#261b18', accent:'#d9c58d' } },
+
+    // South sidewalk — mixed crowd, opposite direction and stable gaps.
+    { x: 49, z: 4.2, speed: 0.46, direction: -1, phase: 0.6, variant:'woman', look: { skin:'#d5a17e', top:'#b27649', bottom:'#ded6c8', hair:'#3a241b', accent:'#e0b967' } },
+    { x: 37, z: 4.2, speed: 0.46, direction: -1, phase: 1.8, variant:'man', look: { skin:'#9b684c', top:'#315f67', bottom:'#6b594b', hair:'#1d1715', accent:'#d6b779' } },
+    { x: 25, z: 4.2, speed: 0.46, direction: -1, phase: 3.0, variant:'woman', look: { skin:'#653f31', top:'#8b668e', bottom:'#27303d', hair:'#111215', accent:'#d9b676' } },
+    { x: 13, z: 4.2, speed: 0.46, direction: -1, phase: 4.2, variant:'man', look: { skin:'#b97758', top:'#c06f3f', bottom:'#30343c', hair:'#2b1d18', accent:'#f0d7aa' } },
   ];
 
   return <>
@@ -407,10 +436,14 @@ function City({ position, near }: { position: MutableRefObject<THREE.Vector3>; n
     {[-1, 10, 21, 32, 43].map((x) => <StreetLight key={x} x={x} />)}
 
     {/* moving city life */}
-    <Car x={-12} z={1.75} speed={3.15} direction={1} kind={0} />
-    <Car x={20} z={-1.75} speed={3.35} direction={-1} kind={1} />
-    <Car x={34} z={1.75} speed={3.15} direction={1} kind={2} />
-    <Car x={54} z={-1.75} speed={3.35} direction={-1} kind={3} />
+    {/* Light traffic: three cars per lane, equal lane speeds preserve spacing. */}
+    <Car x={-12} z={1.75} speed={3.05} direction={1} kind={0} />
+    <Car x={10}  z={1.75} speed={3.05} direction={1} kind={2} />
+    <Car x={34}  z={1.75} speed={3.05} direction={1} kind={4} />
+
+    <Car x={54} z={-1.75} speed={3.25} direction={-1} kind={1} />
+    <Car x={31} z={-1.75} speed={3.25} direction={-1} kind={3} />
+    <Car x={8}  z={-1.75} speed={3.25} direction={-1} kind={5} />
     {walkers.map((w, i) => <Pedestrian key={i} {...w} />)}
 
     <Player position={position} />
@@ -459,7 +492,7 @@ export default function LandingPage() {
   }, [phase, count]);
 
   useEffect(() => {
-    if (phase === 'intro') return;
+    if (phase !== 'tour') return;
 
     if (!audioRef.current) {
       const audio = new Audio('/boot.mp3');
@@ -478,7 +511,6 @@ export default function LandingPage() {
     }
 
     return () => {
-      if (phase === 'tour') return;
       audio.pause();
     };
   }, [phase, soundOn]);
@@ -487,6 +519,10 @@ export default function LandingPage() {
     if (phase !== 'tour') return;
     const down = (event: KeyboardEvent) => {
       const key = event.key.toLowerCase();
+      if (key === 'm' && !event.repeat) {
+        setSoundOn((value) => !value);
+        return;
+      }
       if (['arrowleft', 'arrowright', 'arrowup', 'arrowdown', ' '].includes(key)) event.preventDefault();
       if (key === 'e') {
         if (activeRef.current !== null) {
@@ -515,12 +551,19 @@ export default function LandingPage() {
   return <div className="tour-page">
     <style>{CSS}</style>
     {phase !== 'intro' && <div className="tour-canvas"><Canvas shadows dpr={[1, 1.5]} camera={{ position: [-9, 5, 11], fov: 55 }} gl={{ antialias: false, powerPreference: 'high-performance' }}><Suspense fallback={null}><City position={position} near={active} /><Movement position={position} keys={keys} onMove={(x, z) => setLocation((old) => Math.abs(old.x - x) > 0.05 || Math.abs(old.z - z) > 0.05 ? { x, z } : old)} /></Suspense></Canvas></div>}
-    <header className="tour-header"><div className="tour-brand"><i /> MARSHOUT <span>VICE CITY / WORLD 01</span></div><div className="tour-header-actions"><span className="tour-live">● &nbsp; ONLINE</span><button type="button" className={`sound-toggle ${soundOn ? 'is-on' : ''}`} aria-label={soundOn ? 'Mute sound' : 'Play sound'} onClick={() => setSoundOn((value) => !value)}><span>{soundOn ? '♪' : '×'}</span><i>{soundOn ? 'SOUND ON' : 'SOUND OFF'}</i></button></div></header>
+    <header className="tour-header"><div className="tour-brand"><i /> MARSHOUT <span>VICE CITY / WORLD 01</span></div><span className="tour-live">● &nbsp; ONLINE</span></header>
     {phase === 'intro' && <main className="tour-intro"><div className="tour-intro-copy"><div className="tour-eyebrow">MARSHOUT / VICE CITY <span>✦</span></div><h1>Take a <em>tour.</em></h1><p className="tour-lead">See which door gets you a travel flyer and which one gets you to a new destination.</p><button className="tour-start" aria-label="Take a tour" onClick={() => { setCount(3); setPhase('countdown'); }}><span className="tour-play">▶</span><span>TAKE A TOUR</span></button><p className="tour-hint">Walk the boulevard. Three doors are waiting.</p></div><div className="tour-hero" aria-hidden="true"><div className="tour-sun" /><div className="tour-skyline"><i /><i /><i /><i /><i /><i /><i /><i /></div><div className="tour-palm">✳</div><div className="tour-hero-caption">VICE CITY <span>BOARDING LATE</span></div></div></main>}
     {phase !== 'intro' && <><div className="tour-topline"><span>VICE CITY <b>/</b> MARSHOUT BOULEVARD</span><span>FOLLOW THE GOLD · CHOOSE A DOOR</span></div>{phase === 'tour' && <><div className="tour-mission"><small>YOU'RE ON THE BOULEVARD</small><strong>Where are you headed?</strong><p>Walk up to a marked entrance. The city will tell you when you're close.</p></div><div className="tour-controls">
       <span className="control-block"><b className="control-label">MOVE</b><span className="arrow-pad"><kbd className="key up">↑</kbd><kbd className="key left">←</kbd><kbd className="key down">↓</kbd><kbd className="key right">→</kbd></span></span>
       <span className="control-block"><kbd className="key">E</kbd><b className="control-label">ENTER</b></span>
-    </div>{active !== null && <button className="tour-enter" onClick={enter}>ENTER <strong>{DESTINATIONS[active].title}</strong><span>↗</span></button>}<div className="tour-touch" aria-label="Movement controls"><button aria-label="Move left" onPointerDown={() => move('arrowleft', true)} onPointerUp={() => move('arrowleft', false)} onPointerCancel={() => move('arrowleft', false)}>←</button><button aria-label="Move forward" onPointerDown={() => move('arrowup', true)} onPointerUp={() => move('arrowup', false)} onPointerCancel={() => move('arrowup', false)}>↑</button><button aria-label="Move backward" onPointerDown={() => move('arrowdown', true)} onPointerUp={() => move('arrowdown', false)} onPointerCancel={() => move('arrowdown', false)}>↓</button><button aria-label="Move right" onPointerDown={() => move('arrowright', true)} onPointerUp={() => move('arrowright', false)} onPointerCancel={() => move('arrowright', false)}>→</button></div></>}{phase === 'countdown' && <div className="tour-countdown"><p>VICE CITY / LOADING THE BLOCK</p><strong key={count}>{count}</strong><span>STREETS OPEN IN</span></div>}</>}
+    
+      <span className="control-block sound-control">
+        <kbd className="key">M</kbd>
+        <button type="button" className="speaker-control" aria-label={soundOn ? 'Mute sound' : 'Play sound'} onClick={() => setSoundOn((value) => !value)}>
+          <span className="speaker-icon" aria-hidden="true">{soundOn ? '🔊' : '🔇'}</span>
+          <b className="control-label">{soundOn ? 'SOUND ON' : 'SOUND OFF'}</b>
+        </button>
+      </span></div>{active !== null && <button className="tour-enter" onClick={enter}>ENTER <strong>{DESTINATIONS[active].title}</strong><span>↗</span></button>}<div className="tour-touch" aria-label="Movement controls"><button aria-label="Move left" onPointerDown={() => move('arrowleft', true)} onPointerUp={() => move('arrowleft', false)} onPointerCancel={() => move('arrowleft', false)}>←</button><button aria-label="Move forward" onPointerDown={() => move('arrowup', true)} onPointerUp={() => move('arrowup', false)} onPointerCancel={() => move('arrowup', false)}>↑</button><button aria-label="Move backward" onPointerDown={() => move('arrowdown', true)} onPointerUp={() => move('arrowdown', false)} onPointerCancel={() => move('arrowdown', false)}>↓</button><button aria-label="Move right" onPointerDown={() => move('arrowright', true)} onPointerUp={() => move('arrowright', false)} onPointerCancel={() => move('arrowright', false)}>→</button></div></>}{phase === 'countdown' && <div className="tour-countdown"><p>VICE CITY / LOADING THE BLOCK</p><strong key={count}>{count}</strong><span>STREETS OPEN IN</span></div>}</>}
     <footer className="tour-footer"><span>✦ &nbsp; A TRIP WORTH TAKING</span><span>MARSHOUT © 2026</span></footer>
   </div>;
 }
@@ -547,6 +590,6 @@ const CSS = `
 .tour-enter{position:absolute;z-index:6;left:50%;transform:translateX(-50%);bottom:100px;padding:14px 18px;background:var(--gold);border:0;color:var(--navy);cursor:pointer;font-size:10px;font-weight:950;letter-spacing:.16em;box-shadow:0 0 34px rgba(211,163,79,.36);white-space:nowrap}.tour-enter strong{margin:0 18px;font-size:12px;letter-spacing:0}.tour-enter span{font-size:18px}
 .city-sign{font-family:Inter,system-ui,sans-serif;font-size:21px;font-weight:1000;letter-spacing:.11em;text-align:center;white-space:nowrap;text-shadow:0 2px 14px #06162d}.city-door-label{font-family:Inter,system-ui,sans-serif;min-width:245px;max-width:350px;padding:13px 16px;color:white;text-align:center;background:rgba(7,26,56,.93);border:1px solid rgba(211,163,79,.42);box-shadow:0 12px 32px rgba(0,0,0,.28);transition:transform .2s,border-color .2s;backdrop-filter:blur(8px)}.city-door-label.is-near{transform:scale(1.13);border-color:var(--gold)}.city-door-label small,.city-door-label span{display:block;font-size:8px;color:var(--gold);font-weight:950;letter-spacing:.17em}.city-door-label strong{display:block;font-size:16px;line-height:1.25;margin:6px 0}
 .tour-countdown{position:absolute;z-index:10;inset:0;background:rgba(7,26,56,.96);display:flex;align-items:center;justify-content:center;flex-direction:column}.tour-countdown:before{content:"";position:absolute;width:min(62vw,760px);height:min(62vw,760px);border:1px solid rgba(211,163,79,.18);border-radius:50%}.tour-countdown p,.tour-countdown span{position:relative;font-size:10px;font-weight:950;letter-spacing:.29em;color:var(--gold)}.tour-countdown strong{position:relative;font-size:clamp(150px,28vw,330px);line-height:.9;color:#f7f4ed;font-weight:950;text-shadow:0 0 70px rgba(211,163,79,.3);animation:count .8s cubic-bezier(.2,.8,.2,1)}.tour-countdown span{color:white}@keyframes count{from{transform:scale(1.45);opacity:0}to{transform:scale(1);opacity:1}}
-.tour-header-actions{display:flex;align-items:center;gap:16px}.sound-toggle{height:34px;padding:0 11px;border:1px solid rgba(211,163,79,.35);background:rgba(7,26,56,.65);color:#f5f2eb;display:flex;align-items:center;gap:8px;cursor:pointer;backdrop-filter:blur(8px)}.sound-toggle span{width:17px;height:17px;border-radius:50%;display:grid;place-items:center;background:#d3a34f;color:#071a38;font-size:10px;font-weight:1000}.sound-toggle i{font-style:normal;font-size:7px;font-weight:950;letter-spacing:.14em}.sound-toggle:not(.is-on){opacity:.58}.control-block{display:flex;align-items:center;gap:7px}.control-label{font-size:8px;letter-spacing:.13em;color:#f5f2eb}.key{min-width:29px;height:28px;padding:0 7px!important;display:inline-grid;place-items:center;border:1px solid rgba(255,255,255,.55)!important;border-bottom:3px solid rgba(211,163,79,.75)!important;border-radius:4px!important;background:linear-gradient(#f7f5ef,#dcd8cf)!important;color:#071a38!important;box-shadow:0 3px 8px rgba(0,0,0,.24);font-size:10px!important;font-weight:950!important;margin:0!important}.key.wide{min-width:54px}.arrow-pad{width:89px;height:58px;display:grid;grid-template-columns:repeat(3,29px);grid-template-rows:repeat(2,28px);gap:2px}.arrow-pad .up{grid-column:2;grid-row:1}.arrow-pad .left{grid-column:1;grid-row:2}.arrow-pad .down{grid-column:2;grid-row:2}.arrow-pad .right{grid-column:3;grid-row:2}.key-group{display:flex!important;align-items:center;gap:3px}.key-group b{margin-left:6px;font-size:9px;letter-spacing:.12em}.door-enter-key{margin-top:8px!important}.door-enter-key b{display:inline-grid;place-items:center;margin-right:7px;padding:4px 7px;border:1px solid rgba(255,255,255,.55);border-bottom-width:2px;border-radius:3px;background:#f5f2eb;color:#071a38;font-size:8px;letter-spacing:.08em}.tour-touch{display:none}
+.tour-header-actions{display:flex;align-items:center;gap:16px}.sound-toggle{height:34px;padding:0 11px;border:1px solid rgba(211,163,79,.35);background:rgba(7,26,56,.65);color:#f5f2eb;display:flex;align-items:center;gap:8px;cursor:pointer;backdrop-filter:blur(8px)}.sound-toggle span{width:17px;height:17px;border-radius:50%;display:grid;place-items:center;background:#d3a34f;color:#071a38;font-size:10px;font-weight:1000}.sound-toggle i{font-style:normal;font-size:7px;font-weight:950;letter-spacing:.14em}.sound-toggle:not(.is-on){opacity:.58}.control-block{display:flex;align-items:center;gap:7px}.speaker-control{border:0;background:transparent;color:#f5f2eb;display:flex;align-items:center;gap:6px;padding:0;cursor:pointer}.speaker-icon{font-size:16px;line-height:1;filter:saturate(.7)}.sound-control{gap:6px}.control-label{font-size:8px;letter-spacing:.13em;color:#f5f2eb}.key{min-width:29px;height:28px;padding:0 7px!important;display:inline-grid;place-items:center;border:1px solid rgba(255,255,255,.55)!important;border-bottom:3px solid rgba(211,163,79,.75)!important;border-radius:4px!important;background:linear-gradient(#f7f5ef,#dcd8cf)!important;color:#071a38!important;box-shadow:0 3px 8px rgba(0,0,0,.24);font-size:10px!important;font-weight:950!important;margin:0!important}.key.wide{min-width:54px}.arrow-pad{width:89px;height:58px;display:grid;grid-template-columns:repeat(3,29px);grid-template-rows:repeat(2,28px);gap:2px}.arrow-pad .up{grid-column:2;grid-row:1}.arrow-pad .left{grid-column:1;grid-row:2}.arrow-pad .down{grid-column:2;grid-row:2}.arrow-pad .right{grid-column:3;grid-row:2}.key-group{display:flex!important;align-items:center;gap:3px}.key-group b{margin-left:6px;font-size:9px;letter-spacing:.12em}.door-enter-key{margin-top:8px!important}.door-enter-key b{display:inline-grid;place-items:center;margin-right:7px;padding:4px 7px;border:1px solid rgba(255,255,255,.55);border-bottom-width:2px;border-radius:3px;background:#f5f2eb;color:#071a38;font-size:8px;letter-spacing:.08em}.tour-touch{display:none}
 @media(max-width:900px){.tour-intro{grid-template-columns:1fr;background:#fbfaf7}.tour-intro-copy{padding:130px 28px 70px}.tour-hero{position:absolute;inset:0;opacity:.1}.tour-intro h1{font-size:clamp(74px,17vw,130px)}.tour-controls{display:none}.tour-touch{position:absolute;z-index:8;bottom:85px;right:20px;display:grid;grid-template-columns:repeat(2,55px);gap:6px;touch-action:none}.tour-touch button{height:52px;border:1px solid rgba(211,163,79,.55);background:rgba(7,26,56,.92);color:white;font-size:24px}.tour-topline span:last-child{display:none}.tour-brand span{display:none}.tour-mission{top:122px;max-width:275px}.tour-enter{bottom:160px;max-width:90vw;white-space:normal}.tour-footer{font-size:8px}}
 `;
