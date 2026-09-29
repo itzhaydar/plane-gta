@@ -53,7 +53,7 @@ You are on Marshout Boulevard. Walk up to a marked entrance. The city tells you 
 - `M` — sound on / off
 - Drag — look around
 
-### Homie — Flyer House
+### Flyer House
 
 You are cargo, not the captain.
 
@@ -66,7 +66,7 @@ Open **Vice City Flyer Studio** and build the pickup poster:
 
 The live flyer is `1080 × 1350`. Download unlocks after you sign or edit the portrait. That flyer is how the crew finds you.
 
-### Pilot — Plane (Port Gellhorn)
+### Plane (Port Gellhorn)
 
 **Hangar** (`/hangar`): inspect the plane, then paint the **left flag** and **right flag**.
 
@@ -83,7 +83,7 @@ When both flags are ready, **Take off** opens `/fly`.
 - `M` sound
 - Drag mouse to rotate the camera
 
-### Pilot — Rocket (Mars)
+### Rocket (Mars)
 
 **Launch bay** (`/rock-hangar`): inspect the ship, then mark the **upper insignia** and **lower insignia**.
 
@@ -103,7 +103,7 @@ Phases: parked → launch → clouds → space → Mars approach → entry → l
 
 ## Where the image editor sits
 
-`@unlayer/react-image-editor` is the customization layer, not a detached demo.
+`@unlayer/react-image-editor` is the customization layer.
 
 | Path | What you edit |
 | --- | --- |
@@ -125,7 +125,6 @@ Files live in `/public/templates/`.
 | `flag-right.svg` | Plane right flag |
 | `insu.svg` | Rocket upper insignia |
 | `insl.svg` | Rocket lower insignia |
-| `plane-flag.svg` | Shared flag artwork |
 
 ## Routes
 
@@ -162,18 +161,14 @@ npm run preview
 `predev` and `prebuild` run `scripts/convert-images.cjs`, which converts PNGs / JPGs in `public/` to WebP.
 
 ## Credits
-
-Landing art is AI-generated.
-
 3D GLBs (CC Attribution, Sketchfab):
 
 - Astronaut
 - Pilot
-- Homies on the plane landing
-- Rocket landing homies
 
 Audio: `/public/boot.mp3` on the boulevard, hangars, and flights.
 
 ## Challenge
 
 Unlayer React Image Editor challenge: [github.com/unlayer/react-image-editor](https://github.com/unlayer/react-image-editor)
+#BuiltWithImageEditor
